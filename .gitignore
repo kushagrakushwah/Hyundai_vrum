@@ -1,0 +1,13 @@
+# Ignore archives and binaries
+*.zip
+*.tar.gz
+
+# Python & Jupyter cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Temporary dumps
+Final_Demo_dump.txt
+test.pdf

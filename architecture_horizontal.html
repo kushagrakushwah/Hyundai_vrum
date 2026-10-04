@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyundai SmartReserve - Core Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #060B16;
+    color: #F8FAFC;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 20px;
+    overflow-x: hidden;
+  }
+
+  /* Background Grid Effect */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(5, 150, 105, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(234, 88, 12, 0.1) 0%, transparent 40%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .canvas {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1540px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(2, 132, 199, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+    padding: 6px 18px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: #38BDF8;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #38BDF8;
+  }
+
+  h1 {
+    font-size: 34px;
+    font-weight: 900;
+    color: #FFFFFF;
+    letter-spacing: -0.8px;
+    line-height: 1.2;
+  }
+  h1 span {
+    background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #94A3B8;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  /* 3 Main Pillars Grid */
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  /* Individual Pillar Card */
+  .pillar {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+    border: 1.5px solid transparent;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pillar-car {
+    border-color: rgba(2, 132, 199, 0.4);
+    background: linear-gradient(180deg, rgba(14, 34, 61, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  }
+  .pillar-cloud {
+    border-color: rgba(5, 150, 105, 0.4);
+    background: linear-gradient(180deg, rgba(10, 46, 36, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  }
+  .pillar-kiosk {
+    border-color: rgba(234, 88, 12, 0.4);
+    background: linear-gradient(180deg, rgba(54, 25, 15, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  }
+
+  /* Pillar Header */
+  .pillar-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 18px;
+  }
+  .pillar-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .icon-car { background: rgba(2, 132, 199, 0.2); border: 1px solid #0284C7; }
+  .icon-cloud { background: rgba(5, 150, 105, 0.2); border: 1px solid #059669; }
+  .icon-kiosk { background: rgba(234, 88, 12, 0.2); border: 1px solid #EA580C; }
+
+  .pillar-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: -0.3px;
+  }
+  .pillar-subtitle {
+    font-size: 11px;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  /* Pillar Sub-Widgets */
+  .widget-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .widget {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .widget-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .widget-icon {
+    font-size: 16px;
+  }
+  .widget-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #E2E8F0;
+  }
+  .widget-desc {
+    font-size: 11px;
+    color: #64748B;
+    margin-top: 1px;
+  }
+
+  .widget-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tag-blue { background: rgba(2, 132, 199, 0.2); color: #38BDF8; border: 1px solid rgba(2, 132, 199, 0.4); }
+  .tag-green { background: rgba(5, 150, 105, 0.2); color: #34D399; border: 1px solid rgba(5, 150, 105, 0.4); }
+  .tag-orange { background: rgba(234, 88, 12, 0.2); color: #FB923C; border: 1px solid rgba(234, 88, 12, 0.4); }
+  .tag-red { background: rgba(220, 38, 38, 0.2); color: #F87171; border: 1px solid rgba(220, 38, 38, 0.4); }
+
+  /* Feature Highlight Card */
+  .highlight-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .hb-car { background: rgba(2, 132, 199, 0.1); border: 1px dashed rgba(56, 189, 248, 0.4); color: #BAE6FD; }
+  .hb-cloud { background: rgba(5, 150, 105, 0.1); border: 1px dashed rgba(52, 211, 153, 0.4); color: #A7F3D0; }
+  .hb-kiosk { background: rgba(234, 88, 12, 0.1); border: 1px dashed rgba(251, 146, 60, 0.4); color: #FED7AA; }
+
+  /* ======================================================== */
+  /* PROTOCOL FLOW PIPELINE (Chronological Step-by-Step Flow) */
+  /* ======================================================== */
+  .flow-pipeline {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+  }
+
+  .flow-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .flow-title h2 {
+    font-size: 15px;
+    font-weight: 800;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .flow-protocol-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94A3B8;
+  }
+
+  .steps-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    position: relative;
+  }
+
+  .step-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px 14px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .step-card::after {
+    content: '➔';
+    position: absolute;
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.3);
+    z-index: 2;
+  }
+  .step-card:last-child::after { display: none; }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: white;
+  }
+  .num-1 { background: #0284C7; }
+  .num-2 { background: #059669; }
+  .num-3 { background: #D97706; }
+  .num-4 { background: #8B5CF6; }
+  .num-5 { background: #10B981; }
+
+  .step-route {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .step-action {
+    font-size: 13px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .step-protocol {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #38BDF8;
+    margin-bottom: 6px;
+  }
+  .step-desc {
+    font-size: 11px;
+    color: #64748B;
+    line-height: 1.4;
+  }
+
+  /* Footer Tech Specs Bar */
+  .footer-specs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    font-size: 12px;
+    color: #64748B;
+  }
+  .specs-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .specs-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .sdot-1 { background: #38BDF8; }
+  .sdot-2 { background: #34D399; }
+  .sdot-3 { background: #FB923C; }
+  .sdot-4 { background: #A78BFA; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      Hyundai CoE Ideathon · Topic 2 · Track B (Technology & Prototype)
+    </div>
+    <h1>2. The Core Architecture <span>(100% Pure Software — Zero Hardware)</span></h1>
+    <p class="subtitle">End-to-End Real-Time Pipeline: In-Cabin Experience ➔ Cloud GNN Brain ➔ Physical Charger Lockout</p>
+  </div>
+
+  <!-- 3 Main Pillars -->
+  <div class="pillars-grid">
+
+    <!-- PILLAR 1: CAR COCKPIT -->
+    <div class="pillar pillar-car">
+      <div class="pillar-header">
+        <div class="pillar-icon icon-car">🚗</div>
+        <div>
+          <div class="pillar-title">1. In-Cabin Dashboard</div>
+          <div class="pillar-subtitle">Hyundai AVNT / ccNC Infotainment</div>
+        </div>
+      </div>
+
+      <div class="widget-list">
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🔋</span>
+            <div>
+              <div class="widget-name">Battery Telematics</div>
+              <div class="widget-desc">Real-time SoC & remaining range</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-red">18% (42 km)</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🗺️</span>
+            <div>
+              <div class="widget-name">District Station Map</div>
+              <div class="widget-desc">934 Real Hyderabad Nodes (BEE)</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-blue">Live Pins</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">⚡</span>
+            <div>
+              <div class="widget-name">AI Congestion Badge</div>
+              <div class="widget-desc">GNN predictive queue time</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">0 min Queue</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">👆</span>
+            <div>
+              <div class="widget-name">1-Touch 30-Min Lock</div>
+              <div class="widget-desc">Steering / touchscreen trigger</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-blue">Reserve Slot</span>
+        </div>
+      </div>
+
+      <div class="highlight-box hb-car">
+        <strong>In-Cabin Value:</strong> The driver never takes their phone out while driving. The vehicle computes range, queries the AI cloud, and locks the plug with one tap.
+      </div>
+    </div>
+
+    <!-- PILLAR 2: CLOUD & GNN BRAIN -->
+    <div class="pillar pillar-cloud">
+      <div class="pillar-header">
+        <div class="pillar-icon icon-cloud">☁️</div>
+        <div>
+          <div class="pillar-title">2. Central Cloud & AI Brain</div>
+          <div class="pillar-subtitle">Python FastAPI + WebSocket Engine</div>
+        </div>
+      </div>
+
+      <div class="widget-list">
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🧠</span>
+            <div>
+              <div class="widget-name">Stanford ROLAND GNN</div>
+              <div class="widget-desc">ResidualEdgeConv + GRUUpdater</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">R² ≈ 80.02%</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🔌</span>
+            <div>
+              <div class="widget-name">OCPP 1.6 Protocol Broker</div>
+              <div class="widget-desc">ReserveNow · Authorize · RemoteStart</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">Official Spec</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">⚡</span>
+            <div>
+              <div class="widget-name">WebSocket Hub</div>
+              <div class="widget-desc">Car & Kiosk bidirectional push</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-blue">&lt;100ms Sync</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🗄️</span>
+            <div>
+              <div class="widget-name">Telangana Station DB</div>
+              <div class="widget-desc">36 monthly snapshots (nodes_master)</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">934 EVCS</span>
+        </div>
+      </div>
+
+      <div class="highlight-box hb-cloud">
+        <strong>The AI Advantage:</strong> Not just a static booking calendar. GNN models district-wide topological competition to ensure the recommended station won't get jammed.
+      </div>
+    </div>
+
+    <!-- PILLAR 3: CHARGER KIOSK -->
+    <div class="pillar pillar-kiosk">
+      <div class="pillar-header">
+        <div class="pillar-icon icon-kiosk">🔌</div>
+        <div>
+          <div class="pillar-title">3. Charger Kiosk Simulator</div>
+          <div class="pillar-subtitle">Digital Twin Hardware Lockout Screen</div>
+        </div>
+      </div>
+
+      <div class="widget-list">
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🟢</span>
+            <div>
+              <div class="widget-name">Default State</div>
+              <div class="widget-desc">Ready for direct plug or reservation</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">AVAILABLE</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">🔒</span>
+            <div>
+              <div class="widget-name">Hardware Lockout State</div>
+              <div class="widget-desc">Contactor Relay OPEN (0 kW Power)</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-orange">RESERVED (LOCKED)</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">⌨️</span>
+            <div>
+              <div class="widget-name">PIN Keypad / QR Sensor</div>
+              <div class="widget-desc">Rejects unauthorized users / RFIDs</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-orange">PIN: 482910</span>
+        </div>
+
+        <div class="widget">
+          <div class="widget-left">
+            <span class="widget-icon">⚡</span>
+            <div>
+              <div class="widget-name">Charging Output</div>
+              <div class="widget-desc">Contactor Closes upon verification</div>
+            </div>
+          </div>
+          <span class="widget-tag tag-green">60 kW DC Flow</span>
+        </div>
+      </div>
+
+      <div class="highlight-box hb-kiosk">
+        <strong>Physical Protection:</strong> Unauthorized drivers who try to plug in are denied. Relay remains physically open until the authenticated 6-digit PIN is entered.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHRONOLOGICAL STEP-BY-STEP FLOW PIPELINE -->
+  <div class="flow-pipeline">
+    <div class="flow-title">
+      <h2><span>⚡</span> The 5-Step Execution Pipeline (Real-Time Protocol Sequence)</h2>
+      <span class="flow-protocol-tag">End-to-End Latency: &lt; 250ms</span>
+    </div>
+
+    <div class="steps-row">
+
+      <!-- STEP 1 -->
+      <div class="step-card">
+        <div>
+          <div class="step-header">
+            <div class="step-num num-1">1</div>
+            <div class="step-route">Car ➔ Cloud</div>
+          </div>
+          <div class="step-action">Reserve Request</div>
+          <div class="step-protocol">HTTP POST /api/reserve</div>
+          <div class="step-desc">Driver taps button on car screen. Transmits Station ID, User Token & 30-min duration.</div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-card">
+        <div>
+          <div class="step-header">
+            <div class="step-num num-2">2</div>
+            <div class="step-route">Cloud ➔ Kiosk</div>
+          </div>
+          <div class="step-action">Remote Lockout</div>
+          <div class="step-protocol">OCPP 1.6 ReserveNow</div>
+          <div class="step-desc">Cloud dispatches command over WebSocket. Kiosk screen turns BLUE; relay contactor is locked.</div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-card">
+        <div>
+          <div class="step-header">
+            <div class="step-num num-3">3</div>
+            <div class="step-route">Car ➔ Kiosk</div>
+          </div>
+          <div class="step-action">Driver Arrival & PIN</div>
+          <div class="step-protocol">PIN: [ 4 8 2 9 1 0 ]</div>
+          <div class="step-desc">Car screen displays one-time PIN. Driver arrives within 30 mins and enters PIN on kiosk keypad.</div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-card">
+        <div>
+          <div class="step-header">
+            <div class="step-num num-4">4</div>
+            <div class="step-route">Kiosk ➔ Cloud</div>
+          </div>
+          <div class="step-action">OTP Verification</div>
+          <div class="step-protocol">HTTP POST /verify-otp</div>
+          <div class="step-desc">Kiosk sends entered code to Cloud for authorization. Wrong code triggers RED Access Denied.</div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step-card">
+        <div>
+          <div class="step-header">
+            <div class="step-num num-5">5</div>
+            <div class="step-route">Cloud ➔ Kiosk</div>
+          </div>
+          <div class="step-action">Contactor Closes</div>
+          <div class="step-protocol">RemoteStartTransaction</div>
+          <div class="step-desc">Cloud approves session. High-voltage relay clicks shut. 60 kW DC charging commences!</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tech Specs Footer -->
+  <div class="footer-specs">
+    <div class="specs-item">
+      <span class="specs-dot sdot-1"></span>
+      <strong>Layer 1 (Car):</strong> React + Tailwind Automotive ccNC Cockpit
+    </div>
+    <div class="specs-item">
+      <span class="specs-dot sdot-2"></span>
+      <strong>Layer 2 (Cloud):</strong> FastAPI + Stanford ROLAND GNN (PyTorch)
+    </div>
+    <div class="specs-item">
+      <span class="specs-dot sdot-3"></span>
+      <strong>Layer 3 (Kiosk):</strong> OCPP 1.6 Digital Twin Simulator (HTML/JS)
+    </div>
+    <div class="specs-item">
+      <span class="specs-dot sdot-4"></span>
+      <strong>Data Foundation:</strong> 934 Stations (BEE & Parivahan Government Feeds)
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

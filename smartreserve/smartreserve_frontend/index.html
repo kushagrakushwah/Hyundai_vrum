@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyundai SmartReserve — Demo Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#050c1a; --surface:#0a1628; --border:#1a2d4a; --accent:#00b4d8; --green:#22c55e; --text:#e2e8f0; --muted:#64748b; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+  .logo { font-size:11px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:20px; }
+  h1 { font-size:40px; font-weight:800; color:var(--accent); margin-bottom:8px; text-align:center; }
+  .subtitle { font-size:16px; color:var(--muted); text-align:center; max-width:500px; margin-bottom:48px; line-height:1.6; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; max-width:680px; margin-bottom:32px; }
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:28px; cursor:pointer; text-decoration:none; color:inherit;
+    transition:all .2s; display:block;
+  }
+  .card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 32px rgba(0,180,216,.15); }
+  .card-icon { font-size:36px; margin-bottom:14px; }
+  .card-title { font-size:16px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .card-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+  .card-tag { display:inline-block; margin-top:10px; font-size:10px; font-weight:600; color:var(--accent); background:rgba(0,180,216,.1); border-radius:10px; padding:3px 10px; }
+  .stats { display:flex; gap:32px; margin-bottom:40px; }
+  .stat { text-align:center; }
+  .stat-val { font-size:28px; font-weight:800; color:var(--accent); }
+  .stat-lab { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+  .api-link { font-size:12px; color:var(--muted); text-align:center; }
+  .api-link a { color:var(--accent); text-decoration:none; }
+  .api-link a:hover { text-decoration:underline; }
+  .badge { display:inline-flex; align-items:center; gap:6px; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.2); border-radius:20px; padding:4px 12px; font-size:11px; color:var(--green); margin-bottom:32px; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+</style>
+</head>
+<body>
+  <div class="logo">Hyundai CoE Mobility Innovation Ideathon 2026 · Track B</div>
+  <h1>SmartReserve</h1>
+  <p class="subtitle">AI-Powered In-Cabin EV Charging Co-Pilot<br>OCPP 1.6 · Stanford ROLAND GNN · 934 Real Stations</p>
+
+  <div class="badge"><div class="dot"></div> System Online · All Services Running</div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val">934</div><div class="stat-lab">Station Nodes</div></div>
+    <div class="stat"><div class="stat-val">78%</div><div class="stat-lab">GNN Accuracy</div></div>
+    <div class="stat"><div class="stat-val">30s</div><div class="stat-lab">Demo Time</div></div>
+    <div class="stat"><div class="stat-val">60kW</div><div class="stat-lab">DC Fast Charge</div></div>
+  </div>
+
+  <div class="cards">
+    <a class="card" href="/car" target="_blank">
+      <div class="card-icon">📺</div>
+      <div class="card-title">In-Cabin Dashboard</div>
+      <div class="card-desc">Hyundai AVNT infotainment view. Live station map, AI predictions, one-tap reservation. Driver never touches their phone.</div>
+      <div class="card-tag">localhost:3000/car →</div>
+    </a>
+    <a class="card" href="/kiosk?station=TG0001" target="_blank">
+      <div class="card-icon">🔌</div>
+      <div class="card-title">Charger Kiosk Simulator</div>
+      <div class="card-desc">Physical charging station display. Full OCPP state machine: Available → Reserved → Locked → PIN verify → Charging.</div>
+      <div class="card-tag">localhost:3000/kiosk →</div>
+    </a>
+  </div>
+
+  <div class="api-link">
+    Backend API: <a href="http://localhost:8000/docs" target="_blank">localhost:8000/docs</a> ·
+    Health: <a href="http://localhost:8000/health" target="_blank">localhost:8000/health</a> ·
+    Stations: <a href="http://localhost:8000/api/stations" target="_blank">localhost:8000/api/stations</a>
+  </div>
+</body>
+</html>

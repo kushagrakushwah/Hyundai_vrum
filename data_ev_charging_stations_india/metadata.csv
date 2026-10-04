@@ -1,0 +1,10 @@
+organisation,
+sectors,"undefined"
+updated_frequency,As and When
+granularity,"State, District, City, Village"
+time_saved,4 hours
+source,"Bureau of Energy Efficiency, Ministry of Power"
+source_link,"https://beeindia.gov.in/show_content.php?lang=1&level=2&ls_id=345&lid=67"
+time_period,"2025"
+units,"toal_connections in absolute number"
+citation,". State, District, City and Location wise Electric Vehicle (EV) Charging Stations in India [Data set]. Dataful. https://dataful.in/account/orders/23369"

@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyundai SmartReserve — In-Cabin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg:         #050c1a;
+    --surface:    #0a1628;
+    --surface2:   #0f1e35;
+    --border:     #1a2d4a;
+    --accent:     #00b4d8;
+    --accent2:    #0077b6;
+    --green:      #22c55e;
+    --amber:      #f59e0b;
+    --red:        #ef4444;
+    --blue-res:   #3b82f6;
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+    --hyundai:    #002c5f;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 52px 1fr;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Top Bar ── */
+  #topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 16px;
+  }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand svg { width:28px; height:28px; }
+  .brand-text { font-size:13px; font-weight:700; letter-spacing:.04em; color:var(--accent); }
+  .brand-sub { font-size:10px; color:var(--muted); letter-spacing:.08em; }
+
+  .topbar-center { display:flex; align-items:center; gap:20px; }
+  .time-display { font-family:'DM Mono',monospace; font-size:15px; color:var(--text); }
+  .date-display { font-size:11px; color:var(--muted); }
+
+  .topbar-right { display:flex; align-items:center; gap:14px; }
+  .status-pill {
+    display:flex; align-items:center; gap:6px;
+    background: rgba(0,180,216,.08);
+    border: 1px solid rgba(0,180,216,.2);
+    border-radius:20px; padding: 4px 10px;
+    font-size:11px; font-weight:500; color:var(--accent);
+  }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Main Layout ── */
+  #main {
+    display: grid;
+    grid-template-columns: 300px 1fr 280px;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* ── Left Panel ── */
+  #left-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .panel-title { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
+
+  /* Battery Widget */
+  #battery-widget {
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(0,180,216,.06), rgba(0,119,182,.04));
+    border-bottom: 1px solid var(--border);
+  }
+  .battery-row { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:10px; }
+  .battery-soc { font-size:40px; font-weight:800; color:var(--amber); line-height:1; }
+  .battery-soc.soc-ok { color:var(--green); }
+  .battery-soc.soc-critical { color:var(--red); }
+  .battery-unit { font-size:14px; color:var(--muted); margin-bottom:6px; }
+  .battery-range { font-size:12px; color:var(--muted); }
+  .battery-range span { color:var(--text); font-weight:600; }
+  .battery-bar-wrap { width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .battery-bar { height:100%; border-radius:4px; background:var(--amber); transition: width 1s ease; }
+  .battery-bar.ok { background:var(--green); }
+  .battery-bar.critical { background:var(--red); }
+  .battery-labels { display:flex; justify-content:space-between; margin-top:4px; }
+  .battery-label { font-size:9px; color:var(--muted); }
+
+  /* AI Alert */
+  #ai-alert {
+    padding: 12px 16px;
+    background: rgba(34,197,94,.06);
+    border-bottom: 1px solid rgba(34,197,94,.15);
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .ai-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+  .ai-alert-text { font-size:11px; line-height:1.5; color:var(--text); }
+  .ai-alert-text strong { color:var(--green); }
+  #ai-alert.hidden { display:none; }
+
+  /* Station list */
+  #station-list { flex:1; overflow-y:auto; }
+  #station-list::-webkit-scrollbar { width:4px; }
+  #station-list::-webkit-scrollbar-track { background:transparent; }
+  #station-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .station-card {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .station-card:hover, .station-card.active { background: var(--surface2); }
+  .station-card.active { border-left: 2px solid var(--accent); }
+  .station-card-top { display:flex; align-items:center; justify-content:space-between; }
+  .station-name { font-size:12px; font-weight:600; color:var(--text); flex:1; margin-right:6px; }
+  .status-badge {
+    font-size:9px; font-weight:700; letter-spacing:.04em;
+    padding:2px 7px; border-radius:10px; flex-shrink:0;
+    text-transform:uppercase;
+  }
+  .badge-available { background:rgba(34,197,94,.15); color:var(--green); }
+  .badge-reserved  { background:rgba(59,130,246,.15); color:var(--blue-res); }
+  .badge-charging  { background:rgba(0,180,216,.15);  color:var(--accent); }
+  .badge-unavailable { background:rgba(100,116,139,.15); color:var(--muted); }
+  .station-meta { display:flex; gap:10px; }
+  .meta-item { font-size:10px; color:var(--muted); display:flex; align-items:center; gap:3px; }
+  .congestion-dot { width:7px; height:7px; border-radius:50%; }
+  .cong-low    { background:var(--green); }
+  .cong-med    { background:var(--amber); }
+  .cong-high   { background:var(--red); }
+  .station-dist { font-size:10px; color:var(--accent); font-weight:500; }
+
+  /* Search */
+  #search-bar {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display:flex; gap:8px;
+  }
+  #search-input {
+    flex:1; background:var(--surface2); border:1px solid var(--border);
+    border-radius:6px; padding:6px 10px; font-size:11px; color:var(--text);
+    outline:none; font-family:inherit;
+  }
+  #search-input:focus { border-color:var(--accent); }
+  #search-input::placeholder { color:var(--muted); }
+  .filter-btn {
+    background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+    padding:6px 10px; color:var(--muted); font-size:10px; cursor:pointer;
+    font-family:inherit; transition: all .15s;
+  }
+  .filter-btn.active { border-color:var(--accent); color:var(--accent); }
+
+  /* ── Map ── */
+  #map-wrap {
+    position:relative;
+    background: #071223;
+  }
+  #map { width:100%; height:100%; }
+
+  .map-overlay {
+    position:absolute; z-index:1000;
+    pointer-events:none;
+  }
+  #map-header {
+    top:12px; left:12px; right:12px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    pointer-events: all;
+  }
+  .map-title {
+    background: rgba(5,12,26,.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius:8px; padding: 8px 14px;
+    font-size:12px; font-weight:600; color:var(--text);
+  }
+  .map-title span { color:var(--accent); }
+  .map-legend {
+    background: rgba(5,12,26,.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius:8px; padding: 8px 12px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; }
+
+  /* ── Right Panel ── */
+  #right-panel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Station Detail */
+  #station-detail {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink:0;
+  }
+  #no-selection {
+    padding:32px 16px; text-align:center;
+    color:var(--muted); font-size:12px; line-height:1.6;
+  }
+  .no-sel-icon { font-size:32px; margin-bottom:8px; }
+  .detail-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
+  .detail-address { font-size:11px; color:var(--muted); margin-bottom:12px; }
+  .detail-specs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .spec-card {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px;
+  }
+  .spec-value { font-size:16px; font-weight:700; color:var(--accent); }
+  .spec-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
+
+  .ai-prediction-box {
+    background: rgba(0,180,216,.06);
+    border: 1px solid rgba(0,180,216,.2);
+    border-radius:8px; padding:10px 12px; margin-bottom:12px;
+  }
+  .ai-pred-header { font-size:10px; color:var(--accent); font-weight:600; margin-bottom:6px; letter-spacing:.04em; }
+  .ai-pred-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .ai-pred-label { font-size:11px; color:var(--muted); }
+  .ai-pred-value { font-size:11px; font-weight:600; color:var(--text); }
+  .congestion-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
+  }
+  .cong-badge-low  { background:rgba(34,197,94,.15); color:var(--green); }
+  .cong-badge-med  { background:rgba(245,158,11,.15); color:var(--amber); }
+  .cong-badge-high { background:rgba(239,68,68,.15);  color:var(--red);   }
+
+  /* Reserve Button */
+  #reserve-btn {
+    width:100%; padding:14px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border:none; border-radius:8px;
+    font-family:inherit; font-size:13px; font-weight:700; color:#fff;
+    cursor:pointer; transition: all .2s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  #reserve-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,180,216,.35);
+  }
+  #reserve-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+  #reserve-btn.reserved {
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
+  }
+
+  /* PIN Display */
+  #pin-display {
+    padding:14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(34,197,94,.04);
+    flex-shrink:0;
+  }
+  #pin-display.hidden { display:none; }
+  .pin-header { font-size:10px; color:var(--green); font-weight:700; letter-spacing:.06em; margin-bottom:8px; text-transform:uppercase; }
+  .pin-digits {
+    display:flex; gap:6px; margin-bottom:10px;
+    justify-content:center;
+  }
+  .pin-digit {
+    width:34px; height:38px;
+    background:var(--surface2); border:1px solid var(--green);
+    border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-family:'DM Mono',monospace; font-size:18px; font-weight:600;
+    color:var(--green);
+  }
+  .pin-sub { font-size:10px; color:var(--muted); text-align:center; margin-bottom:8px; }
+  .countdown-row { display:flex; align-items:center; justify-content:space-between; }
+  .countdown-label { font-size:10px; color:var(--muted); }
+  .countdown-timer { font-family:'DM Mono',monospace; font-size:14px; color:var(--amber); font-weight:600; }
+  #cancel-btn {
+    width:100%; padding:7px;
+    background:transparent; border:1px solid var(--border);
+    border-radius:6px; font-family:inherit; font-size:11px;
+    color:var(--muted); cursor:pointer; margin-top:8px;
+    transition: all .15s;
+  }
+  #cancel-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* Charging Session */
+  #charging-display {
+    padding:14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink:0;
+  }
+  #charging-display.hidden { display:none; }
+  .charging-header { font-size:10px; color:var(--accent); font-weight:700; letter-spacing:.06em; margin-bottom:10px; text-transform:uppercase; }
+  .charging-soc { font-size:36px; font-weight:800; color:var(--green); line-height:1; margin-bottom:4px; }
+  .charging-meta { font-size:11px; color:var(--muted); margin-bottom:10px; }
+  .charging-meta span { color:var(--text); font-weight:500; }
+  .soc-bar-wrap { width:100%; height:10px; background:var(--border); border-radius:5px; overflow:hidden; margin-bottom:8px; }
+  .soc-bar { height:100%; background:linear-gradient(90deg, var(--accent2), var(--green)); border-radius:5px; transition:width 1.5s ease; }
+  #charging-chart { width:100%; height:70px; }
+
+  /* Notifications */
+  #notifications {
+    flex:1; overflow-y:auto; padding:10px;
+  }
+  .notif {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px; margin-bottom:6px;
+    font-size:11px; color:var(--muted); line-height:1.4;
+    animation: slideIn .25s ease;
+  }
+  .notif strong { color:var(--text); }
+  .notif .notif-time { font-size:9px; color:var(--muted); margin-top:2px; }
+  .notif.success { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.04); }
+  .notif.info    { border-color:rgba(0,180,216,.3);  background:rgba(0,180,216,.04); }
+  .notif.warning { border-color:rgba(245,158,11,.3); background:rgba(245,158,11,.04); }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+  /* Toast */
+  #toast {
+    position:fixed; top:64px; left:50%; transform:translateX(-50%);
+    background: rgba(10,22,40,.95); border:1px solid var(--accent);
+    backdrop-filter:blur(12px); border-radius:10px;
+    padding:12px 20px; font-size:13px; color:var(--text);
+    z-index:9999; pointer-events:none; opacity:0;
+    transition: opacity .25s; box-shadow:0 8px 32px rgba(0,0,0,.5);
+  }
+  #toast.show { opacity:1; }
+
+  /* Leaflet custom markers */
+  .marker-available { background:var(--green); }
+  .marker-reserved  { background:var(--blue-res); }
+  .marker-charging  { background:var(--accent); }
+  .marker-unavailable { background:var(--muted); }
+  .marker-active { background:var(--amber); }
+
+  .custom-marker {
+    width:14px; height:14px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.6);
+    box-shadow: 0 0 6px rgba(0,0,0,.4);
+    cursor:pointer;
+  }
+  .custom-marker.selected {
+    width:18px; height:18px;
+    border:2px solid #fff;
+    box-shadow: 0 0 12px currentColor, 0 0 4px rgba(0,0,0,.6);
+  }
+
+  .leaflet-popup-content-wrapper {
+    background:var(--surface) !important; border:1px solid var(--border) !important;
+    border-radius:8px !important; box-shadow:0 8px 24px rgba(0,0,0,.5) !important;
+  }
+  .leaflet-popup-content { color:var(--text) !important; font-family:'Inter',sans-serif !important; margin:10px 14px !important; }
+  .leaflet-popup-tip { background:var(--surface) !important; }
+  .popup-name { font-size:12px; font-weight:700; margin-bottom:4px; color:var(--text); }
+  .popup-meta { font-size:10px; color:var(--muted); margin-bottom:6px; }
+  .popup-select {
+    width:100%; padding:6px; background:var(--accent);
+    border:none; border-radius:4px; color:#fff; font-size:11px;
+    font-weight:600; cursor:pointer; font-family:inherit;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<header id="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="48" fill="#002c5f"/>
+      <text x="50" y="62" text-anchor="middle" fill="white" font-size="44" font-weight="700" font-family="sans-serif">H</text>
+    </svg>
+    <div>
+      <div class="brand-text">SmartReserve</div>
+      <div class="brand-sub">HYUNDAI EV CO-PILOT</div>
+    </div>
+  </div>
+  <div class="topbar-center">
+    <div>
+      <div class="time-display" id="clock">--:--</div>
+      <div class="date-display" id="date-display">--</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span>AI Active</span>
+    </div>
+    <div class="status-pill" id="ws-status" style="color:var(--amber); border-color:rgba(245,158,11,.2)">
+      Connecting...
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<div id="main">
+
+  <!-- Left: Station List -->
+  <aside id="left-panel">
+    <div id="battery-widget">
+      <div class="battery-row">
+        <div>
+          <div class="battery-soc soc-critical" id="soc-display">18%</div>
+          <div class="battery-range">Range: <span id="range-display">41 km</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Battery</div>
+          <div style="font-size:10px;color:var(--red);font-weight:600;">⚠ Low</div>
+        </div>
+      </div>
+      <div class="battery-bar-wrap">
+        <div class="battery-bar critical" id="battery-bar" style="width:18%"></div>
+      </div>
+      <div class="battery-labels">
+        <span class="battery-label">0%</span>
+        <span class="battery-label">50%</span>
+        <span class="battery-label">100%</span>
+      </div>
+    </div>
+
+    <div id="ai-alert">
+      <div class="ai-icon">🤖</div>
+      <div class="ai-alert-text">
+        <strong>AI recommends:</strong> Tata Power IT Park — Gachibowli<br>
+        1.8 km away · 60 kW DC · Predicted queue: <strong>0 min</strong>
+      </div>
+    </div>
+
+    <div id="search-bar">
+      <input type="text" id="search-input" placeholder="Search stations..." oninput="filterStations(this.value)">
+      <button class="filter-btn active" onclick="setFilter('all')">All</button>
+      <button class="filter-btn" onclick="setFilter('available')">Free</button>
+    </div>
+
+    <div class="panel-header">
+      <span class="panel-title">Nearby Stations</span>
+      <span style="font-size:10px;color:var(--muted)" id="station-count">Loading...</span>
+    </div>
+
+    <div id="station-list">
+      <div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Loading stations...</div>
+    </div>
+  </aside>
+
+  <!-- Center: Map -->
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div class="map-overlay" id="map-header">
+      <div class="map-title">Hyderabad District · <span id="map-station-count">934</span> Stations</div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Available</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue-res)"></div> Reserved</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Charging</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div> Unavailable</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Detail + Reserve -->
+  <aside id="right-panel">
+    <div class="panel-header">
+      <span class="panel-title">Station Detail</span>
+    </div>
+
+    <div id="no-selection">
+      <div class="no-sel-icon">📍</div>
+      Select a charging station<br>from the map or list
+    </div>
+
+    <div id="station-detail" style="display:none">
+      <div class="detail-name" id="detail-name">—</div>
+      <div class="detail-address" id="detail-address">—</div>
+      <div class="detail-specs">
+        <div class="spec-card">
+          <div class="spec-value" id="detail-power">—</div>
+          <div class="spec-label">Power (kW)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-value" id="detail-ports">—</div>
+          <div class="spec-label">Ports</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-value" id="detail-connector" style="font-size:12px">—</div>
+          <div class="spec-label">Connector</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-value" id="detail-operator" style="font-size:11px">—</div>
+          <div class="spec-label">Operator</div>
+        </div>
+      </div>
+      <div class="ai-prediction-box">
+        <div class="ai-pred-header">🧠 GNN AI Prediction</div>
+        <div class="ai-pred-row">
+          <span class="ai-pred-label">Demand Level</span>
+          <span class="ai-pred-value" id="detail-congestion">—</span>
+        </div>
+        <div class="ai-pred-row">
+          <span class="ai-pred-label">Predicted Queue</span>
+          <span class="ai-pred-value" id="detail-queue">—</span>
+        </div>
+        <div class="ai-pred-row">
+          <span class="ai-pred-label">Confidence</span>
+          <span class="ai-pred-value" id="detail-confidence">—</span>
+        </div>
+        <div class="ai-pred-row">
+          <span class="ai-pred-label">Data Model</span>
+          <span class="ai-pred-value" style="font-size:10px;color:var(--muted)">Stanford ROLAND GNN</span>
+        </div>
+      </div>
+      <button id="reserve-btn" onclick="reserveStation()">
+        <span>🔒</span> Reserve 30-Min Exclusive Slot
+      </button>
+    </div>
+
+    <!-- PIN Display (shown after reservation) -->
+    <div id="pin-display" class="hidden">
+      <div class="pin-header">✅ Slot Reserved — Your PIN</div>
+      <div class="pin-digits" id="pin-digits"></div>
+      <div class="pin-sub">Show this at the charger or type it on the keypad</div>
+      <div class="countdown-row">
+        <span class="countdown-label">⏱ Expires in</span>
+        <span class="countdown-timer" id="countdown">29:59</span>
+      </div>
+      <button id="cancel-btn" onclick="cancelReservation()">Cancel Reservation</button>
+    </div>
+
+    <!-- Live Charging Session -->
+    <div id="charging-display" class="hidden">
+      <div class="charging-header">⚡ Charging Active</div>
+      <div class="charging-soc" id="charge-soc">18.0%</div>
+      <div class="charging-meta">
+        <span id="charge-kw">60</span> kW · <span id="charge-kwh">0.0</span> kWh delivered
+      </div>
+      <div class="soc-bar-wrap">
+        <div class="soc-bar" id="soc-bar" style="width:18%"></div>
+      </div>
+      <canvas id="charging-chart"></canvas>
+    </div>
+
+    <!-- Notifications -->
+    <div class="panel-header">
+      <span class="panel-title">Activity Log</span>
+    </div>
+    <div id="notifications"></div>
+  </aside>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const API = window.location.port === '3000'
+  ? 'http://localhost:8000'
+  : (window.location.origin.replace(':3000', ':8000'));
+const WS_URL = API.replace('http', 'ws');
+const USER_ID = 'hyundai_driver_001';
+
+// ── State ───────────────────────────────────────────────────────────────────
+let allStations = [];
+let selectedStation = null;
+let currentReservation = null;
+let countdownInterval = null;
+let ws = null;
+let mapMarkers = {};
+let activeFilter = 'all';
+let socHistory = [];
+let chartCtx = null;
+let currentSoc = 18;
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('date-display').textContent =
+    now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Map ──────────────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [17.3850, 78.4867],
+  zoom: 11,
+  zoomControl: true,
+  attributionControl: false,
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19,
+}).addTo(map);
+
+function createMarker(station) {
+  const colors = {
+    'AVAILABLE': '#22c55e',
+    'RESERVED': '#3b82f6',
+    'CHARGING': '#00b4d8',
+    'UNAVAILABLE': '#64748b',
+  };
+  const color = colors[station.status] || '#64748b';
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="custom-marker" style="background:${color};width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.6);box-shadow:0 0 6px rgba(0,0,0,.4);"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+  const marker = L.marker([station.lat, station.lng], { icon })
+    .addTo(map)
+    .on('click', () => selectStation(station.station_id));
+  return marker;
+}
+
+function renderMarkers(stations) {
+  // Clear old markers
+  Object.values(mapMarkers).forEach(m => map.removeLayer(m));
+  mapMarkers = {};
+  const limit = Math.min(stations.length, 500);
+  for (let i = 0; i < limit; i++) {
+    const s = stations[i];
+    mapMarkers[s.station_id] = createMarker(s);
+  }
+  document.getElementById('map-station-count').textContent = stations.length;
+}
+
+// ── Station List ─────────────────────────────────────────────────────────────
+function renderStationList(stations) {
+  const list = document.getElementById('station-list');
+  const visible = stations.slice(0, 60);
+  list.innerHTML = visible.map(s => `
+    <div class="station-card ${selectedStation?.station_id === s.station_id ? 'active' : ''}"
+         onclick="selectStation('${s.station_id}')">
+      <div class="station-card-top">
+        <div class="station-name">${s.name}</div>
+        <div class="status-badge badge-${s.status.toLowerCase()}">${s.status}</div>
+      </div>
+      <div class="station-meta">
+        <div class="meta-item">
+          <div class="congestion-dot cong-${s.congestion?.level?.toLowerCase() || 'low'}"></div>
+          ${s.congestion?.level || 'LOW'} demand
+        </div>
+        <div class="meta-item">⚡ ${s.power_kw} kW</div>
+        <div class="meta-item">🔌 ${s.connector_type}</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('station-count').textContent = `${stations.length} stations`;
+}
+
+function filterStations(query) {
+  const q = query.toLowerCase();
+  const filtered = allStations.filter(s =>
+    (activeFilter === 'all' || s.status === 'AVAILABLE') &&
+    (!q || s.name.toLowerCase().includes(q) || s.district.toLowerCase().includes(q))
+  );
+  renderStationList(filtered);
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && f === 'all') || (i === 1 && f === 'available'));
+  });
+  filterStations(document.getElementById('search-input').value);
+}
+
+function selectStation(stationId) {
+  selectedStation = allStations.find(s => s.station_id === stationId);
+  if (!selectedStation) return;
+
+  // Update list highlight
+  document.querySelectorAll('.station-card').forEach(el => el.classList.remove('active'));
+
+  // Fly map to station
+  map.setView([selectedStation.lat, selectedStation.lng], 14);
+
+  // Highlight marker
+  Object.values(mapMarkers).forEach(m => {
+    const el = m.getElement()?.querySelector('.custom-marker');
+    if (el) { el.style.width = '12px'; el.style.height = '12px'; }
+  });
+  const activeMarker = mapMarkers[stationId];
+  if (activeMarker) {
+    const el = activeMarker.getElement()?.querySelector('.custom-marker');
+    if (el) {
+      el.style.width = '18px'; el.style.height = '18px';
+      el.style.background = '#f59e0b';
+    }
+  }
+
+  showDetail(selectedStation);
+}
+
+function showDetail(station) {
+  document.getElementById('no-selection').style.display = 'none';
+  document.getElementById('station-detail').style.display = 'block';
+
+  document.getElementById('detail-name').textContent = station.name;
+  document.getElementById('detail-address').textContent = station.address || station.district + ', Telangana';
+  document.getElementById('detail-power').textContent = station.power_kw;
+  document.getElementById('detail-ports').textContent = station.total_ports;
+  document.getElementById('detail-connector').textContent = station.connector_type;
+  document.getElementById('detail-operator').textContent = station.operator;
+
+  const cong = station.congestion || { level: 'LOW', queue_min: 0, queue_max: 5, confidence: 'HIGH' };
+  const badgeClass = `cong-badge-${cong.level.toLowerCase()}`;
+  document.getElementById('detail-congestion').innerHTML =
+    `<span class="congestion-badge ${badgeClass}">${cong.level}</span>`;
+  document.getElementById('detail-queue').textContent =
+    `${cong.queue_min}–${cong.queue_max} min`;
+  document.getElementById('detail-confidence').textContent = cong.confidence;
+
+  const btn = document.getElementById('reserve-btn');
+  if (station.status === 'AVAILABLE') {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔒</span> Reserve 30-Min Exclusive Slot';
+    btn.className = 'reserve-btn';
+  } else if (station.status === 'RESERVED') {
+    btn.disabled = true;
+    btn.innerHTML = '<span>🔵</span> Already Reserved';
+  } else if (station.status === 'CHARGING') {
+    btn.disabled = true;
+    btn.innerHTML = '<span>⚡</span> Currently Charging';
+  } else {
+    btn.disabled = true;
+    btn.innerHTML = '<span>⛔</span> Unavailable';
+  }
+}
+
+// ── Reserve ───────────────────────────────────────────────────────────────────
+async function reserveStation() {
+  if (!selectedStation) return;
+  const btn = document.getElementById('reserve-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Reserving...';
+
+  try {
+    const res = await fetch(`${API}/api/reserve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        station_id: selectedStation.station_id,
+        duration_minutes: 30,
+        user_id: USER_ID,
+        vehicle_soc: currentSoc,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Reservation failed');
+    handleReservationConfirmed(data);
+  } catch (e) {
+    showToast('⚠ ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔒</span> Reserve 30-Min Exclusive Slot';
+  }
+}
+
+function handleReservationConfirmed(data) {
+  currentReservation = data;
+  showPinDisplay(data.pin, data.expires_at);
+  addNotification(`✅ Slot reserved at <strong>${data.station?.name || selectedStation?.name}</strong>. PIN: <strong>${data.pin}</strong>`, 'success');
+  showToast(`🔒 Charger locked! PIN: ${data.pin}`, 'success');
+
+  // Update station status in local data
+  if (selectedStation) {
+    selectedStation.status = 'RESERVED';
+    // re-render marker
+    const m = mapMarkers[selectedStation.station_id];
+    if (m) {
+      const el = m.getElement()?.querySelector('.custom-marker');
+      if (el) el.style.background = '#3b82f6';
+    }
+  }
+}
+
+function showPinDisplay(pin, expiresAt) {
+  document.getElementById('station-detail').style.display = 'none';
+  document.getElementById('pin-display').classList.remove('hidden');
+
+  const digits = document.getElementById('pin-digits');
+  digits.innerHTML = pin.split('').map(d =>
+    `<div class="pin-digit">${d}</div>`
+  ).join('');
+
+  startCountdown(expiresAt);
+}
+
+function startCountdown(expiresAt) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    const remaining = Math.max(0, expiresAt - Date.now() / 1000);
+    const m = Math.floor(remaining / 60);
+    const s = Math.floor(remaining % 60);
+    document.getElementById('countdown').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      handleExpired();
+    }
+  }, 1000);
+}
+
+function handleExpired() {
+  addNotification('⏰ Reservation expired. No-show fee of ₹100 applied.', 'warning');
+  document.getElementById('pin-display').classList.add('hidden');
+  currentReservation = null;
+}
+
+async function cancelReservation() {
+  if (!currentReservation || !selectedStation) return;
+  try {
+    await fetch(`${API}/api/cancel-reservation/${selectedStation.station_id}?user_id=${USER_ID}`, {
+      method: 'POST',
+    });
+    clearInterval(countdownInterval);
+    document.getElementById('pin-display').classList.add('hidden');
+    document.getElementById('station-detail').style.display = 'block';
+    selectedStation.status = 'AVAILABLE';
+    showDetail(selectedStation);
+    currentReservation = null;
+    addNotification('Reservation cancelled. Full refund processed.', 'info');
+  } catch (e) {
+    showToast('Error cancelling: ' + e.message, 'error');
+  }
+}
+
+// ── Charging Session ──────────────────────────────────────────────────────────
+function showChargingSession(soc, kw, kwh) {
+  document.getElementById('pin-display').classList.add('hidden');
+  document.getElementById('station-detail').style.display = 'none';
+  document.getElementById('charging-display').classList.remove('hidden');
+
+  socHistory.push(soc);
+  if (socHistory.length > 40) socHistory.shift();
+
+  document.getElementById('charge-soc').textContent = soc.toFixed(1) + '%';
+  document.getElementById('charge-kw').textContent = kw.toFixed(1);
+  document.getElementById('charge-kwh').textContent = kwh.toFixed(2);
+  document.getElementById('soc-bar').style.width = soc + '%';
+
+  // Update battery widget too
+  currentSoc = soc;
+  updateBatteryWidget(soc);
+
+  drawChart();
+}
+
+function updateBatteryWidget(soc) {
+  const el = document.getElementById('soc-display');
+  const bar = document.getElementById('battery-bar');
+  el.textContent = soc.toFixed(0) + '%';
+  bar.style.width = soc + '%';
+  document.getElementById('range-display').textContent = Math.round(soc * 2.3) + ' km';
+
+  if (soc < 25) {
+    el.className = 'battery-soc soc-critical';
+    bar.className = 'battery-bar critical';
+  } else if (soc < 60) {
+    el.className = 'battery-soc';
+    bar.className = 'battery-bar';
+    bar.style.background = 'var(--amber)';
+  } else {
+    el.className = 'battery-soc soc-ok';
+    bar.className = 'battery-bar ok';
+  }
+}
+
+function drawChart() {
+  const canvas = document.getElementById('charging-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth;
+  const h = canvas.height = 70;
+  ctx.clearRect(0, 0, w, h);
+
+  if (socHistory.length < 2) return;
+  const min = 0, max = 100;
+  const scaleY = v => h - ((v - min) / (max - min)) * h;
+  const scaleX = i => (i / (socHistory.length - 1)) * w;
+
+  ctx.beginPath();
+  ctx.moveTo(scaleX(0), scaleY(socHistory[0]));
+  for (let i = 1; i < socHistory.length; i++) {
+    ctx.lineTo(scaleX(i), scaleY(socHistory[i]));
+  }
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Fill area
+  ctx.lineTo(scaleX(socHistory.length - 1), h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(34,197,94,.1)';
+  ctx.fill();
+
+  // 80% line
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(0, scaleY(80));
+  ctx.lineTo(w, scaleY(80));
+  ctx.strokeStyle = 'rgba(245,158,11,.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(245,158,11,.6)';
+  ctx.font = '9px Inter';
+  ctx.fillText('80%', w - 26, scaleY(80) - 2);
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connectWS() {
+  const url = `${WS_URL}/ws/car/${USER_ID}`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    document.getElementById('ws-status').innerHTML = '🟢 Live';
+    document.getElementById('ws-status').style.color = 'var(--green)';
+    addNotification('Connected to SmartReserve cloud.', 'info');
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleWsMessage(msg);
+  };
+
+  ws.onclose = () => {
+    document.getElementById('ws-status').innerHTML = '🔴 Offline';
+    document.getElementById('ws-status').style.color = 'var(--red)';
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function handleWsMessage(msg) {
+  switch (msg.type) {
+    case 'RESERVATION_CONFIRMED':
+      handleReservationConfirmed(msg);
+      break;
+    case 'METER_VALUES':
+      showChargingSession(msg.soc, msg.kw, msg.kwh);
+      break;
+    case 'CHARGING_COMPLETE':
+      addNotification(`✅ Charging complete at <strong>${msg.final_soc}%</strong>. ${msg.total_kwh} kWh delivered.`, 'success');
+      document.getElementById('charging-display').classList.add('hidden');
+      break;
+    case 'CONNECTED':
+      break;
+    case 'PONG':
+      break;
+  }
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+function addNotification(text, type = '') {
+  const container = document.getElementById('notifications');
+  const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `notif ${type}`;
+  div.innerHTML = `${text}<div class="notif-time">${now}</div>`;
+  container.insertBefore(div, container.firstChild);
+  // Keep max 20
+  while (container.children.length > 20) container.removeChild(container.lastChild);
+}
+
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--accent)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Load Data ─────────────────────────────────────────────────────────────────
+async function loadStations() {
+  try {
+    const res = await fetch(`${API}/api/stations?limit=200`);
+    const data = await res.json();
+    allStations = data.stations;
+    renderMarkers(allStations);
+    renderStationList(allStations);
+
+    // Auto-select first available 60kW station
+    const best = allStations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50);
+    if (best) {
+      setTimeout(() => selectStation(best.station_id), 800);
+    }
+
+    addNotification(`Loaded <strong>${allStations.length}</strong> stations across Telangana.`, 'info');
+  } catch (e) {
+    console.error('Failed to load stations:', e);
+    // Load demo stations if backend unavailable
+    loadDemoStations();
+  }
+}
+
+function loadDemoStations() {
+  // Generate sample stations for demo without backend
+  const stations = [];
+  const hyd = { lat: 17.3850, lng: 78.4867 };
+  const names = ['Tata Power IT Park Gachibowli', 'ChargeZone Jubilee Hills', 'Statiq Hitech City',
+    'BPCL EV Madhapur', 'Zeon Charging Banjara Hills', 'Chargegrid Kondapur',
+    'ElectricPe Kukatpally', 'EESL Begumpet', 'Volttic Ameerpet', 'Tata Power Secunderabad'];
+  const statuses = ['AVAILABLE','AVAILABLE','AVAILABLE','RESERVED','CHARGING','UNAVAILABLE','AVAILABLE','AVAILABLE','AVAILABLE','AVAILABLE'];
+  for (let i = 0; i < names.length; i++) {
+    stations.push({
+      station_id: `TG${String(i+1).padStart(4,'0')}`,
+      name: names[i], district: 'Hyderabad',
+      address: 'Hyderabad, Telangana',
+      lat: hyd.lat + (Math.random()-.5)*.15,
+      lng: hyd.lng + (Math.random()-.5)*.15,
+      power_kw: [7.2,22,50,60,120][Math.floor(Math.random()*5)],
+      connector_type: 'CCS2', total_ports: 2, operator: names[i].split(' ')[0],
+      location_type: 'Public',
+      status: statuses[i],
+      congestion: { level: ['LOW','LOW','MEDIUM','HIGH'][Math.floor(Math.random()*4)], queue_min:0, queue_max:5, confidence:'HIGH' },
+    });
+  }
+  allStations = stations;
+  renderMarkers(stations);
+  renderStationList(stations);
+  const best = stations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50);
+  if (best) setTimeout(() => selectStation(best.station_id), 800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadStations();
+connectWS();
+
+// Refresh stations every 30s
+setInterval(loadStations, 30000);
+
+// Initial log
+addNotification('SmartReserve AI Co-Pilot started. Monitoring 934 stations.', 'info');
+addNotification('⚠ Battery at <strong>18%</strong>. Nearest fast charger 1.8 km away.', 'warning');
+</script>
+</body>
+</html>

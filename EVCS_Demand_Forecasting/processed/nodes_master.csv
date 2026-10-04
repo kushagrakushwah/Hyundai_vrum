@@ -1,0 +1,935 @@
+node_id,charger_id,district,latitude,longitude,charger_rating,connector_rating,total_connectors,govt_private,charger_name,city_village,charge_point_operators,chargers_type,source
+0,NTC_0001,ADILABAD,19.086198,78.351012,7.4,7.4,,Government,Bhardwaja Filling Station Vakkaladagga,Adilabad,,,North
+1,NTC_0002,ADILABAD,19.486125,78.680428,7.0,7.0,,Government,Indravelli,Adilabad,,,North
+2,NTC_0003,ADILABAD,19.639182,78.509912,7.4,7.4,,Government,"M/S. Varun Petro Plaza,Mavala",Adilabad,,,North
+3,NTC_0004,ADILABAD,19.502716,78.843976,7.0,7.0,,Government,Narnoor,Adilabad,,,North
+4,NTC_0005,ADILABAD,19.431521,78.575492,7.0,7.0,,Government,Sirikonda,Adilabad,,,North
+5,NTC_0006,ADILABAD,19.37536,78.775157,7.4,7.4,,Government,Indian Oil Dealer Sy.No.435/3 Girijan Co-Op.Corporation,Adilabad,,,North
+6,NTC_0007,ADILABAD,19.669815,78.52186,30.0,30.0,,Private,"Iocl - Police Petrol Pump, Apj Abdul Kalam Rd, Vidya Nagar, Adilabad(U), Telangana 504001",Adilabad,,,North
+7,NTC_0008,ADILABAD,19.646664,78.515466,25.0,25.0,,Private,"Iocl - Sri Sainath Filling Station, Mavala, Sy No 162&163, Mavala, Sv Hanuman Mandal, Adilabad Dist, Telangana - 504001",Adilabad,,,North
+8,NTC_0009,ADILABAD,19.656025,78.52951,30.0,30.0,,Private,"Sree Venkateswara Motors, Dasnapur, Plot No 8, Survey No ?? 21/4, Industrial Area, Dasnapur, Adilabad ?? 504001",Adilabad,,,North
+9,NTC_0010,ADILABAD,19.656025,78.52951,15.0,15.0,,Private,"Sree Venkateswara Motors, Dasnapur, Plot No 8, Survey No ?? 21/4, Industrial Area, Dasnapur, Adilabad ?? 504001",Adilabad,,,North
+10,NTC_0011,ADILABAD,19.672283,78.527794,60.0,60.0,,Government,"4-5-55/8, VIDHYANAGAR, ADILABAD, ADILABAD, , City=ADILABAD, District=ADILABAD, State=Telangana",ADILABAD,,,North
+11,NTC_0012,ADILABAD,19.659197,78.524255,3.0,3.0,,Government,"DASNAPUR, ADILABAD, , City=ADILABAD, District=ADILABAD, State=Telangana",ADILABAD,,,North
+12,NTC_0013,ADILABAD,19.589045,78.482298,60.0,60.0,,Government,"SY NO 13 AA, KAMALAPUR VILLAGE, , City=ADILABAD, District=ADILABAD, State=Telangana",ADILABAD,,,North
+13,NTC_0014,ADILABAD,19.685198,78.5438,3.0,3.0,,Government,"SY NO. 153/2/2 & 153/2/3, ADILABAD TOWN, , City=ADILABAD, District=ADILABAD, State=Telangana",ADILABAD,,,North
+14,NTC_0015,BHADRADRI KOTHAGUDEM,17.67214,80.89002,30.0,30.0,,Government,Bhadrachalam,Bhadradri Kothagudem,,,North
+15,NTC_0016,BHADRADRI KOTHAGUDEM,17.588643,80.683481,30.0,30.0,,Government,New Palvancha,Bhadradri Kothagudem,,,North
+16,NTC_0017,BHADRADRI KOTHAGUDEM,17.400985,80.504387,3.3,3.3,,Government,Indian Oil Dealer Sy.No.250/Aa Gundepudi Village,Bhadradri Kothagudem,,,North
+17,NTC_0018,HANUMAKONDA,18.010621,79.49865,3.3,3.3,,Government,"M/S. A S Brothers Filling Station,Devannapet",Devannapet,,,North
+18,NTC_0019,HANUMAKONDA,18.015017,79.542687,7.4,7.4,,Government,"Sree Thirumala Filling Station,Gopalapur",Bheemaram,,,North
+19,NTC_0020,JANGAON,17.789141,79.049072,7.0,7.0,,Government,Chinnaramarcherla,Jangoan,,,North
+20,NTC_0021,JANGAON,17.55364,79.314382,7.0,7.0,,Government,Kadavendi,Jangoan,,,North
+21,NTC_0022,JANGAON,17.928853,79.172319,3.3,3.3,,Government,"M/S. Mahendar Filling Station,Tarigoppula",Akkarajpalli,,,North
+22,NTC_0023,JANGAON,17.75294,79.248514,7.4,7.4,,Government,"R J Filling Station,Raghunathapally",Aswaraopalli,,,North
+23,NTC_0024,JANGAON,17.75294,79.248514,30.0,30.0,,Government,Raghunathpally,Jangoan,,,North
+24,NTC_0025,JANGAON,17.821686,79.342326,3.3,3.3,,Government,Indian Oil Dealer Chagal Station Ghanpur Jangaon Telangana 506101,Jangaon,,,North
+25,NTC_0026,JANGAON,17.780149,79.146914,3.3,3.3,,Government,Indian Oil Dealer Sy.No.276/A/1/2 Ganugupahad Village,Jangaon,,,North
+26,NTC_0027,JANGAON,17.731556,79.204199,3.3,3.3,,Government,Indian Oil Dealer Sy.No-82/1 & 82/15 Yashwanthpur Village,Jangaon,,,North
+27,NTC_0028,JANGAON,17.665421,79.427211,7.4,7.4,,Government,Indian Oil Dealers Palakurthy Warangal Dist. Andhra Pradesh Lock No.-2/3/D2 G,Jangaon,,,North
+28,NTC_0029,JANGAON,17.533874,79.350459,30.0,30.0,,Government,Iocl Dealer Lock No.-121/T3 E-1- Sy.748/H Devaruppala Village And Mandal,Jangaon,,,North
+29,NTC_0030,JANGAON,17.735673,79.137119,30.0,30.0,,Government,Iocl Dealer Sy.No.83/B And 362 Shameerpet Village,Jangaon,,,North
+30,NTC_0031,KAMAREDDY,18.370204,77.874176,7.0,7.0,,Government,Banswada,Kamareddy,,,North
+31,NTC_0032,KAMAREDDY,18.316621,78.445482,3.3,3.3,,Government,"Mshsd Sri Lakshmi Narasimha Fs,Palwancha",Adloor,,,North
+32,NTC_0033,KAMAREDDY,18.206261,78.526952,3.3,3.3,,Government,"Mshsd Sri Mahalaxmi Hp Filling Stn,Bibipet",Bibipet,,,North
+33,NTC_0034,KAMAREDDY,18.27169,78.364092,60.0,60.0,,Government,Narsanapalli,Kamareddy,,,North
+34,NTC_0035,KAMAREDDY,18.323004,78.308301,30.0,30.0,,Government,Indian Oil Dealer Sy.No.138/2/2 Devunipalli Village,Kamareddy,,,North
+35,NTC_0036,KAMAREDDY,18.425679,77.993609,7.4,7.4,,Government,Indian Oil Dealer Sy.No.222/5 Hanmajipet Village,Kamareddy,,,North
+36,NTC_0037,KAMAREDDY,18.319391,78.327293,30.0,30.0,,Government,Indian Oil Dealer Sy.No.90/8A 90/9A 90/7A92/3 93/A 94/1A Lingapur(V),Kamareddy,,,North
+37,NTC_0038,KAMAREDDY,18.24474,78.129464,7.4,7.4,,Government,Indian Oil Dealer Sy.No-1062/2 Lingampet Village & Mandal,Kamareddy,,,North
+38,NTC_0039,KAMAREDDY,18.169598,78.401691,30.0,30.0,,Government,Indian Oil Dealers Bhiknur Andhra Pradesh,Kamareddy,,,North
+39,NTC_0040,KAMAREDDY,18.187761,78.02344,30.0,30.0,,Government,Indian Oil Dealers Sy No 453/3 Andhra Pradesh,Kamareddy,,,North
+40,NTC_0041,KAMAREDDY,18.21501,78.35898,3.3,3.3,,Government,Indianoil Dealer Sircilla Road Kamareddy (V&M) District Kamareddy,Kamareddy,,,North
+41,NTC_0042,KAMAREDDY,18.234937,77.829787,7.4,7.4,,Government,Sy.No.186/2 Pothureddypally Village Pitlam Mandal,Kamareddy,,,North
+42,NTC_0043,KAMAREDDY,18.29187,78.346882,30.0,30.0,,Private,"Sree Venkateswara Motors, Hyderabad Road, 1-112/3, Patha Rajampet, Hyderabad Road, Kamareddy-503111",Kamareddy,,,North
+43,NTC_0044,KAMAREDDY,18.29187,78.346882,15.0,15.0,,Private,"Sree Venkateswara Motors, Hyderabad Road, 1-112/3, Patha Rajampet, Hyderabad Road, Kamareddy-503111",Kamareddy,,,North
+44,NTC_0045,KAMAREDDY,18.14254,78.41742,60.0,60.0,,Government,"957/1 , 958/A AND 959, BHIKNUR, , City=BASWAPUR, District=KAMAREDDY, State=Telangana",BASWAPUR,,,North
+45,NTC_0046,KAMAREDDY,18.32231,78.418347,3.0,3.0,,Government,"KAMAREDDY-SIRCILLA ROAD, #, , City=KAMAREDDY, District=KAMAREDDY, State=Telangana",KAMAREDDY,,,North
+46,NTC_0047,KAMAREDDY,18.485803,77.879947,3.0,3.0,,Government,"NASRULLABAD VILLAGE AND MANDAL, KAMAREDDY DIST, , City=KAMAREDDY, District=KAMAREDDY, State=Telangana",KAMAREDDY,,,North
+47,NTC_0048,KAMAREDDY,18.145407,78.041123,7.0,7.0,,Government,"SY NO 342, MACHAPUR VILLAGE, YELLAREDDY MANDAL, , City=MACHAPUR, District=KAMAREDDY, State=Telangana",MACHAPUR,,,North
+48,NTC_0049,KAMAREDDY,18.44937,78.230249,60.0,60.0,,Government,"SY. NO.17/8 & 17/9, KAMMAJIVADI VILLAGE & POST, , City=KALWARAL, District=KAMAREDDY, State=Telangana",KALWARAL,,,North
+49,NTC_0050,KAMAREDDY,18.418332,78.270395,60.0,60.0,,Government,"SY.NO.279/2, SADASIV NAGAR V & M, NIZAMABAD DISTRICT, , City=SADASHIVANAGAR VILLAGE, District=KAMAREDDY, State=Telangana",SADASHIVANAGAR VILLAGE,,,North
+50,NTC_0051,KAMAREDDY,18.293094,77.768095,60.0,60.0,,Government,"SY.NO.884/PAIKI, PITLAM, PITLAM, , City=PITLAM, District=KAMAREDDY, State=Telangana",PITLAM,,,North
+51,NTC_0052,KAMAREDDY,18.349444,78.306944,30.0,30.0,,Government,"SYNO 32/1 , NH-7, TEKKARIAL VILL, SYNO 32/1 , NH-7, TEKKARIAL VILL, , City=KAMAREDDY MANDAL, District=KAMAREDDY, State=Telangana",KAMAREDDY MANDAL,,,North
+52,NTC_0053,KARIMNAGAR,18.421818,79.136486,3.3,3.3,,Private,"8, Nh563, Ganesh Nagar, Karimnagar, Telangana 505001",Karimnagar,,,North
+53,NTC_0054,KARIMNAGAR,18.428197,79.152783,3.3,3.3,,Private,"Opp: Gayathri Filling Station, C5H3+735, Godavarikhani Bypass Rd, Housing Borad Colony, Bommakal, Telangana 505001",Karimnagar,,,North
+54,NTC_0055,KARIMNAGAR,18.437326,79.098494,3.3,3.3,,Private,"Padma Nagar, Ramnagar, Karimnagar, Telangana 505001",Karimnagar,,,North
+55,NTC_0056,KARIMNAGAR,18.450022,79.12106,3.3,3.3,,Private,"2/10/1567, Jagtial Rd, Opp. Bharath Petrol Bunk, Karimnagar, Telangana 505001",Karimnagar,,,North
+56,NTC_0057,KARIMNAGAR,18.45797,79.135745,3.3,3.3,,Private,"F45P+6F, Choppadandi Rd, Subhash Nagar, Karimnagar, Telangana 505001",Karimnagar,,,North
+57,NTC_0058,KARIMNAGAR,18.466954,79.11081,3.3,3.3,,Private,"Saleh Nagar, Karimnagar, Telangana 505001",Karimnagar,,,North
+58,NTC_0059,KARIMNAGAR,18.466954,79.11081,3.3,3.3,,Private,"Saleh Nagar, Karimnagar, Telangana 505001",Karimnagar,,,North
+59,NTC_0060,KARIMNAGAR,18.569391,78.992665,3.3,3.3,,Private,"Karimnagar, Telangana 505445",Karimnagar,,,North
+60,NTC_0061,KARIMNAGAR,18.369147,78.768241,7.4,7.4,,Government,Latha Filling Station Redypalem,Konaraopeta,,,North
+61,NTC_0062,KARIMNAGAR,18.441031,78.883328,7.4,7.4,,Government,"M/S. Aditya Service Station,Nampalli",Sircilla,,,North
+62,NTC_0063,KARIMNAGAR,18.441615,79.11744,7.4,7.4,,Government,"M/S. Ddl Filling Station,St. Alphones",Karimnagar,,,North
+63,NTC_0064,KARIMNAGAR,18.369147,78.768241,7.4,7.4,,Government,"M/S. Durga Matha Filling Station,Peddur",Bonala,,,North
+64,NTC_0065,KARIMNAGAR,18.428366,79.138306,7.4,7.4,,Government,"M/S. Mahavir Petroleum,Kaman Jn, Karimnagar",Karimnagar,,,North
+65,NTC_0066,KARIMNAGAR,18.303766,79.170999,30.0,30.0,,Government,Nusthullapur,Karimnagar,,,North
+66,NTC_0067,KARIMNAGAR,18.460028,79.116805,7.0,7.0,,Government,Tsrtc Karimnagar,Karimnagar,,,North
+67,NTC_0068,KARIMNAGAR,18.486176,79.221896,3.3,3.3,,Government,Indian Oil Dealer Sy.No.39/B/1 Mogdumpur: Village,Karim Nagar,,,North
+68,NTC_0069,KARIMNAGAR,18.21528,79.413619,3.3,3.3,,Government,Indian Oil Dealer Sy.No.499/D Huzurabad (V) Huzurabad Mandal,Karim Nagar,,,North
+69,NTC_0070,KARIMNAGAR,18.45438,79.052511,3.3,3.3,,Government,Indian Oil Dealer Sy.No.95/C Kamanpur Village,Karim Nagar,,,North
+70,NTC_0071,KARIMNAGAR,18.347634,79.417365,3.3,3.3,,Government,Indian Oil Dealer Veenavanka Villa Veenavanka Mandalkarimnagar Distri Telanagana 505502,Karim Nagar,,,North
+71,NTC_0072,KARIMNAGAR,18.404848,79.150503,7.4,7.4,,Government,Indian Oil Delears L No T3/127/D1 Sy. No.482 & 483/A & B Alugunur(V) Andhra Pradesh C-7-2,Karim Nagar,,,North
+72,NTC_0073,KARIMNAGAR,18.289857,79.476392,7.4,7.4,,Private,"Jammikunta, Telangana",Karimnagar,,,North
+73,NTC_0074,KARIMNAGAR,18.289891,79.476534,7.4,7.4,,Private,"Railway Station Road, Jammikunta, Telangana 505122",Chelpur,,,North
+74,NTC_0075,KARIMNAGAR,18.459566,79.142254,7.4,7.4,,Private,Saraswathi Nagar Telangana,Karimnagar,,,North
+75,NTC_0076,KARIMNAGAR,17.820708,78.07434,25.0,25.0,,Private,"Iocl - Raja Rajeshwara F/P, Gangadhara, Sy No 103/A, Odyaram, Gangadhara Mandal, Karimnagar Dist, Telangana 505445",Karimnagar,,,North
+76,NTC_0077,KARIMNAGAR,18.748328,79.435889,30.0,30.0,,Private,"Iocl ?? Sai Leela As, Kundanpally, Sy No 301, Kundanpally, Ramagundam, Karimnagar Dist, Telangana, 505215",Ramagundam,,,North
+77,NTC_0078,KARIMNAGAR,18.094591,79.449921,30.0,30.0,,Private,"Iocl - Sai Ss, Elkaturthy, Sy No 315&317, Elkaturthy, Warangal Urban Dist(Old Karimnagar), Telangana 505476",Elkathurthy,,,North
+78,NTC_0079,KARIMNAGAR,18.198936,79.397736,30.0,30.0,,Private,"Iocl - Sudhakar Ss, Huzurabad, Sy No -2370, Huzurabad, Karimnagar Dist, Telangana - 505468",Huzurabad,,,North
+79,NTC_0080,KARIMNAGAR,18.417928,79.13639,30.0,30.0,,Private,"Select Cars, Hyderabad Rd - Kothirampur, No 8-6-396, Hyderabad Rd, Kothirampur, Karimnagar, Telangana 505001",Karimnagar,,,North
+80,NTC_0081,KHAMMAM,17.241155,80.14884,3.3,3.3,,Private,"64Rx+8Cp, Jammi Banda Rd, Manikya Nagar Basti, Khammam, Telangana 507002",Khammam,,,North
+81,NTC_0082,KHAMMAM,17.250384,80.145695,3.3,3.3,,Private,"1, Wyra Rd, Balaji Nagar, Khammam, Telangana 507001",Khammam,,,North
+82,NTC_0083,KHAMMAM,17.15668,80.174925,3.3,3.3,,Government,"Addanki Filling Station,Pandillapalli",Ananthasagar,,,North
+83,NTC_0084,KHAMMAM,17.055075,80.120911,3.3,3.3,,Government,"Janatha Filling Point,Banapuram",Appalanarasimhapuram,,,North
+84,NTC_0085,KHAMMAM,17.264221,80.146289,30.0,30.0,,Government,Khammam,Khammam,,,North
+85,NTC_0086,KHAMMAM,17.200138,80.560177,7.4,7.4,,Government,"M/S. Sree Anjaneya Filling Station,Kallur",Battulapalli,,,North
+86,NTC_0087,KHAMMAM,17.285004,80.367436,3.3,3.3,,Government,"M/S. Sri Venkateswara Quality Fuels,Gubbagurthi",Dachapuram,,,North
+87,NTC_0088,KHAMMAM,17.254947,80.161735,7.4,7.4,,Government,"Sri Rama Kotaiah Fuel Point,Khammam",Ballepalli,,,North
+88,NTC_0089,KHAMMAM,17.257184,81.131007,3.3,3.3,,Government,"Sri Vishnu Filling Station,Aswaraopet",Achutapuram,,,North
+89,NTC_0090,KHAMMAM,17.25135,80.1047,30.0,30.0,,Government,Yedulapuram,Khammam,,,North
+90,NTC_0091,KHAMMAM,17.311143,79.943543,3.3,3.3,,Government,Indian Oil Dealer 105/A2 Beerolu Village,Khammam,,,North
+91,NTC_0092,KHAMMAM,17.197091,80.526991,3.3,3.3,,Government,Indian Oil Dealer Lakshmi Thanda Kalluru Khammam Telangana 507209,Khammam,,,North
+92,NTC_0093,KHAMMAM,17.280815,80.864588,3.3,3.3,,Government,Indian Oil Dealer Sy.No.77/^N/^B/2B Buggapadu Sattupalli Mandal,Khammam,,,North
+93,NTC_0094,KHAMMAM,17.228489,80.149773,7.4,7.4,,Government,Ioc Dlr Lock No. Ig4104 Mustafanagar Bonakal Roadkmm Ap Andhra Pradesh,Khammam,,,North
+94,NTC_0095,KHAMMAM,17.218696,80.29753,7.4,7.4,,Government,Iocl Dealer Sy.No.239/F/1/1 Khammam-Wyra Road Konijerla,Khammam,,,North
+95,NTC_0096,KHAMMAM,17.110654,80.337314,7.4,7.4,,Government,Sy.No.300A2 Rebbavaram Village Indian Oil Dealer Rebbavaram Village,Khammam,,,North
+96,NTC_0097,KHAMMAM,17.27019,80.3579,3.3,3.3,,Government,Sy.No.382/2/3 Gubbakurthi Village Konijerla Mandal,Khammam,,,North
+97,NTC_0098,KHAMMAM,17.251209,80.139372,7.4,7.4,,Private,"9, Station Rd, Braman Bazar, Nizampet, Khammam, Telangana 507001",Burhanpuram,,,North
+98,NTC_0099,KHAMMAM,16.921783,80.366179,7.4,7.4,,Private,"Madhira Railway Station, Madhira , Khammam, Telangana - 507203",Allinagaram,,,North
+99,NTC_0100,KHAMMAM,17.552172,80.614378,7.4,7.4,,Private,"Yellandu Bypass Rd, Srinagar, Laxmidevipally, Telangana 507101",Bhajanamandir,,,North
+100,NTC_0101,KHAMMAM,17.250644,80.14484,30.0,30.0,,Private,"Iocl - Balaji Service Station, Khammam, Khammam Urban, Khammam District, Telangana 507003",Khammam,,,North
+101,NTC_0102,KHAMMAM,17.67267,80.88891,30.0,30.0,,Private,"Iocl - Chakka Venkata Subba Rao, Bhadrachalam Rd, Bhadrachalam, Telangana 507111",Bhadrachalam,,,North
+102,NTC_0103,KHAMMAM,18.314547,80.549561,30.0,30.0,,Private,"Iocl - Jai Ganesh Fs, National Highway 202, Chirtapalle G, Telangana 507136",Venkatapuram,,,North
+103,NTC_0104,KHAMMAM,17.584326,80.329608,30.0,30.0,,Private,"Iocl - Janapriya Filling Station, Yellandu, Sy No: 609/43, Yellandu, Bhadradri Kothagudem Dist, Telangana 507123",Yellandu,,,North
+104,NTC_0105,KHAMMAM,17.840583,80.830393,30.0,30.0,,Private,"Iocl - Kandhulapullaiah Oil Fs, Rrrj+65R, Aswapuram, Telangana 507116",Aswapuram,,,North
+105,NTC_0106,KHAMMAM,17.599046,80.722814,30.0,30.0,,Private,"Iocl - Sri Ravi Fs, Palwancha, Indira Nagar Colony, Khammam, Nh-221, Kothagudem Bhadrachalam Road, Palvoncha, Palwancha, Telangana 507115",Paloncha,,,North
+106,NTC_0107,KHAMMAM,17.559601,80.481416,30.0,30.0,,Private,"Iocl - Sri Sai Venkateshwara Fs, Tekulpally, Hf5J+Vhh, Khammam, Telangana 507123",Tekulpally,,,North
+107,NTC_0108,KHAMMAM,17.207041,80.774754,30.0,30.0,,Private,"Iocl - Sri Vyshnavi Service Station, Sattupalli, Sy No: 259/A, Kistaram, Sattupalli, Khammam Dist. Telangana, 579567",Sathupalli,,,North
+108,NTC_0109,KHAMMAM,17.235149,80.136294,3.0,3.0,,Government,"H.NO.4-2-240/4, PLOT NO. 26, TIMBER DEPOT ROAD, , City=KHAMMAM, District=KHAMMAM, State=Telangana",KHAMMAM,,,North
+109,NTC_0110,KHAMMAM,17.24376,80.103404,3.0,3.0,,Government,"KODAD X ROAD, KHAMMAM RURAL MANDAL, , City=GURRALAPADU, District=KHAMMAM, State=Telangana",GURRALAPADU,,,North
+110,NTC_0111,KHAMMAM,17.24376,80.103404,60.0,60.0,,Government,"KODAD X ROAD, KHAMMAM RURAL MANDAL, , City=GURRALAPADU, District=KHAMMAM, State=Telangana",GURRALAPADU,,,North
+111,NTC_0112,KHAMMAM,17.289629,80.191729,3.0,3.0,,Government,"RAGHUNATHAPALEM VIL, KHAMMAM, , City=RAGHUNADHAPALEM, District=KHAMMAM, Telangana, State=Telangana",RAGHUNADHAPALEM,,,North
+112,NTC_0113,KHAMMAM,17.237459,80.241697,60.0,60.0,,Government,"RO AT V VENKATAYAPALEM TO TANIKELLA, RO AT KHAMMAM TO SATHUPALLI ROAD, , City=V VENKATAYAPALEM, District=KHAMMAM, State=Telangana",V VENKATAYAPALEM,,,North
+113,NTC_0114,KHAMMAM,17.200695,80.63997,3.0,3.0,,Government,"S.NO.283/E,TUMALLAPALLI VILLAGE, VM BANJAR, , City=PENUBALLI MANDAL, District=KHAMMAM, State=Telangana",PENUBALLI MANDAL,,,North
+114,NTC_0115,KHAMMAM,17.200695,80.63997,60.0,60.0,,Government,"S.NO.283/E,TUMALLAPALLI VILLAGE, VM BANJAR, , City=PENUBALLI MANDAL, District=KHAMMAM, State=Telangana",PENUBALLI MANDAL,,,North
+115,NTC_0116,KHAMMAM,17.201445,80.858994,3.0,3.0,,Government,"SURVEY NO 56/AA/AA, SATTUPALLI VILLAGE, , City=SATTUPALLI, District=KHAMMAM, State=Telangana",SATTUPALLI,,,North
+116,NTC_0117,KHAMMAM,17.201445,80.858994,60.0,60.0,,Government,"SURVEY NO 56/AA/AA, SATTUPALLI VILLAGE, , City=SATTUPALLI, District=KHAMMAM, State=Telangana",SATTUPALLI,,,North
+117,NTC_0118,KHAMMAM,17.287124,80.107872,3.0,3.0,,Government,"SV NO 147/A1 PALLEGUDEM, MV PALEM GRAM PANCHAYAT, , City=MOTHAGUDEM, District=KHAMMAM, State=Telangana",MOTHAGUDEM,,,North
+118,NTC_0119,KHAMMAM,17.18048,80.391923,3.0,3.0,,Government,"SY.NO 715 STAGE PINAPAKA, H/O SIRIPURAM VILLAGE, , City=WYRA MANDAL, District=KHAMMAM, State=Telangana",WYRA MANDAL,,,North
+119,NTC_0120,KHAMMAM,17.18048,80.391923,60.0,60.0,,Government,"SY.NO 715 STAGE PINAPAKA, H/O SIRIPURAM VILLAGE, , City=WYRA MANDAL, District=KHAMMAM, State=Telangana",WYRA MANDAL,,,North
+120,NTC_0121,MAHABUBABAD,17.58946,79.976113,3.3,3.3,,Government,Indian Oil Dealer 277/B/4 Shangapuram,Mahabubabad,,,North
+121,NTC_0122,MAHABUBABAD,17.483593,79.770309,3.3,3.3,,Government,Indian Oil Dealer Datla Dhanthalapally Mahabubabad Telangana 506324,Mahabubabad,,,North
+122,NTC_0123,MAHABUBABAD,17.436956,79.968047,3.3,3.3,,Government,Indian Oil Dealer Sy.No.250/Aa Dharmaram Village,Mahabubabad,,,North
+123,NTC_0124,MAHABUBABAD,17.387349,79.892135,7.4,7.4,,Government,Indian Oil Delears Marripeda Lock No T3-203H-1-5 Andhra Pradesh,Mahabubabad,,,North
+124,NTC_0125,MAHABUBABAD,17.391207,79.88536,30.0,30.0,,Government,S.No.442 Vill & Mandal- Maripeda Maripeda Warangal Dist. Andhra Pradeshlno.-89/D1/94/T3 D-,Mahabubabad,,,North
+125,NTC_0126,MAHABUBABAD,17.521082,79.729615,7.4,7.4,,Government,Sy. No.421/1 & 2 Warangal-Kha Road Dantalapally Warangal Dist. Andhra Pradesh Lock No.-34/D1 E-,Mahabubabad,,,North
+126,NTC_0127,MAHABUBABAD,17.567723,79.670964,3.0,3.0,,Government,"S.NO.310/D, SH-7, WARANGAL-KHAMMAM ROAD, , City=TORRUR, District=MAHABUBABAD, State=Telangana",TORRUR,,,North
+127,NTC_0128,MAHABUBABAD,17.567723,79.670964,60.0,60.0,,Government,"S.NO.310/D, SH-7, WARANGAL-KHAMMAM ROAD, , City=TORRUR, District=MAHABUBABAD, State=Telangana",TORRUR,,,North
+128,NTC_0129,MAHABUBABAD,17.408252,79.872937,3.0,3.0,,Government,"SH 7, WARANGAL-KHAMMAM ROAD, #, , City=MARIPEDA, District=MAHABUBABAD, State=Telangana",MARIPEDA,,,North
+129,NTC_0130,MAHABUBABAD,17.408252,79.872937,60.0,60.0,,Government,"SH 7, WARANGAL-KHAMMAM ROAD, #, , City=MARIPEDA, District=MAHABUBABAD, State=Telangana",MARIPEDA,,,North
+130,NTC_0131,MANCHERIAL,18.84879,79.662238,7.0,7.0,,Government,Bheemaram,Mancherial,,,North
+131,NTC_0132,MANCHERIAL,19.02382,79.129356,7.4,7.4,,Government,"Rajnivas Hp Filling Station,Lingapur",Dandepalli,,,North
+132,NTC_0133,MANCHERIAL,19.073975,79.519263,7.0,7.0,,Government,Thallagurijala,Mancherial,,,North
+133,NTC_0134,MANCHERIAL,18.936868,79.193797,3.3,3.3,,Government,Indian Oil Dealer Sy.No.60/Ac Venkatraopet (V) Luxettipet Mandal,Mancherial,,,North
+134,NTC_0135,MANCHERIAL,18.878864,79.448992,7.4,7.4,,Private,"Mancherial, Telangana",Mancherial,,,North
+135,NTC_0136,MANCHERIAL,19.051772,79.485612,7.4,7.4,,Private,"Railway Statiion Rd, Bellampalle, Telangana 504251",Mancherial,,,North
+136,NTC_0137,MANCHERIAL,19.346868,79.490297,7.4,7.4,,Private,"Shop No:1-2-56, Adilabad, Opp. Rajkumar Lodge, Kagaznagar (M), Telangana 504296",Mancherial,,,North
+137,NTC_0138,MANCHERIAL,18.843597,79.760975,60.0,60.0,,Government,"BHAMRAOPET SIVAR OF CHENNUR MANDAL, NH 63 CHENNUR MANCHERIAL, , City=MANCHERIAL, District=MANCHERIAL, State=Telangana",MANCHERIAL,,,North
+138,NTC_0139,MANCHERIAL,18.878728,79.443346,3.0,3.0,,Government,"STATION ROAD, MANCHERIAL TOWN, #, , City=MANCHERIAL, District=MANCHERIAL, State=Telangana",MANCHERIAL,,,North
+139,NTC_0140,MANCHERIAL,18.857092,79.477394,7.0,7.0,,Government,"SY NO.105/A1, NH 16, , City=CCC NASPUR, MANCHERIAL MANDAL, District=MANCHERIAL, State=Telangana","CCC NASPUR, MANCHERIAL MANDAL",,,North
+140,NTC_0141,MANCHERIAL,18.868778,79.363904,7.0,7.0,,Government,"SY NO.340 GUDIPET POLICE CAMP, 13TH APSP, N H 16, , City=GUDIPET, MANCHERIAL MANDAL, District=MANCHERIAL, State=Telangana","GUDIPET, MANCHERIAL MANDAL",,,North
+141,NTC_0142,MANCHERIAL,18.868778,79.363904,60.0,60.0,,Government,"SY NO.340 GUDIPET POLICE CAMP, 13TH APSP, N H 16, , City=GUDIPET, MANCHERIAL MANDAL, District=MANCHERIAL, State=Telangana","GUDIPET, MANCHERIAL MANDAL",,,North
+142,NTC_0143,MANCHERIAL,18.842379,79.563681,60.0,60.0,,Government,"SY.NO.305, POST & VILLAGE -JAIPUR, , City=MANCHERIAL, District=MANCHERIAL, State=Telangana",MANCHERIAL,,,North
+143,NTC_0144,MANCHERIAL,18.857078,79.489922,60.0,60.0,,Government,"THEEGALPAHAD - VILLAGE, SRIRAMPUR,, , City=MANCHERIAL MANDAL, District=MANCHERIAL, State=Telangana",MANCHERIAL MANDAL,,,North
+144,NTC_0145,NIRMAL,19.028681,78.08655,3.3,3.3,,Government,"M/S. Lokeshwar Petrol Station,Lokeswaram",Gadchanda,,,North
+145,NTC_0146,NIRMAL,19.086198,78.351012,7.4,7.4,,Government,"M/S. Sri Venkateshwara Filling Station,Venkatapur",Kadthal,,,North
+146,NTC_0147,NIRMAL,19.090424,78.323592,7.0,7.0,,Government,Manjulapur,Nirmal,,,North
+147,NTC_0148,NIRMAL,19.088002,78.422586,7.0,7.0,,Government,Rathnapur Kandli,Nirmal,,,North
+148,NTC_0149,NIRMAL,19.104407,78.244541,3.3,3.3,,Government,Indian Oil Dealer Dilawarpur Vill & Mandalnirmal Dis Telangana 504306,Nirmal,,,North
+149,NTC_0150,NIRMAL,19.252994,77.943269,3.3,3.3,,Government,Indian Oil Dealer Sy.No.330/2B Kubeer Village,Nirmal,,,North
+150,NTC_0151,NIRMAL,19.082489,78.360204,30.0,30.0,,Private,"Sree Venkateswara Motors, Divyanagar, Mallikarjuna Complex, Opp: Kvpg College, Divyanagar, Manchiryal Road, Nirmal, Telangana-504106",Nirmal,,,North
+151,NTC_0152,NIRMAL,19.011316,78.367819,60.0,60.0,,Government,"BPCL DEALER , SYNO 1141( NH-7) ,, BPCL DEALER , SYNO 1141( NH-7) ,, , City=SOAN VILLAGE, NIRMAL MANDAL, District=NIRMAL, State=Telangana","SOAN VILLAGE, NIRMAL MANDAL",,,North
+152,NTC_0153,NIRMAL,19.111409,78.341105,3.0,3.0,,Government,"D.NO.5-6-97/5-6J, NEAR BAIL BAZAR, , City=NIRMAL, District=NIRMAL, State=Telangana",NIRMAL,,,North
+153,NTC_0154,NIRMAL,19.017567,78.133638,60.0,60.0,,Government,"SY. NO. 701/2/A,701/2C & 701/2, #, , City=NARSAPUR G, District=NIRMAL, State=Telangana",NARSAPUR G,,,North
+154,NTC_0155,NIZAMABAD,18.725505,78.27407,30.0,30.0,,Government,Argul (Mamidipally),Nizamabad,,,North
+155,NTC_0156,NIZAMABAD,18.653883,77.906754,7.0,7.0,,Government,Bodhan,Nizamabad,,,North
+156,NTC_0157,NIZAMABAD,18.932568,78.19099,3.0,3.0,,Government,Donkeshwar,Nizamabad,,,North
+157,NTC_0158,NIZAMABAD,18.754848,78.338274,3.0,3.0,,Government,Govindpet,Nizamabad,,,North
+158,NTC_0159,NIZAMABAD,18.926341,78.363747,3.3,3.3,,Government,"M/S Padma Mahesh Fuel Station,Mupkal",Bussapur,,,North
+159,NTC_0160,NIZAMABAD,18.636174,78.177037,7.4,7.4,,Government,"Ms/Hsd Kabs Autolines,Bardipur",Chakarnpalli,,,North
+160,NTC_0161,NIZAMABAD,18.68807,78.082159,7.4,7.4,,Government,"Ms/Hsd Patc Petroleum,Arsapally",Gajulpet,,,North
+161,NTC_0162,NIZAMABAD,18.782115,78.012337,7.4,7.4,,Government,"Mshsd Sai Krupa Filling Station ,Navipet",Abhangapatnam,,,North
+162,NTC_0163,NIZAMABAD,18.682066,78.12554,7.0,7.0,,Government,Nizamabad Bypass,Nizamabad,,,North
+163,NTC_0164,NIZAMABAD,18.798705,78.311285,3.0,3.0,,Government,Perkit,Nizamabad,,,North
+164,NTC_0165,NIZAMABAD,18.821147,78.283979,3.3,3.3,,Government,Indian Oil Dealer 815/1/2 Pipri Village,Nizamabad,,,North
+165,NTC_0166,NIZAMABAD,18.691112,78.17517,3.3,3.3,,Government,Indian Oil Dealer Amrad Village Sy.No.954/E Makloor Mandal Nizamabad District,Nizamabad,,,North
+166,NTC_0167,NIZAMABAD,18.788625,78.007347,30.0,30.0,,Government,Indian Oil Dealer H.No.11-1-1929 Gangastan 1 Kanteshwar,Nizamabad,,,North
+167,NTC_0168,NIZAMABAD,18.654626,78.334439,3.3,3.3,,Government,Indian Oil Dealer Mailaram Mailaram Dharpally Nizamabad Telanagana 503165,Nizamabad,,,North
+168,NTC_0169,NIZAMABAD,18.674504,78.482816,3.3,3.3,,Government,Indian Oil Dealer Sy No. 183/A And 184/A Pallikonda Village,Nizamabad,,,North
+169,NTC_0170,NIZAMABAD,18.604734,78.4232,3.3,3.3,,Government,Indian Oil Dealer Sy. No: 254/Aa Pedda Walgote Sirk Nizamabad Telangana 503165,Nizamabad,,,North
+170,NTC_0171,NIZAMABAD,18.649571,78.077398,7.4,7.4,,Government,Indian Oil Dealer Sy.No. 1881&1882 Woddara Colony Village,Nizamabad,,,North
+171,NTC_0172,NIZAMABAD,18.574001,78.114303,7.4,7.4,,Government,Indian Oil Dealer Sy.No. 253 Narsingpally Village,Nizamabad,,,North
+172,NTC_0173,NIZAMABAD,18.846651,78.308902,7.4,7.4,,Government,Indian Oil Dealer Sy.No. 50/60E & 50/6A Fathepur Village,Nizamabad,,,North
+173,NTC_0174,NIZAMABAD,18.545161,78.436168,3.3,3.3,,Government,Indian Oil Dealer Sy.No. 58 58/A/A 58/A/2 Gadkole Village,Nizamabad,,,North
+174,NTC_0175,NIZAMABAD,18.510487,77.964885,3.3,3.3,,Government,Indian Oil Dealer Sy.No.193/A &1 93/Aa Jalalpur Village,Nizamabad,,,North
+175,NTC_0176,NIZAMABAD,18.707625,78.446418,7.4,7.4,,Government,Indian Oil Dealer Sy.No.38/2 Bheemagal Village,Nizamabad,,,North
+176,NTC_0177,NIZAMABAD,18.66695,78.08612,7.4,7.4,,Government,Indian Oil Dealer Sy.No.9-8-209 & 9-8-210 Quila Road Nizamabad Town,Nizamabad,,,North
+177,NTC_0178,NIZAMABAD,18.68606,78.107104,3.3,3.3,,Government,Indian Oil Dealer Sy.No-382 Old Sy.No-234/2 Gurubabadi Near Kanteshwar,Nizamabad,,,North
+178,NTC_0179,NIZAMABAD,18.929667,78.431861,3.3,3.3,,Government,Indian Oil Dealer Velkatoor Villag Sy No.13/2E/2 Mendora Mandal Nizamabad District,Nizamabad,,,North
+179,NTC_0180,NIZAMABAD,18.769634,78.294339,30.0,30.0,,Government,Indian Oil Dealers Armoor Andhra Pradesh,Nizamabad,,,North
+180,NTC_0181,NIZAMABAD,18.687108,78.063675,30.0,30.0,,Government,Indian Oil Dealers S.No.202Arsapalli-V Andhra Pradesh,Nizamabad,,,North
+181,NTC_0182,NIZAMABAD,18.799876,78.360463,30.0,30.0,,Government,Indian Oil Dealerspadgal (V) Sy No.561/36Armoor-Karimnagar Rd Andhra Pradesh,Nizamabad,,,North
+182,NTC_0183,NIZAMABAD,18.612994,77.983689,7.4,7.4,,Government,Sy.No. 870/3 Mosra Village Indian Oil Dealer Mosra Village,Nizamabad,,,North
+183,NTC_0184,NIZAMABAD,18.61822,77.888299,30.0,30.0,,Government,Sy.No. 99/E & 99/E1 Lad Mavandi Shivar Bodhan Mandal,Nizamabad,,,North
+184,NTC_0185,NIZAMABAD,18.546528,78.382327,7.4,7.4,,Government,Sy.No.738/P6/3 Honnajipet Village Indian Oil Dealer Honnajipet Village,Nizamabad,,,North
+185,NTC_0186,NIZAMABAD,18.675546,78.084493,3.3,3.3,,Private,"Nizamabad, Arsapally, Telangana,503001",Gajulpet,,,North
+186,NTC_0187,NIZAMABAD,18.532897,77.89655,30.0,30.0,,Private,"Iocl - Sai Baba Filling Point, Varni, Sy No 343/5, Varni, Sn Puram, Nizamabad, Telangana 503001",Varni,,,North
+187,NTC_0188,NIZAMABAD,18.457903,77.802091,30.0,30.0,,Private,"Iocl - Sri Laxmi Narasimhaswamy Filling St, Bikroor, Sy No 745/A, Birkur, Kamareddy, Nizamabad Dist, Telangana State 503321",Bikroor,,,North
+188,NTC_0189,NIZAMABAD,18.39506,77.879883,30.0,30.0,,Private,"Iocl - Sri Venkateswra Fs, Banswada, Sy No -342/4, Banswada, Kamareddy, Telangana - 503187",Banswada,,,North
+189,NTC_0190,NIZAMABAD,18.656376,78.123865,30.0,30.0,,Private,"Sree Venkateswara Motors, Hyderabad Road, #1??4/1A, Borgaon (P), Hyderabad Road, Nizamabad, Telangana ?? 503230",Nizamabad,,,North
+190,NTC_0191,NIZAMABAD,18.656376,78.123865,15.0,15.0,,Private,"Sree Venkateswara Motors, Hyderabad Road, #1??4/1A, Borgaon (P), Hyderabad Road, Nizamabad, Telangana ?? 503230",Nizamabad,,,North
+191,NTC_0192,NIZAMABAD,18.819941,78.424744,60.0,60.0,,Government,"1-65/5, DONKAL BUS STOP, DONKAL, NIZAMABAD, , City=DONKAL, District=NIZAMABAD, State=Telangana",DONKAL,,,North
+192,NTC_0193,NIZAMABAD,18.673258,78.097458,3.0,3.0,,Government,"H NO 5-1-69 (N), NIZAMABAD, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+193,NTC_0194,NIZAMABAD,18.678927,78.077613,3.0,3.0,,Government,"HOUSE NO 12 1 10 1, AUTONAGAR, , City=BODHAN ROAD NIZAMABAD MANDAL, District=NIZAMABAD, State=Telangana",BODHAN ROAD NIZAMABAD MANDAL,,,North
+194,NTC_0195,NIZAMABAD,18.68832,78.07788,3.0,3.0,,Government,"KHANAPUR, KHANAPUR, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+195,NTC_0196,NIZAMABAD,18.838159,78.521728,60.0,60.0,,Government,"NH-63 (IKD-16),, KAMARPALLY VILLAGE & MANDAL, , City=KAMMARPALLY, District=NIZAMABAD, State=Telangana",KAMMARPALLY,,,North
+196,NTC_0197,NIZAMABAD,18.789897,78.287845,3.0,3.0,,Government,"S NO 431/3,, ARMOOR, , City=ARMOOR, District=NIZAMABAD, State=Telangana",ARMOOR,,,North
+197,NTC_0198,NIZAMABAD,18.898126,78.351788,60.0,60.0,,Government,"S.NO.70/2A/70/3U/71/2EE/&71/6EE, NH 7, KISSAN NAGAR, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+198,NTC_0199,NIZAMABAD,18.758172,78.283618,60.0,60.0,,Government,"SY NO 276, NH 44, #, , City=ARGUL VILLAGE, District=NIZAMABAD, State=Telangana",ARGUL VILLAGE,,,North
+199,NTC_0200,NIZAMABAD,18.693031,78.095222,3.0,3.0,,Government,"SY NO 3217/AA & 3220, NIZAMABAD, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+200,NTC_0201,NIZAMABAD,18.685831,78.122581,3.0,3.0,,Government,"SY NO 473/P1, GOOPANPALLE, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+201,NTC_0202,NIZAMABAD,18.803727,78.314218,60.0,60.0,,Government,"SY. NO. 359/4, NH-7, NIRMAL ROAD, ARMOOR MANDAL, , City=PERKIT, District=NIZAMABAD, State=Telangana",PERKIT,,,North
+202,NTC_0203,NIZAMABAD,18.792387,78.270395,60.0,60.0,,Government,"SY. NO.443/1 & 443/2 ARMOOR TOWN, #, , City=ARMOOR, District=NIZAMABAD, State=Telangana",ARMOOR,,,North
+203,NTC_0204,NIZAMABAD,18.587861,78.223686,30.0,30.0,,Government,"SY.NO.449/E,, DICHPALLY VILLAGE & MANDAL, , City=NIZAMABAD, District=NIZAMABAD, State=Telangana",NIZAMABAD,,,North
+204,NTC_0205,NIZAMABAD,18.683821,78.114392,3.0,3.0,,Government,"NIZAMABAD TOWN, NIZAMABAD, NIZAMABAD, NIZAMABAD, Telangana",NIZAMABAD,,,North
+205,NTC_0206,NIZAMABAD,18.655544,78.126747,3.0,3.0,,Government,"SY NO. 363/AA PLOT NO.7,8,9,10,23,, 24,,25,26, PANGRA(B) VILLAGE, NZB, NIZAMABAD, NIZAMABAD, Telangana",NIZAMABAD,,,North
+206,NTC_0207,PEDDAPALLI,18.523217,79.628825,3.3,3.3,,Government,"Kamala Filling Station ,Mutharam",Adivisomanpalli,,,North
+207,NTC_0208,PEDDAPALLI,18.639855,79.630298,7.0,7.0,,Government,Kuchirajpalli,Peddapalli,,,North
+208,NTC_0209,PEDDAPALLI,18.636403,79.391024,7.4,7.4,,Government,"M/S. Jaya Durga Filling Station,Bandampalli",Peddapalli,,,North
+209,NTC_0210,PEDDAPALLI,18.511455,79.27759,7.4,7.4,,Government,"M/S. Mahija Petroleum Services,Katnapally",Bonthakuntapalli,,,North
+210,NTC_0211,PEDDAPALLI,18.63835,79.42228,3.3,3.3,,Government,"M/S. Sri Mallikarjuna Fuel Station ,Raghavapur",Peddapalli,,,North
+211,NTC_0212,PEDDAPALLI,18.664832,79.167045,7.4,7.4,,Government,"M/S. Swathi Filling Station,Mallapur",Bommareddypalli,,,North
+212,NTC_0213,PEDDAPALLI,18.762023,79.479682,7.4,7.4,,Government,"M/S. Venkat Sri Nidhi Fuel Point,Medipalli",Peddapalli,,,North
+213,NTC_0214,PEDDAPALLI,18.702036,79.505968,7.4,7.4,,Government,Indian Oil Dealer Sy.No. 34/1/A1 Penchikalpet Village,Peddapalli,,,North
+214,NTC_0215,PEDDAPALLI,18.694174,79.292562,7.4,7.4,,Government,Indian Oil Dealer Sy.No.385/A Dongathurthy Village,Peddapalli,,,North
+215,NTC_0216,PEDDAPALLI,18.54934,79.470255,3.3,3.3,,Government,Indian Oil Dealer Sy.No.778/E Vennampalli Village,Peddapalli,,,North
+216,NTC_0217,PEDDAPALLI,18.709385,79.192209,7.4,7.4,,Government,Indian Oil Dealer Sy.No.97/2/7 Bommareddipalli Village,Peddapalli,,,North
+217,NTC_0218,PEDDAPALLI,18.753528,79.327345,3.3,3.3,,Government,Sy.No.338/1/1 Putnoor Village Indian Oil Dealer Palakurthy Mandal Peddapalli Dist,Peddapalli,,,North
+218,NTC_0219,PEDDAPALLI,18.570608,79.587661,3.3,3.3,,Government,Sy.No.77/3 Matchupeta Indian Oil Dealer Matchupeta Village,Peddapalli,,,North
+219,NTC_0220,PEDDAPALLI,18.613536,79.391945,7.4,7.4,,Private,"Bus Stand, Near, Pdpl Railway Station Rd, Kazipet, Pedapally, Telangana 505172",Peddapalli,,,North
+220,NTC_0221,PEDDAPALLI,18.678064,79.407363,30.0,30.0,,Private,"Iocl - Onkar Roadlines Fp, Andagullapally,, Andugulapally, Karimnagar Dist. Telangana, 505172",Peddapalli,,,North
+221,NTC_0222,PEDDAPALLI,18.645195,79.668585,30.0,30.0,,Private,"Iocl - Sri Ramakrishna Fs, Manthani, Peddapalli, Manthani, Peddapalli Area, Karimnagar Telangana - 505184",Peddapalli,,,North
+222,NTC_0223,PEDDAPALLI,18.588657,79.372444,60.0,60.0,,Government,"BHARAT PETROLEUM DEALERS, KUNDANAPALLI VILLAGE, RAMAGUNDAM MANDAL, , City=RAMAGUNDAM, District=PEDDAPALLI, State=Telangana",RAMAGUNDAM,,,North
+223,NTC_0224,PEDDAPALLI,18.752916,79.191478,60.0,60.0,,Government,"DHARMARAM TO RAYPATNAM ROAD, DHAARMARAM VILLAGE, , City=DHARMARAM, District=PEDDAPALLI, State=Telangana",DHARMARAM,,,North
+224,NTC_0225,PEDDAPALLI,18.741148,79.571582,3.0,3.0,,Government,"MANCHERIAL ROAD,, GANDHINAGAR, , City=GODAVARIKHANI, District=PEDDAPALLI, State=Telangana",GODAVARIKHANI,,,North
+225,NTC_0226,PEDDAPALLI,18.639321,79.426865,3.0,3.0,,Government,"PEDDAPALLI TO MANTHANI ROAD, RAGHAVAPUR, , City=PEDDAPALLI, District=PEDDAPALLI, State=Telangana",PEDDAPALLI,,,North
+226,NTC_0227,PEDDAPALLI,18.593088,79.375122,3.0,3.0,,Government,"RANGAMPALLY (V), PEDDAPALLY, , City=PEDDAPALLI, District=PEDDAPALLI, State=Telangana",PEDDAPALLI,,,North
+227,NTC_0228,PEDDAPALLI,18.642248,79.660791,3.0,3.0,,Government,"SY NO 897A 896D MANTHANI TOWN, MANTHANI TO PEDDAPALLI ROAD, , City=MANTHANI, District=PEDDAPALLI, State=Telangana",MANTHANI,,,North
+228,NTC_0229,PEDDAPALLI,18.521258,79.304122,60.0,60.0,,Government,"SY NO. 297, POOSALA VILLAGE, RAJEEV RAHADARI, SULTANABAD, , City=SULTANABAD, District=PEDDAPALLI, State=Telangana",SULTANABAD,,,North
+229,NTC_0230,PEDDAPALLI,18.772973,79.512656,3.0,3.0,,Government,"SY NO.801 & 802 JANGOAM (V), RAMAGUNDAM (M),RAJIV RAHADARI, , City=GODAVARIKHANI, District=PEDDAPALLI, State=Telangana",GODAVARIKHANI,,,North
+230,NTC_0231,WARANGAL,17.962523,79.63911,3.3,3.3,,Private,"Xj6Q+Xhq, K Street, Gorrekunta Village, Sthambampally, Telangana 506013",Warangal,,,North
+231,NTC_0232,WARANGAL,17.989836,79.532757,3.3,3.3,,Private,"No 1-1-506 And 1-1506/1 Nit New, Rec Old, Waddepally Village, Hanumakonda ""Warangal Urban, Telangana- 506002""",Warangal,,,North
+232,NTC_0233,WARANGAL,17.989836,79.532757,3.3,3.3,,Private,"No 1-1-506 And 1-1506/1 Nit New, Rec Old, Waddepally Village, Hanumakonda ""Warangal Urban, Telangana- 506002""",Warangal,,,North
+233,NTC_0234,WARANGAL,17.999565,79.549861,3.3,3.3,,Private,"Xgxx+Rw4, Nakkala Gutta, Hanamkonda, Telangana 506001",Warangal,,,North
+234,NTC_0235,WARANGAL,18.211198,79.386254,3.3,3.3,,Private,"Karimnagar Rd, Huzurabad, Telangana 505468",Warangal,,,North
+235,NTC_0236,WARANGAL,17.99099,79.591256,7.4,7.4,,Government,"Adhoc Sri Padmavathi Filling Station,Warangal Municipality",Warangal,,,North
+236,NTC_0237,WARANGAL,17.50642,79.879307,7.4,7.4,,Government,Kalyani Petro Delaers Satyanaryanapuram,Chengapur,,,North
+237,NTC_0238,WARANGAL,17.968966,79.592785,7.4,7.4,,Government,"M/S. Aadhya Filling Station,Kareemabad",Warangal,,,North
+238,NTC_0239,WARANGAL,17.974561,79.598035,7.4,7.4,,Government,"M/S. Abss Fuels Service Station,Medariwada, Warangal",Beat Bazar,,,North
+239,NTC_0240,WARANGAL,17.996241,79.568597,7.4,7.4,,Government,"M/S. Adhoc Saritha Quality Fuels,Hanamkonda",Hanamkonda,,,North
+240,NTC_0241,WARANGAL,18.157739,80.62273,3.3,3.3,,Government,"M/S. Girijan Filling Station,Rajupeta",Warangal,,,North
+241,NTC_0242,WARANGAL,17.905683,79.634023,7.4,7.4,,Government,"M/S. Sai Krishna Fill N Fly,Gadepalli, Warangal",Chintalapalli,,,North
+242,NTC_0243,WARANGAL,17.50642,79.879307,3.3,3.3,,Government,"M/S. Teja Filling Station,Chinnagudur",Chengapur,,,North
+243,NTC_0244,WARANGAL,17.920269,79.596462,30.0,30.0,,Government,Mamnoor,Warangal,,,North
+244,NTC_0245,WARANGAL,17.893093,79.937968,7.4,7.4,,Government,"Om Sai Filling Station,Khanapur Budharaopet",Chennaraopet,,,North
+245,NTC_0246,WARANGAL,17.934005,79.857523,3.3,3.3,,Government,"Sheelam Rukkamma Filling Station,Maheswaram",Gurijala,,,North
+246,NTC_0247,WARANGAL,17.96182,79.55865,7.4,7.4,,Government,Indian Oil Dealer Battupally Villa Sy.No.110/A 125/A1 Bhattupally Village,Warangal,,,North
+247,NTC_0248,WARANGAL,18.095792,79.804294,3.3,3.3,,Government,Indian Oil Dealer Katakshapur Vill Sy.No.144/A/3/1 Atmakur Mandal Warangal District,Warangal Rural,,,North
+248,NTC_0249,WARANGAL,18.255181,79.690383,3.3,3.3,,Government,Indian Oil Dealer Lakshmipuram Vil Sy. No.162/A/166 Lakshmipuram Village,Warangal Rural,,,North
+249,NTC_0250,WARANGAL,17.759238,79.581693,3.3,3.3,,Government,Indian Oil Dealer Sy. No.460/B Wardhannapet (V&M) Warangal Telangana,Warangal,,,North
+250,NTC_0251,WARANGAL,17.783278,79.53764,3.3,3.3,,Government,Indian Oil Dealer Sy.No. 107/C/1/2 Bandauthapur Village,Warangal,,,North
+251,NTC_0252,WARANGAL,18.007518,79.755007,3.3,3.3,,Government,Indian Oil Dealer Sy.No.189/B/1 Elukurthy Village,Warangal Rural,,,North
+252,NTC_0253,WARANGAL,17.674667,79.695636,3.3,3.3,,Government,Indian Oil Dealer Sy.No.397/1 Annaram Shareef Village,Warangal Rural,,,North
+253,NTC_0254,WARANGAL,18.032301,79.628003,3.3,3.3,,Government,Indian Oil Dealer Sy.No.605 Arepa Arepally Paidipally Gp Village Warangal Mandal Warangal Urban Dis,Warangal,,,North
+254,NTC_0255,WARANGAL,18.09586,79.558462,3.3,3.3,,Government,Indian Oil Dealer Sy.No.744/E/2/1/A 743/A/2/1/B &743/A/3/Aa Ambala Village,Warangal Rural,,,North
+255,NTC_0256,WARANGAL,17.926077,79.596244,7.4,7.4,,Government,Indian Oil Dealers G-5-2 Khammam Highway Road Mamanur Andhra Pradesh Lock No.-130/D1/276,Warangal,,,North
+256,NTC_0257,WARANGAL,18.176417,79.533456,7.4,7.4,,Government,Survey No.896 Kamalapur Uppal Karimnagarlock No D1-253 A-5-1 Andhra Pradesh,Warangal,,,North
+257,NTC_0258,WARANGAL,17.444583,80.152666,7.4,7.4,,Private,"Dornakal Railway Station,C5V3+R22,Dornakal, Telangana",Ammapalem,,,North
+258,NTC_0259,WARANGAL,17.975183,79.510357,7.4,7.4,,Private,"Kazipet Railway Station, Rahamatnagar, Warangal",Bapujinagar,,,North
+259,NTC_0260,WARANGAL,17.99991,79.556176,7.4,7.4,,Private,"Nakkalagutta, Hanamkonda , Warangal, Telangana- 506002",Warangal,,,North
+260,NTC_0261,WARANGAL,17.99991,79.556176,30.0,30.0,,Private,"Nakkalagutta, Hanamkonda , Warangal, Telangana- 506002",Warangal,,,North
+261,NTC_0262,WARANGAL,17.724278,79.151783,7.4,7.4,,Private,"Near Railway Station, Jangaon, Telangana 506167",Jangaon,,,North
+262,NTC_0263,WARANGAL,17.973973,79.605233,7.4,7.4,,Private,"Warangal Railway Station, Girmajipet, Warangal, Telangana 506002",Warangal,,,North
+263,NTC_0264,WARANGAL,17.980505,79.579956,30.0,30.0,,Private,"Iocl - Adhoc Ap Prison, (Hunter Road Fs), Xhjh+6X2, Ramannapet, Warangal, Telangana 506002",Warangal,,,North
+264,NTC_0265,WARANGAL,17.994033,79.591653,25.0,25.0,,Private,"Iocl - Ap Prisons Department,, Sy No 32, Mattewada, Warangal Urban, Telangana 506001",Warangal,,,North
+265,NTC_0266,WARANGAL,18.087979,79.492938,30.0,30.0,,Private,"Iocl - Balaji Fs, Yellapur, Warangal-Karimnagar, Highway, Yellapur, Telangana 506371","Yellapur,Tl",,,North
+266,NTC_0267,WARANGAL,17.985489,79.573782,30.0,30.0,,Private,"Iocl - Orugallu Fs, Hunter Rd, Shyampet, Hanamkonda, Telangana 506001",Warangal,,,North
+267,NTC_0268,WARANGAL,18.39744,78.122548,25.0,25.0,,Private,"Iocl - Shiva Sai Fp, Hanamkonda, Sy No 560, Waddepally, Hanamkonda, Waranagal Urban Dist Telangana - 506370",Warangal,,,North
+268,NTC_0269,WARANGAL,18.198788,79.698056,30.0,30.0,,Private,"Iocl - Vishwambhara Fs, Sy No 653/D, Parkal V&M, Warangal Urban District, Telangana 506162",Parkal,,,North
+269,NTC_0270,WARANGAL,18.013301,79.675042,30.0,30.0,,Private,"Iocl - Yadadri Fs, Sy No 254/A/2, Mustyalapalle, Damera, Warangal Rural Dist, Telangana 506006",Oglapur,,,North
+270,NTC_0271,WARANGAL,17.999273,79.585443,25.0,25.0,,Private,"Select Cars, Svp Road, No. 15 - 1 - 315 Shri Vishnu Priya Complex Svp Road (Nh163) Beside Rama Krishna Theatre, Telangana 506007",Warangal,,,North
+271,CHG_0008,HYDERABAD,17.391683,78.476672,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+272,CHG_0850,RANGAREDDY,17.328349,78.418179,60.0,60,2.0,Government,,,BPCL,CCS,South
+273,CHG_0849,RANGAREDDY,17.328349,78.418179,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+274,CHG_0809,RANGAREDDY,17.342441,78.547351,60.0,60,2.0,Government,,,BPCL,CCS,South
+275,CHG_0808,RANGAREDDY,17.3433,78.5399,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+276,CHG_0750,RANGAREDDY,17.350581,78.542938,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+277,CHG_0738,RANGAREDDY,17.33229,78.54195,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+278,CHG_0706,RANGAREDDY,17.335453,78.410268,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+279,CHG_0188,RANGAREDDY,17.45,78.39,120.0,60,2.0,Private,,,Lioncharge,CCS-II,South
+280,CHG_0538,MEDCHAL MALKAJGIRI,17.610098,78.487597,60.0,60,2.0,Government,,,BPCL,CCS,South
+281,CHG_0528,MEDCHAL MALKAJGIRI,17.636783,78.485357,30.0,30,1.0,Government,,,BPCL,CCS,South
+282,CHG_0749,RANGAREDDY,17.350558,78.543247,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+283,CHG_0479,MEDCHAL MALKAJGIRI,17.615578,78.485489,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+284,CHG_0088,MEDCHAL MALKAJGIRI,17.414084,78.547335,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+285,CHG_0087,MEDCHAL MALKAJGIRI,17.414084,78.547335,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+286,CHG_0368,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+287,CHG_0367,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+288,CHG_0366,HYDERABAD,17.418239,78.451807,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+289,CHG_0365,HYDERABAD,17.418239,78.451807,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+290,CHG_0209,HYDERABAD,17.38504,78.48667,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+291,CHG_0195,HYDERABAD,17.35733,78.47396,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+292,CHG_0190,HYDERABAD,17.4426,78.49535,7.4,7.4,1.0,Government,,,NTPC,Type-II AC,South
+293,CHG_0481,MEDCHAL MALKAJGIRI,17.597187,78.479233,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+294,CHG_0864,SANGAREDDY,17.56817,78.16011,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+295,CHG_0491,MEDCHAL MALKAJGIRI,17.584077,78.49105,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+296,CHG_0751,RANGAREDDY,17.350581,78.542938,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+297,CHG_0752,RANGAREDDY,17.350581,78.542938,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+298,CHG_0945,SURYAPET,17.145631,79.589817,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+299,CHG_0943,SURYAPET,16.982319,80.003576,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+300,CHG_0944,SURYAPET,17.128326,79.637229,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+301,CHG_0946,SURYAPET,17.151711,79.60734,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+302,CHG_0096,HYDERABAD,17.44329,78.49527,20.0,20,1.0,Private,,,Fortum,Bharat DC-001,South
+303,CHG_0185,RANGAREDDY,17.445935,78.395065,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+304,CHG_0799,RANGAREDDY,17.317842,78.403597,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+305,CHG_1004,YADADRI BHUVANAGIRI,17.237716,78.947218,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+306,CHG_0286,MEDCHAL MALKAJGIRI,17.400215,78.554785,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+307,CHG_0587,NALGONDA,17.179663,79.25894,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+308,CHG_0586,NALGONDA,17.208348,79.177221,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+309,CHG_0287,MEDCHAL MALKAJGIRI,17.400215,78.554785,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+310,CHG_0673,RANGAREDDY,17.329761,78.552914,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+311,CHG_0130,HYDERABAD,17.3985,78.4936,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+312,CHG_0501,MEDCHAL MALKAJGIRI,17.593295,78.517025,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+313,CHG_0369,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+314,CHG_0275,RANGAREDDY,17.448213,78.384346,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+315,CHG_0125,HYDERABAD,17.44329,78.49527,15.0,15,1.0,Government,,,Hyderabad Metro Corporation Ltd.,Bharat DC-001,South
+316,CHG_0370,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+317,CHG_0498,MEDCHAL MALKAJGIRI,17.582874,78.427595,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+318,CHG_0276,RANGAREDDY,17.448213,78.384346,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+319,CHG_0277,RANGAREDDY,17.448213,78.384346,7.5,7.5,1.0,Private,,,Reliance BP,Type-II AC,South
+320,CHG_0072,HYDERABAD,17.428476,78.52774,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+321,CHG_0073,HYDERABAD,17.428476,78.52774,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+322,CHG_0134,HYDERABAD,17.4379,78.4941,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+323,CHG_0500,MEDCHAL MALKAJGIRI,17.567322,78.526287,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+324,CHG_0913,SIDDIPET,17.939888,78.956295,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+325,CHG_0135,HYDERABAD,17.4379,78.4941,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+326,CHG_0136,HYDERABAD,17.44116,78.50442,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+327,CHG_0137,HYDERABAD,17.44116,78.50442,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+328,CHG_0383,HYDERABAD,17.441846,78.50438,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+329,CHG_0371,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+330,CHG_0674,RANGAREDDY,17.329761,78.552914,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+331,CHG_0555,MEDCHAL MALKAJGIRI,17.54459,78.47359,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+332,CHG_0552,MEDCHAL MALKAJGIRI,17.631611,78.570332,60.0,60,2.0,Government,,,BPCL,CCS,South
+333,CHG_0531,MEDCHAL MALKAJGIRI,17.616179,78.388214,60.0,60,2.0,Government,,,BPCL,CCS,South
+334,CHG_0588,NALGONDA,17.1796,79.258706,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+335,CHG_0761,RANGAREDDY,17.317335,78.402775,30.0,30,1.0,Private,,,Joule,CCS-II,South
+336,CHG_0159,HYDERABAD,17.417592,78.456457,30.0,30,1.0,Private,,,Joule,CCS-II,South
+337,CHG_0499,MEDCHAL MALKAJGIRI,17.629434,78.567503,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+338,CHG_0230,MEDCHAL MALKAJGIRI,17.39794,78.53363,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+339,CHG_0414,MAHBUBNAGAR,16.525282,77.94011,60.0,60,1.0,Private,,,Fortum,CCS-II,South
+340,CHG_0384,HYDERABAD,17.44185,78.504376,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+341,CHG_0372,HYDERABAD,17.418239,78.451807,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+342,CHG_0009,MEDCHAL MALKAJGIRI,17.39981,78.555117,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+343,CHG_0079,MEDCHAL MALKAJGIRI,17.399031,78.554874,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+344,CHG_0078,MEDCHAL MALKAJGIRI,17.399031,78.554874,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+345,CHG_0362,RANGAREDDY,17.45345,78.38334,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+346,CHG_0544,MEDCHAL MALKAJGIRI,17.593106,78.569747,60.0,60,2.0,Government,,,BPCL,CCS,South
+347,CHG_0915,SIDDIPET,18.119352,78.877037,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+348,CHG_0914,SIDDIPET,17.82027,78.730215,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+349,CHG_0515,MEDCHAL MALKAJGIRI,17.394138,78.559477,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+350,CHG_0474,MEDCHAL MALKAJGIRI,17.401753,78.571562,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+351,CHG_0470,MEDCHAL MALKAJGIRI,17.563381,78.414399,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+352,CHG_0802,RANGAREDDY,17.32988,78.55328,3.3,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+353,CHG_0149,RANGAREDDY,17.44058,78.3982,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+354,CHG_0865,SANGAREDDY,17.56817,78.16011,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+355,CHG_0556,MEDCHAL MALKAJGIRI,17.569728,78.556302,60.0,60,2.0,Government,,,BPCL,CCS,South
+356,CHG_0253,MEDCHAL MALKAJGIRI,17.402559,78.573878,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+357,CHG_0150,RANGAREDDY,17.44058,78.3982,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+358,CHG_0023,RANGAREDDY,17.438065,78.392418,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+359,CHG_0545,MEDCHAL MALKAJGIRI,17.544335,78.433703,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+360,CHG_0711,RANGAREDDY,17.342648,78.556039,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+361,CHG_0590,NALGONDA,17.106361,79.51907,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+362,CHG_0589,NALGONDA,17.158136,79.311225,20.0,20,1.0,Private,,,Fortum,Bharat DC-001,South
+363,CHG_0947,SURYAPET,16.829627,80.045997,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+364,CHG_0847,RANGAREDDY,17.341159,78.558448,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+365,CHG_0797,RANGAREDDY,17.326299,78.434238,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+366,CHG_0988,WANAPARTHY,16.382307,78.075599,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+367,CHG_0866,RANGAREDDY,17.292046,78.413685,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+368,CHG_0385,HYDERABAD,17.441846,78.504359,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+369,CHG_0869,SIDDIPET,18.113762,78.76519,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+370,CHG_0870,SANGAREDDY,17.697969,78.207712,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+371,CHG_0868,SANGAREDDY,17.568126,78.159986,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+372,CHG_0867,SANGAREDDY,17.568126,78.159986,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+373,CHG_0800,RANGAREDDY,17.34172,78.55907,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+374,CHG_0386,HYDERABAD,17.441837,78.504381,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+375,CHG_0527,MEDCHAL MALKAJGIRI,17.402195,78.573718,60.0,60,2.0,Government,,,BPCL,CCS,South
+376,CHG_0028,RANGAREDDY,17.452666,78.380343,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+377,CHG_0027,RANGAREDDY,17.452666,78.380343,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+378,CHG_0592,NALGONDA,16.717617,79.647629,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+379,CHG_0591,NALGONDA,17.230286,79.009719,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+380,CHG_0872,SANGAREDDY,17.667159,77.936089,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+381,CHG_0871,SANGAREDDY,17.659482,78.175694,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+382,CHG_0546,MEDCHAL MALKAJGIRI,17.533598,78.458934,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+383,CHG_0387,HYDERABAD,17.44189,78.504338,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+384,CHG_0548,MEDCHAL MALKAJGIRI,17.657957,78.586615,60.0,60,2.0,Government,,,BPCL,CCS,South
+385,CHG_0388,HYDERABAD,17.441862,78.504369,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+386,CHG_0389,HYDERABAD,17.441889,78.504319,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+387,CHG_0415,MAHBUBNAGAR,16.525282,77.94011,60.0,60,1.0,Private,,,Fortum,CCS-II,South
+388,CHG_1005,YADADRI BHUVANAGIRI,17.237716,78.947218,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+389,CHG_0873,SANGAREDDY,17.567432,78.159931,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+390,CHG_0857,RANGAREDDY,17.349616,78.416439,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+391,CHG_0825,RANGAREDDY,17.326644,78.525941,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+392,CHG_0824,RANGAREDDY,17.326644,78.525941,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+393,CHG_0816,RANGAREDDY,17.341715,78.559068,60.0,60,2.0,Government,,,BPCL,CCS,South
+394,CHG_0243,HYDERABAD,17.414912,78.458199,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+395,CHG_0242,HYDERABAD,17.414912,78.458199,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+396,CHG_0170,HYDERABAD,17.417647,78.456474,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+397,CHG_0131,HYDERABAD,17.3985,78.4936,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+398,CHG_0204,HYDERABAD,17.35733,78.47396,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+399,CHG_0524,MEDCHAL MALKAJGIRI,17.437542,78.574074,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+400,CHG_0514,MEDCHAL MALKAJGIRI,17.56,78.38,60.0,60,2.0,Government,,,BPCL,CCS,South
+401,CHG_0505,MEDCHAL MALKAJGIRI,17.385509,78.558688,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+402,CHG_0391,HYDERABAD,17.441843,78.504354,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+403,CHG_0390,HYDERABAD,17.44187,78.504363,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+404,CHG_0684,RANGAREDDY,17.302966,78.420693,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+405,CHG_0683,RANGAREDDY,17.302966,78.420693,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+406,CHG_0875,SANGAREDDY,17.61711,77.97563,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+407,CHG_0876,SANGAREDDY,17.554308,78.192787,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+408,CHG_0116,HYDERABAD,17.367907,78.468794,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+409,CHG_0874,MEDAK,17.832167,78.230818,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+410,CHG_0557,MEDCHAL MALKAJGIRI,17.400961,78.579936,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+411,CHG_0877,SANGAREDDY,17.571371,78.259156,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+412,CHG_0948,SURYAPET,17.115626,79.65912,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+413,CHG_0858,RANGAREDDY,17.331111,78.520278,60.0,60,2.0,Government,,,BPCL,CCS,South
+414,CHG_0525,MEDCHAL MALKAJGIRI,17.437542,78.574074,60.0,60,2.0,Government,,,BPCL,CCS,South
+415,CHG_0735,RANGAREDDY,17.340555,78.563666,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+416,CHG_0736,RANGAREDDY,17.340555,78.563666,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+417,CHG_0284,RANGAREDDY,17.447692,78.37888,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+418,CHG_0285,RANGAREDDY,17.447692,78.37888,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+419,CHG_0106,RANGAREDDY,17.45926,78.3856,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+420,CHG_0950,SURYAPET,16.821398,79.874551,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+421,CHG_0878,SANGAREDDY,17.712516,78.201618,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+422,CHG_0949,SURYAPET,16.878224,79.869858,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+423,CHG_0833,RANGAREDDY,17.355892,78.530853,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+424,CHG_0244,HYDERABAD,17.414912,78.458199,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+425,CHG_0558,MEDCHAL MALKAJGIRI,17.400961,78.579936,60.0,60,2.0,Government,,,BPCL,CCS,South
+426,CHG_0397,HYDERABAD,17.39918,78.47997,60.0,60,2.0,Government,,,BPCL,CCS,South
+427,CHG_0489,MEDCHAL MALKAJGIRI,17.380295,78.557911,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+428,CHG_0652,RANGAREDDY,17.361751,78.544145,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+429,CHG_0373,RANGAREDDY,17.449383,78.378638,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+430,CHG_0593,NALGONDA,16.874978,79.119423,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+431,CHG_0107,RANGAREDDY,17.45926,78.3856,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+432,CHG_0418,WANAPARTHY,16.382337,77.932193,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+433,CHG_0879,SANGAREDDY,17.59183,78.194177,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+434,CHG_0951,SURYAPET,17.023448,79.87114,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+435,CHG_0419,WANAPARTHY,16.370242,78.271593,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+436,CHG_0567,NAGARKURNOOL,16.400328,78.63597,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+437,CHG_0203,HYDERABAD,17.3667,78.4621,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+438,CHG_0004,HYDERABAD,17.34763,78.475395,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+439,CHG_0416,MAHBUBNAGAR,16.765631,77.967343,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+440,CHG_0522,MEDCHAL MALKAJGIRI,17.4167,78.584694,60.0,60,2.0,Government,,,BPCL,CCS,South
+441,CHG_0420,MAHBUBNAGAR,16.525552,77.940146,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+442,CHG_0187,MEDCHAL MALKAJGIRI,17.456048,78.544441,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+443,CHG_0471,MEDCHAL MALKAJGIRI,17.533886,78.39367,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+444,CHG_0417,MAHBUBNAGAR,16.61701,77.828632,3.0,3,1.0,Government,,,HPCL,Bharat AC-001,South
+445,CHG_0653,RANGAREDDY,17.361751,78.544145,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+446,CHG_0374,RANGAREDDY,17.449383,78.378638,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+447,CHG_1006,YADADRI BHUVANAGIRI,17.57803,78.948153,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+448,CHG_0725,RANGAREDDY,17.3082,78.4325,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+449,CHG_0952,SURYAPET,16.750931,79.834867,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+450,CHG_0989,WANAPARTHY,16.248764,77.959427,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+451,CHG_0245,HYDERABAD,17.414912,78.458199,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+452,CHG_0408,JOGULAMBA GADWAL,16.211342,77.823207,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+453,CHG_0042,HYDERABAD,17.377715,78.471147,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+454,CHG_0103,HYDERABAD,17.377764,78.471327,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+455,CHG_0518,MEDCHAL MALKAJGIRI,17.374526,78.558122,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+456,CHG_0448,MEDAK,18.065855,78.391731,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+457,CHG_0006,MEDCHAL MALKAJGIRI,17.377497,78.558085,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+458,CHG_0007,MEDCHAL MALKAJGIRI,17.377497,78.558085,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+459,CHG_0026,MEDCHAL MALKAJGIRI,17.447469,78.57175,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+460,CHG_0120,MEDCHAL MALKAJGIRI,17.408374,78.586556,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+461,CHG_0681,RANGAREDDY,17.459252,78.385219,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+462,CHG_0792,RANGAREDDY,17.29925,78.41957,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+463,CHG_0594,NALGONDA,16.965885,79.467304,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+464,CHG_0071,RANGAREDDY,17.459252,78.385218,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+465,CHG_0916,SIDDIPET,18.161625,78.970924,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+466,CHG_0562,MEDCHAL MALKAJGIRI,17.396912,78.588487,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+467,CHG_1007,YADADRI BHUVANAGIRI,17.461837,79.131697,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+468,CHG_0104,HYDERABAD,17.377764,78.471327,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+469,CHG_0512,MEDCHAL MALKAJGIRI,17.37258,78.56535,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+470,CHG_0421,MAHBUBNAGAR,16.757653,77.993222,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+471,CHG_0399,MEDCHAL MALKAJGIRI,17.372529,78.56534,60.0,60,2.0,Government,,,BPCL,CCS,South
+472,CHG_0682,RANGAREDDY,17.459252,78.385219,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+473,CHG_0728,RANGAREDDY,17.33915,78.5678,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+474,CHG_0745,RANGAREDDY,17.363575,78.543142,30.0,30,1.0,Private,,,Joule,CCS-II,South
+475,CHG_1008,YADADRI BHUVANAGIRI,17.562625,78.820868,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+476,CHG_0422,NAGARKURNOOL,16.395837,78.63615,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+477,CHG_0880,SANGAREDDY,17.63097,78.325438,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+478,CHG_0254,HYDERABAD,17.404176,78.504278,122.0,50+50+22,3.0,Government,,,REIL,Combo (CCS-II + CHAdeMo + Type II),South
+479,CHG_0272,HYDERABAD,17.4208,78.455389,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+480,CHG_0392,HYDERABAD,17.441831,78.504388,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+481,CHG_0175,HYDERABAD,17.392015,78.468062,30.0,30,1.0,Private,,,Joule,CCS-II,South
+482,CHG_0523,MEDCHAL MALKAJGIRI,17.372578,78.565347,60.0,60,2.0,Government,,,BPCL,CCS,South
+483,CHG_0595,NALGONDA,16.893027,78.966272,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+484,CHG_0795,RANGAREDDY,17.4594,78.3848,7.5,7.5,1.0,Government,,,REIL,Type-II AC,South
+485,CHG_1009,YADADRI BHUVANAGIRI,17.421966,79.109526,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+486,CHG_0321,HYDERABAD,17.43683,78.398326,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+487,CHG_0393,HYDERABAD,17.441863,78.504377,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+488,CHG_0394,HYDERABAD,17.441846,78.504346,3.3,3.3,1.0,Private,,,UJOY,Bharat AC-001,South
+489,CHG_0539,MEDCHAL MALKAJGIRI,17.531,78.395,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+490,CHG_0540,MEDCHAL MALKAJGIRI,17.531,78.395,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+491,CHG_0266,MEDCHAL MALKAJGIRI,17.4633,78.56077,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+492,CHG_0775,RANGAREDDY,17.46073,78.38543,7.0,7,1.0,Private,,,OLA,LEV DC Charge Point (IS-17017-2-6),South
+493,CHG_0818,RANGAREDDY,17.299248,78.419565,60.0,60,2.0,Government,,,BPCL,CCS,South
+494,CHG_0826,RANGAREDDY,17.316197,78.446607,60.0,60,2.0,Government,,,BPCL,CCS,South
+495,CHG_0043,HYDERABAD,17.377715,78.471147,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+496,CHG_0194,HYDERABAD,17.44111,78.50511,7.0,7,1.0,Private,,,OLA,LEV DC Charge Point (IS-17017-2-6),South
+497,CHG_0196,HYDERABAD,17.44111,78.50511,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+498,CHG_0267,MEDCHAL MALKAJGIRI,17.4633,78.56077,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+499,CHG_0709,RANGAREDDY,17.360707,78.428206,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+500,CHG_0710,RANGAREDDY,17.360707,78.428206,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+501,CHG_0596,NALGONDA,16.696269,79.600731,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+502,CHG_0917,SIDDIPET,18.075539,78.859469,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+503,CHG_0881,SANGAREDDY,17.55138,78.054035,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+504,CHG_0409,JOGULAMBA GADWAL,15.985216,77.975031,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+505,CHG_0410,JOGULAMBA GADWAL,16.072144,77.955037,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+506,CHG_0423,MAHBUBNAGAR,16.75329,78.024012,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+507,CHG_0701,RANGAREDDY,17.309396,78.448992,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+508,CHG_0882,SANGAREDDY,17.65626,77.605988,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+509,CHG_0861,RANGAREDDY,17.460734,78.385425,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+510,CHG_0146,HYDERABAD,17.3365,78.4683,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+511,CHG_0147,HYDERABAD,17.3365,78.4683,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+512,CHG_0153,HYDERABAD,17.3446,78.4509,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+513,CHG_0154,HYDERABAD,17.3446,78.4509,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+514,CHG_0268,MEDCHAL MALKAJGIRI,17.4633,78.56077,7.5,7.5,1.0,Private,,,Reliance BP,Type-II AC,South
+515,CHG_0774,RANGAREDDY,17.36587,78.42812,7.0,7,1.0,Private,,,OLA,LEV DC Charge Point (IS-17017-2-6),South
+516,CHG_0424,NAGARKURNOOL,16.529869,78.215328,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+517,CHG_0005,HYDERABAD,17.360278,78.504702,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+518,CHG_0425,MAHBUBNAGAR,16.763526,77.99302,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+519,CHG_0598,NALGONDA,16.89734,79.15026,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+520,CHG_0599,NALGONDA,16.775346,78.899109,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+521,CHG_0597,NALGONDA,16.727798,78.966408,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+522,CHG_0862,RANGAREDDY,17.460734,78.385425,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+523,CHG_0229,HYDERABAD,17.44111,78.50511,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+524,CHG_0411,JOGULAMBA GADWAL,16.08145,77.53831,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+525,CHG_0426,MAHBUBNAGAR,16.957009,78.184773,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+526,CHG_0753,RANGAREDDY,17.363576,78.543094,30.0,30,1.0,Private,,,Joule,CCS-II,South
+527,CHG_0361,RANGAREDDY,17.441226,78.378531,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+528,CHG_0563,MEDCHAL MALKAJGIRI,17.5401,78.367844,60.0,60,2.0,Government,,,BPCL,CCS,South
+529,CHG_0269,RANGAREDDY,17.43436,78.3866,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+530,CHG_0273,HYDERABAD,17.4208,78.455389,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+531,CHG_0274,HYDERABAD,17.4208,78.455389,7.4,7.4,1.0,Private,,,Reliance BP,Type-II AC,South
+532,CHG_0126,HYDERABAD,17.3594,78.4444,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+533,CHG_0484,MEDCHAL MALKAJGIRI,17.544875,78.363342,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+534,CHG_0487,MEDCHAL MALKAJGIRI,17.367484,78.557522,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+535,CHG_0427,MAHBUBNAGAR,16.87173,77.886904,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+536,CHG_0784,RANGAREDDY,17.36587,78.42812,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+537,CHG_0255,HYDERABAD,17.404176,78.504278,122.0,50+50+22,3.0,Government,,,REIL,Combo (CCS-II + CHAdeMo + Type II),South
+538,CHG_0657,RANGAREDDY,17.348941,78.513976,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+539,CHG_0656,RANGAREDDY,17.348941,78.513976,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+540,CHG_0687,RANGAREDDY,17.348831,78.513991,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+541,CHG_0756,RANGAREDDY,17.335897,78.56947,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+542,CHG_0270,RANGAREDDY,17.43436,78.3866,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+543,CHG_0844,RANGAREDDY,17.344284,78.570445,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+544,CHG_0395,HYDERABAD,17.441106,78.505111,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+545,CHG_0176,HYDERABAD,17.412348,78.459892,30.0,30,1.0,Private,,,Joule,CCS-II,South
+546,CHG_0488,MEDCHAL MALKAJGIRI,17.367484,78.557522,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+547,CHG_0509,MEDCHAL MALKAJGIRI,17.37086,78.56853,7.0,7,1.0,Private,,,OLA,LEV DC Charge Point (IS-17017-2-6),South
+548,CHG_0428,MAHBUBNAGAR,16.964329,78.122988,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+549,CHG_0734,RANGAREDDY,17.4441,78.37675,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+550,CHG_0568,NAGARKURNOOL,16.074729,78.26324,3.0,3,1.0,Government,,,HPCL,Bharat AC-001,South
+551,CHG_0271,RANGAREDDY,17.43436,78.3866,7.5,7.5,1.0,Private,,,Reliance BP,Type-II AC,South
+552,CHG_0953,SURYAPET,16.765421,80.020509,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+553,CHG_0855,RANGAREDDY,17.365872,78.428118,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+554,CHG_0400,HYDERABAD,17.3518,78.506743,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+555,CHG_0127,HYDERABAD,17.3594,78.4444,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+556,CHG_0010,HYDERABAD,17.400595,78.508078,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+557,CHG_0529,MEDCHAL MALKAJGIRI,17.370863,78.568527,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+558,CHG_0283,HYDERABAD,17.371753,78.509757,7.4,7.4,1.0,Private,,,Reliance BP,Type-II AC,South
+559,CHG_0282,HYDERABAD,17.371753,78.509757,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+560,CHG_0281,HYDERABAD,17.371753,78.509757,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+561,CHG_0231,HYDERABAD,17.40925,78.49802,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+562,CHG_0095,HYDERABAD,17.435968,78.40003,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+563,CHG_0412,JOGULAMBA GADWAL,16.115318,77.696008,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+564,CHG_0406,HYDERABAD,17.409254,78.498019,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+565,CHG_0569,NAGARKURNOOL,16.416434,78.560431,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+566,CHG_0601,NALGONDA,16.843074,79.527453,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+567,CHG_0600,NALGONDA,16.75176,79.511063,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+568,CHG_0918,SIDDIPET,18.087928,78.839215,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+569,CHG_1010,YADADRI BHUVANAGIRI,17.761862,78.969675,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+570,CHG_0954,SURYAPET,16.731231,79.701101,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+571,CHG_0259,HYDERABAD,17.412183,78.434876,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+572,CHG_0105,HYDERABAD,17.43598,78.40002,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+573,CHG_0140,HYDERABAD,17.405815,78.460953,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+574,CHG_0451,MEDAK,18.031019,78.433679,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+575,CHG_0450,MEDAK,18.024594,78.270902,7.4,7.4,1.0,Government,,,HPCL,Type-II AC,South
+576,CHG_0449,MEDAK,18.114437,78.40229,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+577,CHG_0712,RANGAREDDY,17.33564,78.57896,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+578,CHG_0554,MEDCHAL MALKAJGIRI,17.540734,78.362009,60.0,60,2.0,Government,,,BPCL,CCS,South
+579,CHG_0991,WANAPARTHY,16.365246,78.051801,3.0,3,1.0,Government,,,HPCL,Bharat AC-001,South
+580,CHG_0925,SIDDIPET,17.939194,78.631431,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+581,CHG_0924,SIDDIPET,17.954868,78.603127,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+582,CHG_0923,SIDDIPET,18.145149,78.935566,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+583,CHG_0922,SIDDIPET,17.854136,78.686098,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+584,CHG_0921,SIDDIPET,18.080969,78.828258,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+585,CHG_0920,SIDDIPET,18.124529,78.836654,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+586,CHG_0919,SIDDIPET,17.836035,78.698425,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+587,CHG_0553,MEDCHAL MALKAJGIRI,17.540734,78.362009,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+588,CHG_0990,WANAPARTHY,16.382307,78.075599,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+589,CHG_0956,SURYAPET,17.249268,79.664746,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+590,CHG_0955,SURYAPET,17.012228,79.906907,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+591,CHG_0883,SANGAREDDY,17.583691,78.019914,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+592,CHG_0803,RANGAREDDY,17.33635,78.57926,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+593,CHG_0316,HYDERABAD,17.43588,78.40101,15.0,15,1.0,Private,,,Tata Power,Bharat DC-001,South
+594,CHG_0198,HYDERABAD,17.402686,78.458469,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+595,CHG_0197,HYDERABAD,17.402686,78.458469,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+596,CHG_0045,HYDERABAD,17.402168,78.509141,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+597,CHG_0044,HYDERABAD,17.402168,78.509141,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+598,CHG_0141,HYDERABAD,17.405815,78.460953,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+599,CHG_0139,HYDERABAD,17.443571,78.488185,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+600,CHG_0138,HYDERABAD,17.443571,78.488185,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+601,CHG_0492,MEDCHAL MALKAJGIRI,17.52809,78.35515,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+602,CHG_0396,HYDERABAD,17.441106,78.505111,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+603,CHG_0530,MEDCHAL MALKAJGIRI,17.370863,78.568527,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+604,CHG_0413,JOGULAMBA GADWAL,15.964237,77.996857,30.0,30,1.0,Government,,,BPCL,CCS,South
+605,CHG_0220,MEDCHAL MALKAJGIRI,17.43983,78.5089,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+606,CHG_0550,MEDCHAL MALKAJGIRI,17.533342,78.365109,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+607,CHG_0453,MEDAK,17.984625,78.191898,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+608,CHG_0452,MEDAK,18.071672,78.266436,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+609,CHG_0762,RANGAREDDY,17.305743,78.520752,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+610,CHG_0804,RANGAREDDY,17.33635,78.57926,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+611,CHG_0928,SIDDIPET,17.91669,78.97689,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+612,CHG_0927,SIDDIPET,17.862178,78.742045,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+613,CHG_0926,SIDDIPET,17.98447,78.56961,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+614,CHG_0957,SURYAPET,17.041285,79.668803,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+615,CHG_1014,YADADRI BHUVANAGIRI,17.368713,79.032797,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+616,CHG_1013,YADADRI BHUVANAGIRI,17.23732,78.947174,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+617,CHG_1012,YADADRI BHUVANAGIRI,17.393294,79.203417,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+618,CHG_1011,YADADRI BHUVANAGIRI,17.440284,78.817335,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+619,CHG_0959,SURYAPET,17.227071,79.713092,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+620,CHG_0958,SURYAPET,16.942136,80.039517,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+621,CHG_0856,RANGAREDDY,17.365872,78.428118,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+622,CHG_0887,SANGAREDDY,17.586371,78.097625,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+623,CHG_0886,SANGAREDDY,17.64524,77.826308,50.0,25,1.0,Private,,,Tata Power,CCS-II,South
+624,CHG_0885,SANGAREDDY,17.64524,77.826308,50.0,25,1.0,Private,,,Tata Power,CCS-II,South
+625,CHG_0884,SANGAREDDY,17.765407,77.961764,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+626,CHG_0199,HYDERABAD,17.402686,78.458469,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+627,CHG_0100,HYDERABAD,17.402246,78.509387,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+628,CHG_0099,HYDERABAD,17.402246,78.509387,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+629,CHG_0097,HYDERABAD,17.423312,78.458954,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+630,CHG_0022,HYDERABAD,17.43065,78.402004,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+631,CHG_0020,HYDERABAD,17.428515,78.488866,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+632,CHG_0019,HYDERABAD,17.428515,78.488866,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+633,CHG_0341,MEDCHAL MALKAJGIRI,17.3649,78.55747,30.0,30,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+634,CHG_0429,MAHBUBNAGAR,16.92456,77.7967,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+635,CHG_0046,MEDCHAL MALKAJGIRI,17.466128,78.562443,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+636,CHG_0810,RANGAREDDY,17.336449,78.58031,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+637,CHG_0570,NAGARKURNOOL,16.183955,78.317312,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+638,CHG_0648,RANGAREDDY,17.371318,78.511117,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+639,CHG_0571,NAGARKURNOOL,16.692651,78.691329,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+640,CHG_0649,RANGAREDDY,17.371318,78.511117,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+641,CHG_0965,NALGONDA,17.212796,79.166746,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+642,CHG_0144,RANGAREDDY,17.3325,78.4395,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+643,CHG_0961,SURYAPET,16.876863,79.888089,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+644,CHG_0960,SURYAPET,16.96781,79.71282,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+645,CHG_0929,SIDDIPET,18.11532,78.852163,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+646,CHG_0962,SURYAPET,16.915935,79.732126,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+647,CHG_0963,SURYAPET,17.150628,79.577475,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+648,CHG_0966,SURYAPET,16.972505,80.020037,7.0,7,1.0,Government,,,BPCL,Type II,South
+649,CHG_1018,YADADRI BHUVANAGIRI,17.245691,78.921473,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+650,CHG_1017,YADADRI BHUVANAGIRI,17.245691,78.921473,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+651,CHG_1016,YADADRI BHUVANAGIRI,17.523887,78.89804,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+652,CHG_1015,YADADRI BHUVANAGIRI,17.536787,78.91623,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+653,CHG_0964,SURYAPET,17.152535,79.569919,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+654,CHG_0852,RANGAREDDY,17.302901,78.586842,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+655,CHG_0845,RANGAREDDY,17.290411,78.535545,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+656,CHG_0404,HYDERABAD,17.330871,78.488427,60.0,60,2.0,Government,,,BPCL,CCS,South
+657,CHG_0098,HYDERABAD,17.423312,78.458954,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+658,CHG_0191,HYDERABAD,17.402246,78.509387,10.0,3.3,1.0,Government,,,NTPC,Bharat AC-001,South
+659,CHG_0405,HYDERABAD,17.324794,78.47238,60.0,60,2.0,Government,,,BPCL,CCS,South
+660,CHG_0777,HYDERABAD,17.33087,78.48843,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+661,CHG_0534,MEDCHAL MALKAJGIRI,17.367808,78.578324,60.0,60,2.0,Government,,,BPCL,CCS,South
+662,CHG_0533,MEDCHAL MALKAJGIRI,17.367808,78.578324,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+663,CHG_0200,MEDCHAL MALKAJGIRI,17.4661,78.5625,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+664,CHG_0232,MEDCHAL MALKAJGIRI,17.44582,78.51401,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+665,CHG_0047,MEDCHAL MALKAJGIRI,17.466128,78.562443,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+666,CHG_0733,RANGAREDDY,17.278133,78.4081,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+667,CHG_0732,RANGAREDDY,17.278133,78.4081,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+668,CHG_0696,RANGAREDDY,17.305494,78.589815,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+669,CHG_0690,RANGAREDDY,17.32337,78.601717,3.0,3,1.0,Government,,,HPCL,Bharat AC-001,South
+670,CHG_0743,RANGAREDDY,17.314849,78.459056,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+671,CHG_0744,RANGAREDDY,17.314849,78.459056,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+672,CHG_0605,NALGONDA,17.231566,79.099293,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+673,CHG_0603,NALGONDA,16.694828,79.572985,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+674,CHG_0602,NALGONDA,16.92929,79.544858,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+675,CHG_0822,RANGAREDDY,17.432208,78.370605,60.0,60,2.0,Government,,,BPCL,CCS,South
+676,CHG_0068,RANGAREDDY,17.432389,78.373194,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+677,CHG_0319,RANGAREDDY,17.352657,78.546636,30.0,30,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+678,CHG_0155,RANGAREDDY,17.349311,78.553534,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+679,CHG_0070,RANGAREDDY,17.434609,78.369647,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+680,CHG_0069,RANGAREDDY,17.432389,78.373194,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+681,CHG_0982,VIKARABAD,17.558364,77.914433,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+682,CHG_0967,SURYAPET,16.972505,80.020037,60.0,60,2.0,Government,,,BPCL,CCS,South
+683,CHG_1027,YADADRI BHUVANAGIRI,17.526807,78.903984,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+684,CHG_1026,YADADRI BHUVANAGIRI,17.537272,78.860853,60.0,60,2.0,Government,,,BPCL,CCS,South
+685,CHG_1025,YADADRI BHUVANAGIRI,17.537272,78.860853,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+686,CHG_1024,YADADRI BHUVANAGIRI,17.496111,78.837583,60.0,60,2.0,Government,,,BPCL,CCS,South
+687,CHG_1023,YADADRI BHUVANAGIRI,17.496111,78.837583,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+688,CHG_1022,YADADRI BHUVANAGIRI,17.245997,78.921388,30.0,30,1.0,Private,,,Joule,CCS-II,South
+689,CHG_1021,YADADRI BHUVANAGIRI,17.245514,78.921059,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+690,CHG_1020,YADADRI BHUVANAGIRI,17.245514,78.921059,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+691,CHG_1019,YADADRI BHUVANAGIRI,17.245691,78.921473,10.0,3.3,1.0,Private,,,Joule,Bharat AC-001,South
+692,CHG_0859,RANGAREDDY,17.308716,78.475267,60.0,60,2.0,Government,,,BPCL,CCS,South
+693,CHG_0841,RANGAREDDY,17.351018,78.360348,60.0,60,2.0,Government,,,BPCL,CCS,South
+694,CHG_0604,NALGONDA,16.629086,79.291162,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+695,CHG_0813,MEDCHAL MALKAJGIRI,17.397936,78.53363,60.0,60,2.0,Government,,,BPCL,CCS,South
+696,CHG_0330,HYDERABAD,17.402909,78.460068,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+697,CHG_0329,HYDERABAD,17.402909,78.460068,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+698,CHG_0206,HYDERABAD,17.455042,78.507655,60.0,60,1.0,Government,,,REIL,CCS-II,South
+699,CHG_0201,HYDERABAD,17.45256,78.510818,7.4,7.4,1.0,Government,,,REIL,Type-II AC,South
+700,CHG_0720,HYDERABAD,17.364882,78.446098,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+701,CHG_0192,HYDERABAD,17.402246,78.509387,10.0,3.3,1.0,Government,,,NTPC,Bharat AC-001,South
+702,CHG_0162,HYDERABAD,17.426741,78.453122,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+703,CHG_0133,HYDERABAD,17.4244,78.4917,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+704,CHG_0132,HYDERABAD,17.4244,78.4917,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+705,CHG_0193,HYDERABAD,17.402246,78.509387,10.0,3.3,1.0,Government,,,NTPC,Bharat AC-001,South
+706,CHG_0490,MEDCHAL MALKAJGIRI,17.391003,78.604844,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+707,CHG_0480,MEDCHAL MALKAJGIRI,17.411986,78.608962,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+708,CHG_0812,MEDCHAL MALKAJGIRI,17.397936,78.53363,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+709,CHG_0807,MEDCHAL MALKAJGIRI,17.39414,78.55948,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+710,CHG_0748,MEDCHAL MALKAJGIRI,17.470264,78.384618,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+711,CHG_0676,MEDCHAL MALKAJGIRI,17.390742,78.558545,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+712,CHG_0675,MEDCHAL MALKAJGIRI,17.390742,78.558545,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+713,CHG_0454,MEDAK,17.983626,78.028569,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+714,CHG_0202,MEDCHAL MALKAJGIRI,17.477205,78.564259,25.0,25,1.0,Government,,,REIL,CCS-II,South
+715,CHG_0114,MEDCHAL MALKAJGIRI,17.450662,78.604403,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+716,CHG_0121,MEDCHAL MALKAJGIRI,17.391658,78.602426,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+717,CHG_0163,MEDCHAL MALKAJGIRI,17.481345,78.55553,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+718,CHG_0164,MEDCHAL MALKAJGIRI,17.481345,78.555532,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+719,CHG_0165,MEDCHAL MALKAJGIRI,17.48131,78.555473,30.0,30,1.0,Private,,,Joule,CCS-II,South
+720,CHG_0695,RANGAREDDY,17.32,78.61,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+721,CHG_0689,RANGAREDDY,17.266406,78.539383,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+722,CHG_0688,RANGAREDDY,17.266406,78.539383,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+723,CHG_0671,RANGAREDDY,17.266334,78.539374,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+724,CHG_0820,RANGAREDDY,17.381,78.367,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+725,CHG_0819,RANGAREDDY,17.378547,78.370873,60.0,60,2.0,Government,,,BPCL,CCS,South
+726,CHG_0801,RANGAREDDY,17.381,78.367,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+727,CHG_0041,RANGAREDDY,17.424272,78.379436,25.0,25,1.0,Private,,,Exicom,CCS-II,South
+728,CHG_0029,RANGAREDDY,17.456842,78.364575,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+729,CHG_0611,NALGONDA,17.012805,79.245548,25.0,25,1.0,Private,,,Tata Power,CCS-II,South
+730,CHG_0610,NALGONDA,17.041645,79.265196,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+731,CHG_0608,NALGONDA,16.991031,79.44047,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+732,CHG_0607,NALGONDA,17.231681,79.09995,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+733,CHG_0606,NALGONDA,17.231566,79.099293,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+734,CHG_0381,RANGAREDDY,17.44254,78.36302,15.0,15,1.0,Private,,,Tata Power,Bharat DC-001,South
+735,CHG_0338,RANGAREDDY,17.457774,78.36396,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+736,CHG_0115,RANGAREDDY,17.424272,78.379436,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+737,CHG_0969,SURYAPET,17.112727,79.685394,60.0,60,2.0,Government,,,BPCL,CCS,South
+738,CHG_0968,SURYAPET,17.112727,79.685394,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+739,CHG_1028,YADADRI BHUVANAGIRI,17.292542,78.75148,7.0,7,1.0,Government,,,BPCL,Type II,South
+740,CHG_0993,WANAPARTHY,16.461665,78.071901,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+741,CHG_0992,WANAPARTHY,16.22388,77.968549,30.0,30,1.0,Government,,,HPCL,CCS-II,South
+742,CHG_0851,RANGAREDDY,17.332997,78.6112,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+743,CHG_0609,SURYAPET,16.994091,79.975967,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+744,CHG_0891,SANGAREDDY,17.626188,78.102382,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+745,CHG_0890,SANGAREDDY,17.599339,78.051208,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+746,CHG_0889,SANGAREDDY,17.627949,77.905782,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+747,CHG_0888,SANGAREDDY,17.597642,78.056198,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+748,CHG_0335,HYDERABAD,17.45848,78.5,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+749,CHG_0207,HYDERABAD,17.455042,78.507655,60.0,60,1.0,Government,,,REIL,CCS-II,South
+750,CHG_0067,HYDERABAD,17.423539,78.458942,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+751,CHG_0066,HYDERABAD,17.423539,78.458942,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+752,CHG_0024,HYDERABAD,17.443546,78.479827,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+753,CHG_0021,HYDERABAD,17.42979,78.412445,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+754,CHG_0148,HYDERABAD,17.455141,78.485558,30.0,30,1.0,Government,,,IOCL,CCS-II,South
+755,CHG_0142,HYDERABAD,17.390953,78.516123,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+756,CHG_0814,MEDCHAL MALKAJGIRI,17.397936,78.53363,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+757,CHG_0559,MEDCHAL MALKAJGIRI,17.471389,78.601486,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+758,CHG_0430,MAHBUBNAGAR,16.76124,77.93293,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+759,CHG_0473,MEDCHAL MALKAJGIRI,17.45034,78.60962,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+760,CHG_0472,MEDCHAL MALKAJGIRI,17.45034,78.60962,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+761,CHG_0380,MEDCHAL MALKAJGIRI,17.48081,78.57715,15.0,15,1.0,Private,,,Tata Power,Bharat DC-001,South
+762,CHG_0672,RANGAREDDY,17.266334,78.539374,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+763,CHG_0821,RANGAREDDY,17.381,78.367,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+764,CHG_0660,RANGAREDDY,17.465763,78.367065,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+765,CHG_0434,NARAYANPET,16.481967,77.674081,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+766,CHG_0433,NARAYANPET,16.429903,77.602638,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+767,CHG_0431,NARAYANPET,17.017637,77.681468,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+768,CHG_0613,NALGONDA,17.069441,79.263884,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+769,CHG_0340,RANGAREDDY,17.457774,78.36396,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+770,CHG_0339,RANGAREDDY,17.457774,78.36396,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+771,CHG_0219,RANGAREDDY,17.41795,78.38842,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+772,CHG_0830,RANGAREDDY,17.320702,78.622373,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+773,CHG_1029,YADADRI BHUVANAGIRI,17.292542,78.75148,60.0,60,2.0,Government,,,BPCL,CCS,South
+774,CHG_0612,YADADRI BHUVANAGIRI,17.522471,78.924306,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+775,CHG_0897,SANGAREDDY,17.625809,77.915996,60.0,60,2.0,Government,,,BPCL,CCS,South
+776,CHG_0896,SANGAREDDY,18.027766,77.779191,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+777,CHG_0895,SANGAREDDY,17.4637,78.2512,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+778,CHG_0894,SANGAREDDY,17.520398,78.319751,60.0,60,2.0,Government,,,BPCL,CCS,South
+779,CHG_0893,SANGAREDDY,17.520398,78.319751,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+780,CHG_0892,SANGAREDDY,18.036227,77.778521,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+781,CHG_0778,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+782,CHG_0143,HYDERABAD,17.390953,78.516123,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+783,CHG_0662,MEDCHAL MALKAJGIRI,17.40808,78.553847,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+784,CHG_0661,MEDCHAL MALKAJGIRI,17.40808,78.553847,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+785,CHG_0560,MEDCHAL MALKAJGIRI,17.471389,78.601486,60.0,60,2.0,Government,,,BPCL,CCS,South
+786,CHG_0077,MEDCHAL MALKAJGIRI,17.48359,78.5966,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+787,CHG_0076,MEDCHAL MALKAJGIRI,17.48359,78.5966,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+788,CHG_0455,MEDAK,17.910499,78.360891,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+789,CHG_0436,MAHBUBNAGAR,16.86725,78.153739,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+790,CHG_0435,MAHBUBNAGAR,16.609311,77.834038,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+791,CHG_0432,MAHBUBNAGAR,16.950955,78.166694,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+792,CHG_0679,RANGAREDDY,17.298016,78.477031,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+793,CHG_0817,RANGAREDDY,17.417946,78.388424,60.0,60,2.0,Government,,,BPCL,CCS,South
+794,CHG_0791,RANGAREDDY,17.41795,78.38842,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+795,CHG_0620,NALGONDA,17.207486,79.185863,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+796,CHG_0619,NALGONDA,16.962922,78.727799,60.0,60,2.0,Government,,,BPCL,CCS,South
+797,CHG_0618,NALGONDA,16.962922,78.727799,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+798,CHG_0617,NALGONDA,17.023996,79.338307,60.0,60,2.0,Government,,,BPCL,CCS,South
+799,CHG_0616,NALGONDA,17.023996,79.338307,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+800,CHG_0615,NALGONDA,17.211248,79.16733,60.0,60,2.0,Government,,,BPCL,CCS,South
+801,CHG_0614,NALGONDA,17.211248,79.16733,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+802,CHG_0899,SANGAREDDY,17.560436,78.174805,60.0,60,2.0,Government,,,BPCL,CCS,South
+803,CHG_0898,SANGAREDDY,17.716952,77.547612,30.0,30,1.0,Government,,,BPCL,CCS,South
+804,CHG_0779,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+805,CHG_0167,HYDERABAD,17.426774,78.453065,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+806,CHG_0542,MEDCHAL MALKAJGIRI,17.422639,78.640713,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+807,CHG_0541,MEDCHAL MALKAJGIRI,17.464409,78.620285,60.0,60,2.0,Government,,,BPCL,CCS,South
+808,CHG_0506,MEDCHAL MALKAJGIRI,17.462976,78.623868,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+809,CHG_0572,NAGARKURNOOL,16.582274,78.564488,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+810,CHG_0089,MEDCHAL MALKAJGIRI,17.436066,78.519164,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+811,CHG_0457,MEDAK,17.729047,78.473951,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+812,CHG_0456,MEDAK,18.09121,78.25287,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+813,CHG_0145,MEDCHAL MALKAJGIRI,17.379258,78.516163,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+814,CHG_0360,RANGAREDDY,17.346516,78.521809,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+815,CHG_0172,RANGAREDDY,17.240334,78.429286,120.0,60,1.0,Private,,,Joule,CCS-II,South
+816,CHG_0171,RANGAREDDY,17.240334,78.429286,120.0,60,1.0,Private,,,Joule,CCS-II,South
+817,CHG_0173,RANGAREDDY,17.240334,78.429286,120.0,60,1.0,Private,,,Joule,CCS-II,South
+818,CHG_0174,RANGAREDDY,17.240334,78.429286,120.0,60,1.0,Private,,,Joule,CCS-II,South
+819,CHG_0189,RANGAREDDY,17.30291,78.420742,15.0,15,1.0,Government,,,NTPC,Bharat DC-001,South
+820,CHG_0317,RANGAREDDY,17.359176,78.426285,30.0,30,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+821,CHG_0680,RANGAREDDY,17.298016,78.477031,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+822,CHG_0746,RANGAREDDY,17.260179,78.383238,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+823,CHG_0003,RANGAREDDY,17.343403,78.545447,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+824,CHG_0000,RANGAREDDY,17.259968,78.385917,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+825,CHG_0108,RANGAREDDY,17.3029,78.42074,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+826,CHG_0112,RANGAREDDY,17.327515,78.52635,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+827,CHG_0123,RANGAREDDY,17.064889,78.473327,7.0,7,1.0,Government,,,HPCL,Type-II AC,South
+828,CHG_0621,NALGONDA,16.905254,79.542557,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+829,CHG_0900,SANGAREDDY,17.534749,78.247699,60.0,60,2.0,Government,,,BPCL,CCS,South
+830,CHG_0901,SANGAREDDY,17.6047,78.03099,30.0,30,1.0,Government,,,BPCL,CCS,South
+831,CHG_0902,SANGAREDDY,17.583536,78.105858,60.0,60,2.0,Government,,,BPCL,CCS,South
+832,CHG_0225,HYDERABAD,17.471154,78.474047,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+833,CHG_0226,HYDERABAD,17.471154,78.474047,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+834,CHG_0227,HYDERABAD,17.471154,78.474047,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+835,CHG_0228,HYDERABAD,17.471154,78.474047,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+836,CHG_0278,HYDERABAD,17.429289,78.450195,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+837,CHG_0182,HYDERABAD,17.409916,78.506212,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+838,CHG_0183,HYDERABAD,17.409916,78.506212,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+839,CHG_0184,HYDERABAD,17.409916,78.506212,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+840,CHG_0186,HYDERABAD,17.425381,78.4321,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+841,CHG_0179,HYDERABAD,17.409785,78.506565,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+842,CHG_0279,HYDERABAD,17.429289,78.450195,60.0,60,1.0,Private,,,Reliance BP,CCS-II,South
+843,CHG_0377,HYDERABAD,17.425307,78.435094,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+844,CHG_0378,HYDERABAD,17.425307,78.435094,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+845,CHG_0379,HYDERABAD,17.425307,78.435094,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+846,CHG_0382,HYDERABAD,17.4226,78.46136,30.0,30,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+847,CHG_0376,HYDERABAD,17.425307,78.435094,10.0,3.3,1.0,Private,,,Tata Power,Bharat AC-001,South
+848,CHG_0280,HYDERABAD,17.429289,78.450195,7.4,7.4,1.0,Private,,,Reliance BP,Type-II AC,South
+849,CHG_0375,HYDERABAD,17.425307,78.435094,60.0,60,1.0,Private,,,Tata Power,CCS-II,South
+850,CHG_0331,HYDERABAD,17.422608,78.461364,22.0,22,1.0,Private,,,Tata Power,Type-II AC,South
+851,CHG_0364,HYDERABAD,17.423562,78.462234,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+852,CHG_0363,HYDERABAD,17.423562,78.462234,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+853,CHG_0178,HYDERABAD,17.409785,78.506565,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+854,CHG_0049,HYDERABAD,17.436905,78.457036,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+855,CHG_0050,HYDERABAD,17.424274,78.430237,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+856,CHG_0051,HYDERABAD,17.424274,78.430237,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+857,CHG_0052,HYDERABAD,17.43522,78.427565,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+858,CHG_0053,HYDERABAD,17.43522,78.427565,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+859,CHG_0048,HYDERABAD,17.436905,78.457036,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+860,CHG_0082,HYDERABAD,17.423924,78.430328,30.0,30,1.0,Private,,,Fortum,CCS-II,South
+861,CHG_0093,HYDERABAD,17.425592,78.414458,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+862,CHG_0011,HYDERABAD,17.404026,78.465186,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+863,CHG_0015,HYDERABAD,17.419149,78.499954,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+864,CHG_0016,HYDERABAD,17.427019,78.443419,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+865,CHG_0018,HYDERABAD,17.428495,78.455579,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+866,CHG_0017,HYDERABAD,17.428495,78.455579,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+867,CHG_0177,HYDERABAD,17.409785,78.506565,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+868,CHG_0151,HYDERABAD,17.3919,78.4232,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+869,CHG_0156,HYDERABAD,17.40439,78.465034,30.0,30,1.0,Private,,,Joule,CCS-II,South
+870,CHG_0157,HYDERABAD,17.40439,78.465034,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+871,CHG_0158,HYDERABAD,17.40439,78.465034,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+872,CHG_0161,HYDERABAD,17.435861,78.4542,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+873,CHG_0166,HYDERABAD,17.43586,78.4542,30.0,30,1.0,Private,,,Joule,CCS-II,South
+874,CHG_0168,HYDERABAD,17.426778,78.453053,60.0,60,1.0,Private,,,Joule,CCS-II,South
+875,CHG_0160,HYDERABAD,17.438842,78.457549,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+876,CHG_0181,HYDERABAD,17.409916,78.506212,3.3,3.3,1.0,Private,,,KAZAM,Bharat AC-001,South
+877,CHG_0482,MEDCHAL MALKAJGIRI,17.50837,78.5413,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+878,CHG_0483,MEDCHAL MALKAJGIRI,17.50837,78.5413,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+879,CHG_0401,MEDCHAL MALKAJGIRI,17.382415,78.518343,60.0,60,2.0,Government,,,BPCL,CCS,South
+880,CHG_0217,MEDCHAL MALKAJGIRI,17.50825,78.50251,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+881,CHG_0403,MEDCHAL MALKAJGIRI,17.46936,78.487883,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+882,CHG_0320,MEDCHAL MALKAJGIRI,17.499345,78.541866,30.0,30,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+883,CHG_0537,MEDCHAL MALKAJGIRI,17.477072,78.420849,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+884,CHG_0547,MEDCHAL MALKAJGIRI,17.493089,78.435446,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+885,CHG_0398,HYDERABAD,17.437786,78.471565,60.0,60,2.0,Government,,,BPCL,CCS,South
+886,CHG_0516,MEDCHAL MALKAJGIRI,17.506618,78.516273,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+887,CHG_0517,MEDCHAL MALKAJGIRI,17.508248,78.502512,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+888,CHG_0519,MEDCHAL MALKAJGIRI,17.507837,78.478825,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+889,CHG_0520,MEDCHAL MALKAJGIRI,17.507837,78.478825,60.0,60,2.0,Government,,,BPCL,CCS,South
+890,CHG_0521,MEDCHAL MALKAJGIRI,17.507837,78.478825,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+891,CHG_0781,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+892,CHG_0402,HYDERABAD,17.426301,78.414878,3.0,3,1.0,Government,,,BPCL,Bharat AC,South
+893,CHG_0493,HYDERABAD,17.45568,78.48328,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+894,CHG_0494,HYDERABAD,17.45568,78.48328,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+895,CHG_0503,HYDERABAD,17.46845,78.48145,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+896,CHG_0504,HYDERABAD,17.46845,78.48145,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+897,CHG_0508,HYDERABAD,17.46943,78.49556,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+898,CHG_0532,HYDERABAD,17.385044,78.486671,60.0,60,2.0,Government,,,BPCL,CCS,South
+899,CHG_0780,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+900,CHG_0507,HYDERABAD,17.46943,78.49556,60.0,60,1.0,Government,,,IOCL,CCS-II,South
+901,CHG_0058,MEDCHAL MALKAJGIRI,17.44484,78.4671,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+902,CHG_0059,MEDCHAL MALKAJGIRI,17.44484,78.4671,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+903,CHG_0060,MEDCHAL MALKAJGIRI,17.44484,78.4671,20.0,20,1.0,Private,,,Fortum,Bharat DC-001,South
+904,CHG_0055,MEDCHAL MALKAJGIRI,17.444838,78.466949,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+905,CHG_0090,MEDCHAL MALKAJGIRI,17.436066,78.519164,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+906,CHG_0054,MEDCHAL MALKAJGIRI,17.444838,78.466949,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+907,CHG_0031,MEDCHAL MALKAJGIRI,17.486819,78.543127,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+908,CHG_0034,MEDCHAL MALKAJGIRI,17.500244,78.474529,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+909,CHG_0037,MEDCHAL MALKAJGIRI,17.513726,78.48993,3.3,3.3,1.0,Private,,,Ather,LEV DC Charge Point (IS-17017-2-7),South
+910,CHG_0747,RANGAREDDY,17.259976,78.383591,7.5,7.5,1.0,Private,,,Joule,Type-II AC,South
+911,CHG_0840,RANGAREDDY,17.223461,78.475433,60.0,60,2.0,Government,,,BPCL,CCS,South
+912,CHG_0094,HYDERABAD,17.425592,78.414458,50.0,50,2.0,Private,,,Fortum,Combo (CCS-II+CHAdeMO),South
+913,CHG_0782,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+914,CHG_0437,MAHBUBNAGAR,16.897,78.17399,15.0,15,1.0,Government,,,REIL,Bharat DC-001,South
+915,CHG_0665,RANGAREDDY,17.186461,78.473879,15.0,15,1.0,Private,,,Fortum,Bharat DC-001,South
+916,CHG_0573,NAGARKURNOOL,16.619089,78.210779,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+917,CHG_0930,SIDDIPET,17.862936,78.744131,25.0,25,2.0,Private,,,Tata Power,Combo (CCS-II+CHAdeMO),South
+918,CHG_0345,RANGAREDDY,17.4316,78.36326,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+919,CHG_0343,RANGAREDDY,17.4316,78.36326,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+920,CHG_0342,RANGAREDDY,17.4316,78.36326,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+921,CHG_0344,RANGAREDDY,17.4316,78.36326,7.4,7.4,1.0,Private,,,Tata Power,Type-II AC,South
+922,CHG_0757,RANGAREDDY,17.187141,78.331826,7.4,7.4,1.0,Private,,,Joule,Type-II AC,South
+923,CHG_0994,WANAPARTHY,16.387947,77.939865,3.3,3.3,1.0,Government,,,IOCL,LEV AC Charge point,South
+924,CHG_0903,SANGAREDDY,17.666258,78.37297,7.0,7,1.0,Government,,,BPCL,Type II,South
+925,CHG_0776,RANGAREDDY,17.1863,78.4741,15.0,15,1.0,Government,,,PGCIL,Bharat DC-001,South
+926,CHG_0783,HYDERABAD,17.409284,78.495094,10.0,3.3,1.0,Government,,,REIL,Bharat AC-001,South
+927,CHG_0438,MAHBUBNAGAR,16.747347,77.992772,60.0,60,2.0,Government,,,BPCL,CCS,South
+928,CHG_0758,RANGAREDDY,17.187142,78.329639,30.0,30,1.0,Private,,,Joule,CCS-II,South
+929,CHG_0719,RANGAREDDY,17.346894,78.63737,7.4,7.4,1.0,Government,,,IOCL,Type-II AC,South
+930,CHG_0702,MEDCHAL MALKAJGIRI,17.419976,78.578245,3.3,3.3,1.0,Government,,,HPCL,Bharat AC-001,South
+931,CHG_0458,SANGAREDDY,17.820708,78.07434,30.0,30,1.0,Private,,,Tata Power,CCS-II,South
+932,CHG_0543,MEDCHAL MALKAJGIRI,17.422639,78.640713,15.0,7,1.0,Government,,,BPCL,LEV DC,South
+933,CHG_0439,MEDAK,17.996111,78.191944,30.0,30,1.0,Government,,,BPCL,CCS,South

@@ -1,0 +1,597 @@
+EV Charger Live Availability
+
+Research findings for the Hyundai Challenge prototype (Hyderabad)
+
+Main question: how do we know whether a connector is free, and when it will be free?
+
+The Chargezone and EVselect only tells, what type of connectors they have and if they are working, it doest track if connector is free at any particular time or not.
+
+Okay so we can get the detail of CPO and charging points data [dataful Hyderabad Dataset] and also we can get data of  total RTO registered EVs in Hyderabad.
+
+Consumer Apps: Apps like Electromaps and Zapmap use filters to show live connector status directly to drivers. 
+
+Electromap is an application that provides the details of free connectors in real time. Limitation: Its not for India as far as I have seen So till now no one is tracking live connector state and type in India, but well understand how electromap achieve this goal.
+
+How Electromaps gets its data from charging stations   
+
+As you are no doubt already aware, Electromaps is a super collaborative application. This means that EV drivers share information about charging stations (charging speed, type of socket, photos of the 
+
+location, reviews, etc.). This mutual help between EV users is part of the DNA of Electromaps. Beyond the community, data also come from our partners.
+
+Our data are drawn from three different sources:
+
+• The Electromaps Community: Members help create data richness and reliability through their contributions. Our moderators check their shared information for quality and reliability before posting.
+
+• Our partner charging networks: whenever a new network, for instance Total Energies, connects to our service, it sends us all the available data on their corresponding charging stations.
+
+• Major roaming platforms, GIREVE and Hubject, which together cover a large portion of Europe. They do also provide real-time data access to us.
+
+The data from the charging stations are collected by each charging operator and sent to the Electromaps application via the internet. The data are then displayed on the app for our users.
+
+Our app even has a "Show only real time" filter.
+
+How does Electromaps deliver real-time information?
+
+What information is updated in real time?
+
+This is the data on the availability and status of the charging stations and connectors. In other words, the statuses "Available", "Occupied", "In service", and "Out of service" represent the data displayed in real time on Electromaps.
+
+The charging stations of the charging operators are in constant communication from their supervision software and our application.
+
+Real-time information comes from direct management via our platform (i.e., Electromaps' chargers), or from our partner interoperability platforms such as Girève and Hubject.
+
+What does real time mean?
+
+In simple terms, real-time data are updated every minute. This would mean a delay of about 1-2 minutes before the status change is displayed on Electromaps. For example, there is a short delay between the moment you unplug your EV and the moment the connector returns to its available status on Electromaps.
+
+The limitations of real time
+
+Data may not be downloaded in real time in three cases:
+
+• First: if a user posts a charge point for information purposes, this new point is not yet in the Electromaps network and, therefore, this is not under our control and cannot check it.
+
+• Second: if a point breaks down, the information will not appear (the point status will be red, in “fault mode”).
+
+• Third: if our charge point partners send the data with some delay.
+
+These cases will impact the reliability of the information displayed.
+
+Partnerships with CPOs
+
+We are proudly partnering with major and renowned CPOs (Charge Point Operators) and networks, namely Ionity, TotalEnergies, Shell, Allego, Greenflux, EnBW, Power Dot, Iberdrola, EV Box, FEDA, and EDF throughout Europe. We also have a partnership in Spain with EDP and the municipal services of Barcelona.
+
+All the other charge point operators with whom we have agreements work through Gireve or Hubject. These two platforms are intermediaries between CPOs and eMSPs (eMobility Service Providers) like us.
+
+1. Short answer
+
+Yes, live connector status exists, and it is standardised. There is no separate “sensor” we need to install. The charger itself (the EVSE) detects whether a vehicle is plugged in and charging, and reports each connector’s status to its operator’s backend software over a protocol called OCPP (Open Charge Point Protocol). The status is pushed in real time every time it changes.
+
+The real problem is access, not technology. That status data sits with the Charge Point Operator (CPO), such as Tata Power, ChargeZone or Statiq, not with us. So our job is to get legitimate access to it. There are four ways to do that (Section 3), and for a Hyundai-backed project the strongest one is a direct data partnership with the CPOs that Hyundai already works with.
+
+Indian policy helps. The Ministry of Power’s 2024 guidelines push public chargers towards open protocols (OCPP/OCPI) and require operators to show real-time availability and feed a national database. This is the main reason a data-sharing conversation with CPOs is realistic, though how strictly it is enforced in practice should be confirmed.
+
+The “free after how long” feature is an estimate, not a reading. Chargers report power and energy delivered, and often the car’s state of charge, but never when the driver intends to leave. We can predict it well, and Hyundai’s connected-car data could make that prediction much better (Section 5).
+
+Booking is the hardest part. It only works properly on chargers that support reservation commands, or on chargers Hyundai/its partners control (Section 6).
+
+2. How connector status actually works
+
+2.1 The data path
+
+From the plug to your app, the data travels through these layers:
+
+Step
+
+What happens
+
+Who owns it
+
+1. Connector
+
+The charger’s controller detects plug-in, handshake, charging, and faults using signals defined in the charging standards (e.g. the control-pilot signal).
+
+Charger manufacturer
+
+2. OCPP message
+
+The charger sends a StatusNotification (per connector) to the operator’s backend whenever status changes, plus MeterValues (power, energy, sometimes battery %) during a session.
+
+Charger → CPO
+
+3. CPO backend (CSMS)
+
+Operator’s software stores status, runs billing and the operator’s own app.
+
+CPO (Tata Power, ChargeZone, Statiq, etc.)
+
+4. Sharing layer
+
+Status is exposed to other apps through OCPI (roaming/data standard) or the CPO’s own API, or through aggregators like Google or TomTom.
+
+CPO or aggregator
+
+5. Our app
+
+We read status, show free connectors, and add our own logic (ETA, booking).
+
+Us
+
+OCPP is the standard used between chargers and operators. It defines per-connector statuses, which one source describes as reported in real time whenever they change, so the backend has an up-to-date view (Flipturn, see resources). Each connector has its own status, so one station can show Port 1 charging while Port 2 is available.
+
+2.2 OCPP statuses and how we should show them
+
+OCPP status
+
+Meaning
+
+What the user sees in our app
+
+Available
+
+Connector is free.
+
+Green: Free now
+
+Preparing
+
+Vehicle plugged in or driver authorising; charging not started.
+
+Amber: Occupied (about to start)
+
+Charging
+
+Session in progress.
+
+Red: Charging, free in ~X min (estimate)
+
+SuspendedEV / SuspendedEVSE
+
+Charging paused by the car (e.g. battery full) or by the charger.
+
+Amber: Plugged in but idle. Nudge: “please move your car”
+
+Finishing
+
+Session ended, cable still connected.
+
+Amber: Free soon
+
+Reserved
+
+Held for a booking.
+
+Blue: Reserved until HH:MM
+
+Unavailable / Faulted
+
+Out of service or error.
+
+Grey: Out of order. Exclude from booking
+
+Caveat: vendors implement these statuses inconsistently. Flipturn notes, for example, that some chargers report “Preparing” instead of “Finishing” after a session. Our app needs a normalisation layer that maps each vendor’s quirks to the simple states above.
+
+3. Ways to get live connector data
+
+Option
+
+How it works
+
+Real-time?
+
+Pros / cons
+
+A. Direct CPO partnership (recommended)
+
+Ask each operator for API access (OCPI or their own REST/webhook feed) to location, connector status and tariffs.
+
+Yes (seconds)
+
++ Most accurate, supports booking and payments.
+
+- Needs agreements; each CPO integrates differently. Hyundai can open these doors.
+
+B. Aggregator APIs
+
+Use Google Places (EV charge options), TomTom EV availability, or resellers such as OpenWeb Ninja.
+
+Depends on coverage
+
++ One integration, fast to prototype.
+
+- Coverage in Hyderabad must be tested; no booking; per-call cost; terms of use.
+
+C. Open Charge Map
+
+Free community database of stations and connectors, with an API.
+
+Mostly no
+
++ Free, good for station locations and connector types.
+
+- Status is last-known or crowd-sourced, not reliably live.
+
+D. Own charger / own backend
+
+Run our own OCPP backend and have chargers (e.g. Hyundai dealerships’ or pilot chargers) connect to it.
+
+Yes
+
++ Full control, enables real booking.
+
+- Only covers chargers we can reconfigure. Good for pilot, not city-wide.
+
+E. Crowd-sourced / inferred
+
+Users report status; infer occupancy from app check-ins, navigation arrivals, or historical patterns.
+
+Approximate
+
++ Works anywhere, no permissions.
+
+- Low trust; useful only as a fallback layer.
+
+3.1 What we found on each route
+
+Google Places API: the Places API exposes EV charging info grouped by connector type and power, with fields for the number of connectors, how many are currently available, how many are out of service, and when availability was last updated. This is exactly the shape of data we need. However, whether Google actually populates live availability for Hyderabad chargers is something we must test, because it depends on operator feeds.
+
+TomTom: offers an EV charging availability endpoint that returns real-time availability by connector type. Its documentation notes it works in two steps (search, then an availability lookup), which affects API cost and speed.
+
+Open Charge Map: free and community-driven. Tools built on it warn that the availability flag reflects the last known state and may not be real-time. Use it for the station list and connector types, not for “free right now”.
+
+Scraping other apps: avoid. It breaks easily, usually violates terms of service, and would look bad in front of Hyundai judges.
+
+3.2 Policy tailwind in India
+
+The Ministry of Power’s Sept 2024 guidelines encourage open protocols such as OCPP so that real-time monitoring, booking and payment options are possible.
+
+Industry analyses of the guidelines say public stations must tie up with online network providers and show real-time charger availability, and must support OCPP/OCPI and UPI payments. Reports also say data-sharing protocols will feed a national database of public chargers.
+
+Action: read the official PDF (linked below) and quote the exact clause numbers in the pitch. Secondary sources paraphrase and sometimes overstate.
+
+4. Recommended plan for the prototype
+
+A judge will ask “is this real or a mock-up?”. The safest approach is to build the real architecture and be honest about which parts are live.
+
+Phase
+
+What we do
+
+Outcome
+
+Phase 1: Simulated (hackathon)
+
+Run an open-source OCPP backend and several OCPP charger simulators acting as Hyderabad stations. Our app reads status from it. Seed station locations from Open Charge Map and/or Google Places.
+
+Fully working demo of free/busy, ETA, and booking with realistic status events.
+
+Phase 2: Partner pilot
+
+Get API or OCPI access from one or two CPOs already tied to Hyundai (ChargeZone, Tata Power, Statiq), starting with Hyundai-dealership chargers in Hyderabad.
+
+Real live data for a handful of stations; booking on chargers that support reservation.
+
+Phase 3: Scale
+
+Add aggregator data (Google/TomTom) for coverage, and an OCPI roaming link for more operators. Keep our status-normalisation layer.
+
+City-wide coverage with a clear trust label per station (live / estimated).
+
+4.1 Suggested technical stack for Phase 1
+
+Backend (OCPP server): an open-source central system such as SteVe or CitrineOS, so we are not writing the protocol from scratch.
+
+Charger simulators: scriptable OCPP simulators (one found on GitHub supports OCPP 1.6 and can send the standard Available → Preparing → Charging → Available session sequence) so we can create realistic scenarios on demand.
+
+App backend: a service that subscribes to status changes, normalises them, stores connector state, and pushes updates to the app by WebSocket.
+
+Front end: map view with colour-coded markers, a per-station connector list and a booking sheet.
+
+Tip: label demo data clearly as simulated in the app and the slides. Being upfront about it is more credible than pretending.
+
+5. “Free after how long?”: estimating availability
+
+No charger knows when a driver will unplug. We can still give a useful estimate by combining signals:
+
+Session data from the charger. MeterValues report power (kW) and energy delivered. Some chargers also report the vehicle’s battery percentage (SoC).
+
+Charging-curve model. Fast charging slows sharply after about 80% SoC. Estimate remaining time with a taper curve per vehicle and charger power, not a straight line.
+
+Driver behaviour data. From past sessions at the same station: typical stop point (most drivers stop at 80%), typical idle time before unplugging, by time of day.
+
+Show a range, not a promise. For example “free in 25–40 min”, with a confidence indicator. If the car is in SuspendedEV with no power draw, show “finished, car still plugged in”.
+
+Hyundai-specific advantage
+
+If a driver of a Hyundai EV (Creta Electric, Ioniq 5, Kona) opts in through the myHyundai/connected-car service, the car can share its current SoC and the driver’s target charge level. That removes most of the guesswork, and it is something no third-party app can offer. Whether Hyundai can expose this data for the challenge is a question for the organisers and must be asked directly; we should present it as a proposed integration, not an existing one.
+
+6. Booking a connector and the no-show fee
+
+6.1 Can we really reserve a physical connector?
+
+Yes, but only in some cases. OCPP includes a reservation command (ReserveNow) and a “Reserved” status, and OCPI has an equivalent reserve command. The charger and the CPO’s backend must both support it. Many installed chargers either do not or have it disabled. If it is not supported, our booking is only a “soft hold”: another driver can still physically plug in.
+
+Charger type
+
+How booking works
+
+Reliability
+
+Supports reservation (OCPP/OCPI)
+
+Our system sends reserve command; connector shows Reserved and cannot be started by others.
+
+High
+
+Operator-controlled, no reserve command
+
+Operator blocks the connector through its own system or staff.
+
+Medium (needs agreement)
+
+Not controllable
+
+Soft hold in our app only. We monitor status and re-assign if it is taken.
+
+Low. Label clearly and use a smaller fee.
+
+6.2 Suggested booking and fee design
+
+Window: allow booking from now up to 12 hours ahead, in slots (for example 30 or 60 minutes), as you planned.
+
+Grace period: hold the connector for 10–15 minutes after the slot start. After that, release it and apply the no-show fee.
+
+Payment mechanism: take a refundable deposit or place a hold (card pre-authorisation or a UPI mandate), and convert it to a fee only on a no-show. UPI is the dominant payment method in India and the guidelines expect UPI support at chargers. Check with the payment provider (for example Razorpay or similar) which hold/mandate options apply to your use case before promising this in the demo.
+
+Fairness rules: free cancellation up to a cut-off, a fee that rises as the slot gets closer, and automatic full refund if the charger is faulted or taken by someone else.
+
+Make it appealing: offer the booking fee as credit toward the charging session when the user shows up. It then feels like a prepayment, not a penalty.
+
+Anti-hogging: also charge idle fees when a car stays plugged in after finishing, since this is what actually blocks connectors.
+
+Legal note: deducting money for no-shows creates consumer-protection and refund obligations. Have the terms checked before a real launch; this is not legal advice.
+
+7. Ideas that fit the Hyundai Group specifically
+
+The challenge asks for a unique idea that serves Hyundai Group’s needs. These build on your core concept and are ordered by how realistic they are:
+
+Hyundai network first, everyone else too. Hyundai India has a fast-charging network with partners including ChargeZone, Statiq and Shell, accessed through the myHyundai app, plus Tata Power chargers planned at its dealerships. Our app can sit on top of this: show all chargers, but highlight Hyundai-network ones with live status and bookable slots.
+
+Car-aware recommendations. Because we know the car model, we can show only compatible connectors (CCS2 vs. AC), the charging speed this exact car can accept, and a charging time based on its real battery size.
+
+Trip-integrated booking. When a driver plans a route in the car or app, auto-suggest and book a charger at the arrival time, using the 12-hour window.
+
+Dealership value. Dealership chargers get higher utilisation through bookings, and Hyundai gets service-visit and test-drive touchpoints from people who come to charge.
+
+Data for Hyundai. Anonymous demand heat-maps (where and when people charge, where they get turned away) help Hyundai and CPOs decide where to put the next chargers.
+
+Group-wide reach. The same app can serve Kia and Genesis owners, and be extended to other Hyundai Group businesses (for instance, energy or mobility services) as a later roadmap item.
+
+8. Risks and open questions
+
+Risk
+
+Why it matters
+
+Mitigation
+
+CPOs refuse or delay data access
+
+Core feature depends on live status.
+
+Start with Hyundai-linked partners; use simulator for demo; aggregator as fallback.
+
+Google/TomTom coverage in Hyderabad is poor
+
+Aggregator route may not give live counts.
+
+Test 20–30 known Hyderabad stations early and record how many return live data.
+
+Chargers do not support reservation
+
+Booking cannot be enforced.
+
+Offer booking only where supported; label others as soft hold.
+
+Status is stale or wrong (offline chargers, vendor quirks)
+
+Users arrive at a “free” connector that is not.
+
+Show last-updated time; mark stale data; re-verify before arrival; refund if wrong.
+
+ETA is inaccurate
+
+Erodes trust.
+
+Show ranges; learn from history; use car data where available.
+
+Payment/legal complexity
+
+Fee deduction rules.
+
+Use a licensed payment provider; clear terms; refund rules.
+
+Questions to ask the Hyundai challenge organisers
+
+Can we get API access to Hyundai’s own charging network data (myHyundai network, dealership chargers)?
+
+Can connected-car data (battery level, target SoC) be made available for the prototype?
+
+Is a simulated data demo acceptable for the prototype, as long as the architecture is real?
+
+Are there preferred CPO partners in Hyderabad?
+
+9. Next steps (suggested order)
+
+Test Google Places and TomTom for 20–30 real Hyderabad stations and record whether live availability comes back. This takes about a day and settles Option B.
+
+Download the Ministry of Power / BEE guidelines and note the clauses on real-time data and OCPP/OCPI.
+
+Set up an open-source OCPP backend plus two or three simulated Hyderabad stations.
+
+Build the status-normalisation layer and the map plus connector-list UI against that backend.
+
+Add the ETA estimator (start simple: remaining energy / current power, with an 80% taper), then the booking flow and fee logic.
+
+Prepare a one-page partnership ask for CPOs (what data we need, what they get: bookings and footfall).
+
+10. Resources
+
+Indian policy and regulation
+
+Resource
+
+Why it matters
+
+Link
+
+BEE: Guidelines for Installation and Operation of EV Charging Infrastructure (17 Sep 2024)
+
+Official source for the data-sharing and open-protocol requirements
+
+https://beeindia.gov.in/sites/default/files/Guidelines%20and%20Standards%20for%20EVCI%20dated%2017-09-2024_compressed.pdf
+
+Energetica India: MoP updates guidelines for EV charging infra
+
+Summary: OCPP for real-time monitoring and booking; national database
+
+https://www.energetica-india.net/news/ministry-of-power-updates-guidelines-for-installing-ev-charging-infra-2024
+
+Autocar Pro: MoP revises guidelines for EV fast charging
+
+Notes data-sharing protocol and national database of public chargers
+
+https://www.autocarpro.in/news/ministry-of-power-revises-guidelines-for-ev-fast-charging-122714
+
+Bolt.Earth: India’s EV Charging Policy 2025
+
+Interpretation of OCPP/OCPI/UPI requirements for CPOs
+
+https://bolt.earth/blog/indias-ev-charging-infrastructure-policy-2025-impact-on-cpos-and-oems
+
+Bolt.Earth: OCPP 2.0.1 explained for Indian CPOs
+
+Indian context for OCPP and OCPI interoperability
+
+https://bolt.earth/blog/ocpp-2-0-1-explained-why-it-matters-for-indian-cpos
+
+Protocols and how connector status works
+
+Resource
+
+Why it matters
+
+Link
+
+Flipturn: Understanding OCPP statuses
+
+Plain-language guide to statuses and session lifecycle, with vendor quirks
+
+https://www.getflipturn.com/blog/understanding-ocpp-statuses
+
+OCPP 1.6 simulator (GitHub)
+
+Example code for a charger sending status and session messages
+
+https://github.com/oglimmer/scriptable-ocpp-chargepoint-simulator
+
+Open Charge Alliance: OCPP 1.6 *
+
+Official OCPP specification download
+
+https://openchargealliance.org/protocols/ocpp-16/
+
+OCPI specification (GitHub) *
+
+Roaming/data standard: locations, connector status, reservations, tariffs
+
+https://github.com/ocpi/ocpi
+
+SteVe: open-source OCPP server *
+
+Candidate backend for the simulated prototype
+
+https://github.com/steve-community/steve
+
+CitrineOS *
+
+Alternative open-source charging station management system
+
+https://github.com/citrineos/citrineos-core
+
+Data and API sources
+
+Resource
+
+Why it matters
+
+Link
+
+Google Places API: EV connector aggregation fields
+
+Fields for connector count, available count, out-of-service count and last update time
+
+https://docs.cloud.google.com/nodejs/docs/reference/places/latest/places/protos.google.maps.places.v1.evchargeoptions.iconnectoraggregation
+
+TomTom: EV charging stations availability (search API)
+
+Real-time availability by connector type
+
+https://developer.tomtom.com/maps-ios-sdk/documentation/search/examples/ev-charging-stations-availability
+
+TomTom Maps SDK for JS: EV availability guide
+
+Web example for showing availability on a map
+
+https://docs.tomtom.com/maps-sdk-js/guides/services/places/ev-charging-stations-availability
+
+OpenWeb Ninja: EV Charge Finder API
+
+Third-party API claiming real-time connector availability from Google Maps and other sources
+
+https://openwebninja.com/api/ev-charge-finder
+
+Open Charge Map API *
+
+Free global station database with API (status not reliably live)
+
+https://openchargemap.org/site/develop/api
+
+Apify: EV Charging Station Finder
+
+Shows the stale-status caveat for Open Charge Map data
+
+https://apify.com/urban_quidnunc/ev-charging-station-finder
+
+iReV (GitHub)
+
+Example India EV app using Open Charge Map, with reservation ideas
+
+https://github.com/ikppramesh/iReV
+
+Hyundai and Indian CPO context
+
+Resource
+
+Why it matters
+
+Link
+
+Autocar India: Hyundai India fast-charging plans
+
+myHyundai app and partners ChargeZone, Statiq, Shell
+
+https://www.autocarindia.com/industry-amp/hyundai-india-to-have-50-fast-charging-stations-by-end-of-the-year-433803
+
+electrive: Hyundai and ChargeZone MoU
+
+Hyundai–ChargeZone partnership on network and availability
+
+https://www.electrive.com/2024/08/03/hyundai-ties-up-with-charge-zone-to-expand-charging-network-in-india
+
+electrive: Tata Power and Hyundai
+
+Dealership chargers run by Tata Power
+
+https://www.electrive.com/2022/05/17/tata-power-hyundai-collaborate-on-charging-in-india
+
+* These links are well-known official project pages that were not re-opened during this research. Please check them before relying on them. Other claims in this document come from the sources above; items marked as proposals (Hyundai connected-car data, payment holds) still need confirmation with Hyundai and the payment provider.

@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyundai SmartReserve - Full Project Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: #1a1a2e;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #00263A 0%, #004E7A 40%, #0079BE 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    top: -200px; right: -200px;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    bottom: -100px; left: -100px;
+  }
+  .cover-logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 40px;
+    position: relative; z-index: 1;
+  }
+  .cover-badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 24px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    position: relative; z-index: 1;
+  }
+  .cover h1 {
+    font-size: 52px;
+    font-weight: 900;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    position: relative; z-index: 1;
+    letter-spacing: -1px;
+  }
+  .cover h1 span { color: #4FC3F7; }
+  .cover-subtitle {
+    font-size: 20px;
+    color: rgba(255,255,255,0.75);
+    max-width: 650px;
+    margin-bottom: 50px;
+    font-weight: 400;
+    position: relative; z-index: 1;
+  }
+  .cover-tags {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 60px;
+    position: relative; z-index: 1;
+  }
+  .tag {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .cover-meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    max-width: 700px;
+    width: 100%;
+    position: relative; z-index: 1;
+  }
+  .meta-item {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .meta-item .num {
+    font-size: 28px;
+    font-weight: 900;
+    color: #4FC3F7;
+    display: block;
+  }
+  .meta-item .label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* ===== CONTENT PAGES ===== */
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 50px;
+    page-break-after: always;
+  }
+  .page-last { page-break-after: auto; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #0079BE;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #00263A;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #00263A;
+    margin-top: 32px;
+    margin-bottom: 12px;
+  }
+  h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #004E7A;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  .divider {
+    width: 50px;
+    height: 4px;
+    background: #0079BE;
+    border-radius: 2px;
+    margin-bottom: 30px;
+  }
+  p { margin-bottom: 14px; color: #333; }
+
+  /* ===== CALLOUT BOXES ===== */
+  .callout {
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin: 20px 0;
+    border-left: 5px solid;
+  }
+  .callout-blue {
+    background: #EFF6FF;
+    border-color: #0079BE;
+  }
+  .callout-green {
+    background: #F0FDF4;
+    border-color: #16A34A;
+  }
+  .callout-orange {
+    background: #FFF7ED;
+    border-color: #EA580C;
+  }
+  .callout-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .callout-blue .callout-title { color: #0079BE; }
+  .callout-green .callout-title { color: #16A34A; }
+  .callout-orange .callout-title { color: #EA580C; }
+
+  /* ===== CARDS ===== */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 24px 0;
+  }
+  .cards-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .card {
+    background: white;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 22px;
+    transition: all 0.2s;
+  }
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #00263A;
+    margin-bottom: 8px;
+  }
+  .card-body { font-size: 13px; color: #555; line-height: 1.6; }
+  .card-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    background: #0079BE;
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+
+  /* ===== MERMAID ===== */
+  .diagram-wrap {
+    background: #F8FAFC;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 30px 20px;
+    margin: 24px 0;
+    overflow: auto;
+  }
+  .diagram-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #6B7280;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .mermaid { text-align: center; }
+
+  /* ===== STATES TABLE ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  th {
+    background: #00263A;
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #E5E7EB;
+    color: #333;
+  }
+  tr:nth-child(even) td { background: #F9FAFB; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ===== STATUS PILLS ===== */
+  .pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill-green { background: #DCFCE7; color: #15803D; }
+  .pill-blue { background: #DBEAFE; color: #1D4ED8; }
+  .pill-red { background: #FEE2E2; color: #DC2626; }
+  .pill-orange { background: #FED7AA; color: #C2410C; }
+
+  /* ===== TIMELINE ===== */
+  .timeline { margin: 24px 0; }
+  .timeline-item {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .timeline-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+  }
+  .timeline-dot {
+    width: 40px; height: 40px;
+    background: #0079BE;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .timeline-line {
+    width: 2px;
+    flex: 1;
+    background: #E5E7EB;
+    margin-top: 8px;
+  }
+  .timeline-content {
+    flex: 1;
+    padding-bottom: 16px;
+  }
+  .timeline-day {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0079BE;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .timeline-heading {
+    font-size: 16px;
+    font-weight: 700;
+    color: #00263A;
+    margin-bottom: 6px;
+  }
+  .timeline-text { font-size: 13px; color: #555; }
+
+  /* ===== CODE BLOCK ===== */
+  .code-block {
+    background: #0F172A;
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #E2E8F0;
+    margin: 16px 0;
+    overflow-x: auto;
+    line-height: 1.8;
+  }
+  .code-comment { color: #64748B; }
+  .code-key { color: #7DD3FC; }
+  .code-val { color: #86EFAC; }
+  .code-str { color: #FCA5A5; }
+
+  /* ===== TECH STACK ===== */
+  .tech-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: white;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .tech-icon {
+    font-size: 24px;
+    min-width: 40px;
+    text-align: center;
+  }
+  .tech-info .tech-name {
+    font-weight: 700;
+    color: #00263A;
+    font-size: 14px;
+  }
+  .tech-info .tech-role {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 2px;
+  }
+
+  /* ===== DEMO FLOW ===== */
+  .demo-step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #F8FAFC;
+    border: 1px solid #E5E7EB;
+  }
+  .step-num {
+    min-width: 36px; height: 36px;
+    background: #0079BE;
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px;
+  }
+  .step-content .step-title { font-weight: 700; color: #00263A; margin-bottom: 4px; }
+  .step-content .step-desc { font-size: 13px; color: #555; }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    padding: 40px;
+    background: #00263A;
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { font-size: 12px; }
+    .cover { min-height: 100vh; }
+    .page { padding: 40px 35px; }
+    h2 { font-size: 26px; }
+    .cover h1 { font-size: 40px; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { primaryColor: '#0079BE', primaryTextColor: '#00263A', primaryBorderColor: '#004E7A', lineColor: '#6B7280', fontSize: '13px' } });
+</script>
+
+<!-- ============================== COVER PAGE ============================== -->
+<div class="cover">
+  <div class="cover-logo">Hyundai CoE Mobility Innovation Ideathon 2026</div>
+  <div class="cover-badge">Track B · Technology & Prototype</div>
+  <h1>Hyundai<br><span>SmartReserve</span></h1>
+  <p class="cover-subtitle">
+    An AI-Powered In-Cabin EV Charging Co-Pilot that finds free chargers in your district, predicts congestion, and physically locks a 30-minute exclusive slot — all from the car screen.
+  </p>
+  <div class="cover-tags">
+    <div class="tag">📍 Category 2: AI-Powered & Digital In-Vehicle Experience</div>
+    <div class="tag">🏆 ₹10 Lakh Prize Pool</div>
+    <div class="tag">🔌 OCPP 1.6 Protocol</div>
+  </div>
+  <div class="cover-meta">
+    <div class="meta-item">
+      <span class="num">3</span>
+      <div class="label">Software Screens</div>
+    </div>
+    <div class="meta-item">
+      <span class="num">934</span>
+      <div class="label">Real Station Nodes</div>
+    </div>
+    <div class="meta-item">
+      <span class="num">78%</span>
+      <div class="label">GNN Accuracy</div>
+    </div>
+    <div class="meta-item">
+      <span class="num">30s</span>
+      <div class="label">Demo Time</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 1: WHAT IS THE PROBLEM ============================== -->
+<div class="page">
+  <div class="section-label">Section 01 — The Problem</div>
+  <h2>Why Indian EV Drivers Are Suffering</h2>
+  <div class="divider"></div>
+
+  <p>India has over <strong>60,000 registered EVs in Telangana alone</strong>, but the charging experience is still completely broken. Here is exactly what happens to an EV driver today in Hyderabad:</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">🔴 What Happens WITHOUT Our System (Current Painful Journey)</div>
+    <div class="mermaid">
+flowchart LR
+    A["🚗 Driving\nBattery: 18%"] --> B["📱 Open 3 Apps\nTata Power + Statiq\n+ ChargeZone"]
+    B --> C["❓ All Show\nStation Locations\nNo Live Status"]
+    C --> D["🚦 Drive 20 Mins\nTo Nearest Station"]
+    D --> E{"Charger\nAvailable?"}
+    E -->|"No — Occupied"| F["😤 Wait in Queue\n30-60 Minutes\nWith No AC"]
+    E -->|"No — Broken"| G["⚡ Drive to\nNext Station\nBattery Critical"]
+    E -->|"Yes!"| H["✅ Start Charging\nBut 40 Mins Wasted"]
+    style A fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
+    style F fill:#FEF3C7,stroke:#D97706,color:#78350F
+    style G fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
+    style H fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="callout callout-orange">
+      <div class="callout-title">😤 Problem 1: No Live Status</div>
+      Apps like ChargeZone and Statiq only show whether chargers exist — not whether a specific connector port is <strong>free right now</strong>. The "Available" badge is often 24 hours old.
+    </div>
+    <div class="callout callout-orange">
+      <div class="callout-title">📱 Problem 2: Phone While Driving</div>
+      Drivers must pull out their phone while driving, open 3 different apps, and manually search — which is both <strong>dangerous and illegal</strong> in India.
+    </div>
+    <div class="callout callout-orange">
+      <div class="callout-title">🔒 Problem 3: No Reservation</div>
+      Even if you know a charger is free, someone else can arrive before you and <strong>steal your spot</strong>. There is no way to lock a connector in advance.
+    </div>
+    <div class="callout callout-orange">
+      <div class="callout-title">🤑 Problem 4: ICE Vehicle Blocking</div>
+      Non-electric cars park at charging stations (called ICE-ing). There is <strong>no enforcement or economic penalty</strong> to stop this from happening.
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 2: THE SOLUTION OVERVIEW ============================== -->
+<div class="page">
+  <div class="section-label">Section 02 — The Solution</div>
+  <h2>Hyundai SmartReserve: What We Built</h2>
+  <div class="divider"></div>
+
+  <div class="callout callout-blue">
+    <div class="callout-title">💡 The Big Idea — One Sentence</div>
+    A software system that shows all charging station live statuses on the <strong>Hyundai in-car touchscreen</strong>, predicts waiting time using AI, and lets the driver press one button to <strong>physically lock a charger for 30 minutes</strong> — only unlockable with a secret PIN or QR code.
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">✅ What Happens WITH Our System (Smooth New Journey)</div>
+    <div class="mermaid">
+flowchart LR
+    A["🚗 Driving\nBattery: 18%"] --> B["📺 Car Screen Auto-Shows\nNearest Free Charger\n(AI Predicted: 0 min wait)"]
+    B --> C["👆 Driver Taps\nReserve 30 Min Slot\nNever Touches Phone"]
+    C --> D["🔒 Charger Locks\nInstantly Over Internet\nOthers Cannot Use It"]
+    D --> E["📱 Driver Gets\n6-Digit PIN: 482910"]
+    E --> F["🚗 Drives to\nCharger in 18 mins"]
+    F --> G["⌨️ Types PIN\non Charger Screen"]
+    G --> H["⚡ 60 kW DC Charging\nStarts Immediately!"]
+    style A fill:#DBEAFE,stroke:#1D4ED8,color:#1E3A5F
+    style H fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    </div>
+  </div>
+
+  <h3>The Three Things We Build</h3>
+  <div class="cards-grid-3">
+    <div class="card">
+      <span class="card-icon">📺</span>
+      <div class="card-title">1. In-Cabin Dashboard</div>
+      <div class="card-body">The Hyundai car touchscreen view. Shows live map, AI predictions, and the "Reserve" button. Driver never touches their phone.</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">☁️</span>
+      <div class="card-title">2. Cloud AI Brain</div>
+      <div class="card-body">FastAPI backend + Stanford ROLAND GNN model. Predicts congestion, manages reservations, and sends lock commands to chargers via OCPP.</div>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔌</span>
+      <div class="card-title">3. Charger Kiosk Simulator</div>
+      <div class="card-body">A simulated charger touchscreen that physically locks out unauthorized users until the correct PIN is entered.</div>
+    </div>
+  </div>
+
+  <div class="callout callout-green">
+    <div class="callout-title">✅ Why This Perfectly Fits Ideathon Category 2</div>
+    Category 2 asks: <em>"How can AI, digital content, and software create new experiences <strong>inside the vehicle</strong>?"</em><br><br>
+    Our answer: AI predicts which charger will be free. The car screen shows this to the driver. The driver never leaves the car experience — no phone, no confusion, no anxiety. Pure in-vehicle intelligence.
+  </div>
+</div>
+
+<!-- ============================== PAGE 3: FULL SYSTEM ARCHITECTURE ============================== -->
+<div class="page">
+  <div class="section-label">Section 03 — Full Architecture</div>
+  <h2>How Everything Connects</h2>
+  <div class="divider"></div>
+
+  <div style="margin: 20px 0; text-align: center;">
+    <img src="architecture_horizontal.png" alt="Core Horizontal Architecture" style="width: 100%; max-width: 100%; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1.5px solid #1E293B;">
+  </div>
+
+  <h3>What Data Flows Between the Parts</h3>
+  <table>
+    <tr>
+      <th>From</th>
+      <th>To</th>
+      <th>What Is Sent</th>
+      <th>Protocol</th>
+    </tr>
+    <tr>
+      <td>Car Dashboard</td>
+      <td>Cloud API</td>
+      <td>Reserve request: Station ID, Duration 30 min, User ID</td>
+      <td><span class="pill pill-blue">HTTP POST</span></td>
+    </tr>
+    <tr>
+      <td>Cloud API</td>
+      <td>Charger Kiosk</td>
+      <td>Lock command: ReserveNow with OTP token</td>
+      <td><span class="pill pill-orange">WebSocket</span></td>
+    </tr>
+    <tr>
+      <td>Cloud API</td>
+      <td>Car Dashboard</td>
+      <td>Confirmation + 6-digit PIN + countdown timer</td>
+      <td><span class="pill pill-blue">HTTP Response</span></td>
+    </tr>
+    <tr>
+      <td>Charger Kiosk</td>
+      <td>Cloud API</td>
+      <td>PIN entered by driver for verification</td>
+      <td><span class="pill pill-blue">HTTP POST</span></td>
+    </tr>
+    <tr>
+      <td>Cloud API</td>
+      <td>Charger Kiosk</td>
+      <td>Unlock signal: close relay, start charging session</td>
+      <td><span class="pill pill-orange">WebSocket</span></td>
+    </tr>
+    <tr>
+      <td>Charger Kiosk</td>
+      <td>Car Dashboard</td>
+      <td>Live meter: kW, kWh, SoC% (simulated battery graph)</td>
+      <td><span class="pill pill-orange">WebSocket</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ============================== PAGE 4: CHARGER STATES ============================== -->
+<div class="page">
+  <div class="section-label">Section 04 — The Charger Lock System</div>
+  <h2>How the 30-Minute Lock Works</h2>
+  <div class="divider"></div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">🔄 Charger State Machine — All Possible States</div>
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> Available: System Starts
+
+    Available --> Reserved: Driver clicks Reserve in Car\n(OCPP ReserveNow sent)
+    Available --> Charging: Driver plugs in directly\nwithout reservation
+
+    Reserved --> AccessDenied: Wrong PIN entered\nOR wrong RFID tapped
+    Reserved --> Unlocked: Correct PIN entered\nOR QR code scanned
+    Reserved --> Available: 30-min timer expires\nNo-show fee deducted
+
+    AccessDenied --> Reserved: Try again (3 attempts max)
+
+    Unlocked --> Charging: Relay closes\nPower flows to vehicle
+    Charging --> Finishing: Session ends\nSoC reaches 80% or driver stops
+    Finishing --> Available: Cable unplugged
+    </div>
+  </div>
+
+  <h3>What the Charger Screen Shows in Each State</h3>
+  <table>
+    <tr>
+      <th>State</th>
+      <th>LED Color</th>
+      <th>Screen Message</th>
+      <th>Power Status</th>
+    </tr>
+    <tr>
+      <td>Available</td>
+      <td><span class="pill pill-green">🟢 Green</span></td>
+      <td>60 kW CCS2 Available — Plug in or tap RFID</td>
+      <td>Relay Open · Ready</td>
+    </tr>
+    <tr>
+      <td>Reserved</td>
+      <td><span class="pill pill-blue">🔵 Blue</span></td>
+      <td>RESERVED for Hyundai Driver — Enter 6-digit PIN</td>
+      <td>Relay LOCKED · 0 kW</td>
+    </tr>
+    <tr>
+      <td>Access Denied</td>
+      <td><span class="pill pill-red">🔴 Red Flash</span></td>
+      <td>❌ WRONG PIN — Access Denied. Connector stays locked</td>
+      <td>Relay LOCKED · 0 kW</td>
+    </tr>
+    <tr>
+      <td>Unlocked</td>
+      <td><span class="pill pill-green">🟢 Blinking</span></td>
+      <td>✅ Identity Verified! Plug in your cable now</td>
+      <td>Awaiting plug-in</td>
+    </tr>
+    <tr>
+      <td>Charging</td>
+      <td><span class="pill pill-green">🟢 Solid</span></td>
+      <td>Charging: 60 kW · SoC: 42% · Time: 28 min left</td>
+      <td>Relay CLOSED · 60 kW flowing</td>
+    </tr>
+    <tr>
+      <td>Finishing</td>
+      <td><span class="pill pill-orange">🟡 Amber</span></td>
+      <td>Charging complete at 80%. Please unplug to free connector</td>
+      <td>Idle fee starts in 5 min</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-blue">
+    <div class="callout-title">🧠 How Physical Lock Works (No Hardware Needed to Demo)</div>
+    In the real world, the charger's internal microcontroller runs the OCPP state machine. The contactor relay (a high-voltage switch) opens and closes based on OCPP commands. <strong>In our software simulator, this is simply a JavaScript boolean variable</strong>: <code>relayOpen = true/false</code>. When it is <code>false</code>, the screen shows "0 kW" and "Access Denied" — perfectly mimicking the real hardware behavior for judges.
+  </div>
+</div>
+
+<!-- ============================== PAGE 5: THE RESERVATION FLOW ============================== -->
+<div class="page">
+  <div class="section-label">Section 05 — Complete User Journey</div>
+  <h2>Step-by-Step Demo Flow</h2>
+  <div class="divider"></div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">👤 Complete Sequence: Driver to Charged Battery</div>
+    <div class="mermaid">
+sequenceDiagram
+    actor D as 🚗 Driver in Car
+    participant UI as 📺 Car Dashboard
+    participant API as ☁️ Cloud API
+    participant DB as 🗄️ Database
+    participant EVSE as 🔌 Charger Kiosk
+
+    D->>UI: Battery alert shows 18% SoC
+    UI->>API: GET /stations?district=Hyderabad
+    API->>DB: Fetch 934 stations + live status
+    DB-->>API: Station list with GNN demand scores
+    API-->>UI: Map with color-coded pins
+    UI-->>D: Shows nearest free 60kW charger
+
+    D->>UI: Taps Reserve for 30 Minutes
+    UI->>API: POST /reserve {station_id, duration: 30}
+    API->>DB: Create reservation record
+    API->>EVSE: WebSocket ReserveNow {token: 482910}
+    EVSE-->>EVSE: Screen turns BLUE — Locked
+    API-->>UI: Confirmed! PIN: 482910, ETA: 18 min
+    UI-->>D: Shows countdown + PIN on screen
+
+    Note over EVSE: Unauthorized person arrives
+    EVSE-->>EVSE: Shows RESERVED — Enter PIN
+    Note over EVSE: They type 111111 → REJECTED
+
+    D->>EVSE: Types correct PIN 482910
+    EVSE->>API: POST /verify-otp {pin: 482910}
+    API-->>EVSE: WebSocket UNLOCK_RELAY
+    EVSE-->>EVSE: Relay closes! Power ON
+    EVSE-->>UI: WebSocket MeterValues (kW, kWh, SoC%)
+    UI-->>D: Live charging graph on car screen!
+    </div>
+  </div>
+
+  <h3>The Money & Anti-Hogging Rules</h3>
+  <div class="cards-grid">
+    <div class="callout callout-green">
+      <div class="callout-title">✅ Driver Shows Up</div>
+      The ₹100 UPI pre-authorization hold is <strong>credited toward their charging bill</strong>. They pay less. It feels like a reward, not a penalty.
+    </div>
+    <div class="callout callout-orange">
+      <div class="callout-title">❌ Driver No-Shows (30 min expire)</div>
+      The ₹100 hold is <strong>captured as a no-show fee</strong>. The charger unlocks automatically and becomes available to others. The CPO and Hyundai split the fee.
+    </div>
+    <div class="callout callout-blue">
+      <div class="callout-title">🕐 Anti-Hogging (Car Stays Plugged After 80%)</div>
+      If a car reaches full charge but stays plugged in, <strong>idle fees of ₹5/minute</strong> kick in. This is the single biggest reason real chargers are blocked in India.
+    </div>
+    <div class="callout callout-orange">
+      <div class="callout-title">🔧 Charger Breaks During Reservation</div>
+      If the charger reports a Fault, the reservation is <strong>automatically cancelled with a full refund</strong>. The driver is notified on the car screen and a nearby free station is suggested.
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 6: THE AI ENGINE ============================== -->
+<div class="page">
+  <div class="section-label">Section 06 — The AI Brain</div>
+  <h2>How the GNN Predicts Congestion</h2>
+  <div class="divider"></div>
+
+  <p>Most apps just show you whether a charger is currently free. Our AI goes further — it predicts <strong>which stations will be congested in the next few hours</strong> across the entire district, so you always pick the smartest charger, not just the nearest one.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">🧠 Stanford ROLAND Graph Neural Network — How It Works</div>
+    <div class="mermaid">
+flowchart TD
+    subgraph INPUT["📥 Input — 52 Features Per Station"]
+        F1["Static: Charger Power Rating\nConnector Type, GPS Location"]
+        F2["Dynamic: Units (kWh), Load (kW)\nLag 1, 2, 3 months ago"]
+        F3["Seasonal: Month sin/cos\nQuarter of year"]
+        F4["POI: Nearby shops, malls\nRestaurants, hospitals"]
+    end
+
+    subgraph GNN_MODEL["🧠 Stanford ROLAND GNN Model"]
+        SPATIAL["ResidualEdgeConv Layer\nLooks at neighbours in same district\nAggregates spatial patterns"]
+        TEMPORAL["GRU Updater\nRemembers what happened last month\nOnly updates active stations"]
+        HEAD["Regression Head\nPredicts next month values"]
+        SPATIAL --> TEMPORAL --> HEAD
+    end
+
+    subgraph OUTPUT["📤 Output — Per Station Prediction"]
+        O1["Monthly Units (kWh)\nHow much energy will be consumed?"]
+        O2["Peak Load (kW)\nWhat is maximum power demand?"]
+        O3["Congestion Score\nTraffic light for the app"]
+    end
+
+    INPUT --> GNN_MODEL --> OUTPUT
+
+    style INPUT fill:#EFF6FF,stroke:#0079BE
+    style GNN_MODEL fill:#F0FDF4,stroke:#16A34A
+    style OUTPUT fill:#FFF7ED,stroke:#EA580C
+    </div>
+  </div>
+
+  <h3>What We Already Have (Done!)</h3>
+  <div class="cards-grid">
+    <div class="callout callout-green">
+      <div class="callout-title">✅ Trained Model Ready</div>
+      The GNN is already trained on <strong>36 months of real data</strong> (January 2023 – December 2025) across 934 charging stations in Telangana. Pre-trained weights are saved in <code>roland_final_weights_80_02.pt</code>.
+    </div>
+    <div class="callout callout-green">
+      <div class="callout-title">✅ Real Dataset Ready</div>
+      Data comes from two official Indian government sources: Bureau of Energy Efficiency (BEE) and Parivahan Sewa (Ministry of Road Transport). This is <strong>not dummy data</strong>.
+    </div>
+    <div class="callout callout-blue">
+      <div class="callout-title">📊 Model Performance</div>
+      The model achieves <strong>R² Score = 78.50% to 80.02%</strong> on the test set. This means it correctly explains 80% of the variation in charging demand across all 33 districts of Telangana.
+    </div>
+    <div class="callout callout-blue">
+      <div class="callout-title">📍 Coverage</div>
+      The model covers <strong>all 33 districts of Telangana</strong> including Hyderabad, Rangareddy, Medchal-Malkajgiri, Sangareddy — all major Hyundai EV markets in the state.
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 7: WHAT YOU WILL BUILD ============================== -->
+<div class="page">
+  <div class="section-label">Section 07 — Build Plan</div>
+  <h2>Exactly What You Will Build: File by File</h2>
+  <div class="divider"></div>
+
+  <p>Here is the complete file structure of the prototype. Everything is just code files — no hardware, no physical parts, no electronics needed.</p>
+
+  <div class="code-block">
+<span class="code-comment">📁 EV_Hyundai/</span>
+<span class="code-comment">├── EVCS_Demand_Forecasting/     ← Already done! AI engine lives here</span>
+<span class="code-comment">│   ├── final_model/</span>
+<span class="code-comment">│   │   └── roland_final_weights_80_02.pt   ← Pre-trained AI model</span>
+<span class="code-comment">│   └── processed/nodes_master.csv          ← 934 real station locations</span>
+<span class="code-comment">│</span>
+<span class="code-key">├── smartreserve_backend/        ← YOU WILL BUILD THIS</span>
+<span class="code-comment">│   ├── main.py                  ← FastAPI server, all endpoints</span>
+<span class="code-comment">│   ├── websocket_manager.py     ← Real-time connection hub</span>
+<span class="code-comment">│   ├── ocpp_engine.py           ← OCPP 1.6 protocol commands</span>
+<span class="code-comment">│   ├── gnn_predictor.py         ← Loads GNN and gets predictions</span>
+<span class="code-comment">│   └── stations_db.py           ← Reads nodes_master.csv</span>
+<span class="code-comment">│</span>
+<span class="code-key">├── smartreserve_frontend/       ← YOU WILL BUILD THIS</span>
+<span class="code-comment">│   ├── car_dashboard/           ← In-Cabin Screen (React/HTML)</span>
+<span class="code-comment">│   │   ├── index.html           ← Hyundai-styled dark UI</span>
+<span class="code-comment">│   │   ├── map.js               ← Leaflet.js station map</span>
+<span class="code-comment">│   │   └── reservation.js       ← Reserve button + PIN display</span>
+<span class="code-comment">│   └── kiosk_simulator/         ← Charger Screen (React/HTML)</span>
+<span class="code-comment">│       ├── index.html           ← Charger display UI</span>
+<span class="code-comment">│       ├── keypad.js            ← PIN number pad</span>
+<span class="code-comment">│       └── state_machine.js     ← Green/Blue/Red states logic</span>
+<span class="code-comment">│</span>
+<span class="code-key">└── run_demo.py                  ← One script to start everything</span>
+  </div>
+
+  <div class="callout callout-green">
+    <div class="callout-title">✅ You Only Need to Build 2 Things</div>
+    The AI engine and dataset are <strong>already built and working</strong> (EVCS_Demand_Forecasting folder). You only need to build:<br>
+    <strong>1.</strong> The FastAPI backend that connects everything together.<br>
+    <strong>2.</strong> The two web screens (Car Dashboard + Charger Kiosk Simulator).
+  </div>
+</div>
+
+<!-- ============================== PAGE 8: TECH STACK ============================== -->
+<div class="page">
+  <div class="section-label">Section 08 — Technology Stack</div>
+  <h2>What Technology to Use and Why</h2>
+  <div class="divider"></div>
+
+  <h3>Backend (The Brain — Python)</h3>
+  <div class="tech-item">
+    <div class="tech-icon">⚡</div>
+    <div class="tech-info">
+      <div class="tech-name">FastAPI (Python)</div>
+      <div class="tech-role">The main server that handles all API requests and WebSocket connections. Very fast to build. You write a function, it becomes an API automatically.</div>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">🔗</div>
+    <div class="tech-info">
+      <div class="tech-name">WebSockets (python-websockets)</div>
+      <div class="tech-role">Allows instant two-way communication. When the car sends a "Reserve" command, the charger screen updates in under 100 milliseconds — no page refresh needed.</div>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">🧠</div>
+    <div class="tech-info">
+      <div class="tech-name">PyTorch + PyTorch Geometric</div>
+      <div class="tech-role">Loads the pre-trained Stanford ROLAND GNN model. Runs inference to predict which stations will be congested. Already installed in your Miniconda environment.</div>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">📊</div>
+    <div class="tech-info">
+      <div class="tech-name">Pandas + SQLite</div>
+      <div class="tech-role">Reads the 934-station nodes_master.csv. Stores reservations, PIN codes, and session records during the demo.</div>
+    </div>
+  </div>
+
+  <h3>Frontend (The Screens — HTML/JavaScript)</h3>
+  <div class="tech-item">
+    <div class="tech-icon">🗺️</div>
+    <div class="tech-info">
+      <div class="tech-name">Leaflet.js (for the map)</div>
+      <div class="tech-role">Free open-source map library. Plots the 934 charging station pins on a Hyderabad street map with color-coded status (green/blue/red). No API key needed.</div>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">🎨</div>
+    <div class="tech-info">
+      <div class="tech-name">Tailwind CSS</div>
+      <div class="tech-role">Makes the UI look professional and Hyundai-styled (dark mode, modern automotive feel) without spending weeks on custom CSS.</div>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">📡</div>
+    <div class="tech-info">
+      <div class="tech-name">Browser WebSocket API (built-in)</div>
+      <div class="tech-role">The car dashboard and charger kiosk both connect to the backend's WebSocket hub using JavaScript's built-in <code>new WebSocket()</code>. No library needed.</div>
+    </div>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">📦 How All Technologies Connect Together</div>
+    <div class="mermaid">
+flowchart LR
+    A["🗺️ Leaflet.js Map\nShows 934 Stations\nHyderabad District"] --> B
+    B["📺 Car Dashboard\nHTML + Tailwind CSS\nPort :3000/car"] -->|"POST /reserve"| C
+    C["⚡ FastAPI Server\nPython\nPort :8000"] -->|"WebSocket Push"| D
+    C --> E["🧠 ROLAND GNN\nPyTorch\nCongestion Score"]
+    C --> F["🗄️ SQLite DB\nReservations\nPIN Codes"]
+    D["🔌 Charger Kiosk\nHTML + Tailwind CSS\nPort :3000/kiosk"] -->|"POST /verify-otp"| C
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 9: BUILD TIMELINE ============================== -->
+<div class="page">
+  <div class="section-label">Section 09 — Day by Day Plan</div>
+  <h2>How to Build Everything in 7 Days</h2>
+  <div class="divider"></div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">1</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 1</div>
+        <div class="timeline-heading">Set Up Backend Skeleton</div>
+        <div class="timeline-text">Install FastAPI, Uvicorn. Create <code>main.py</code> with 4 endpoints: <code>GET /stations</code>, <code>POST /reserve</code>, <code>POST /verify-otp</code>, <code>WS /ws/kiosk</code>. Load <code>nodes_master.csv</code> into memory using Pandas. Test all endpoints with a browser. Duration: 3-4 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">2</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 2</div>
+        <div class="timeline-heading">Build the Charger Kiosk Simulator</div>
+        <div class="timeline-text">Create <code>kiosk/index.html</code>. Design the charger screen with four states (Available, Reserved, Access Denied, Charging). Add the PIN number keypad. Connect it to the backend WebSocket so the screen updates automatically when a reservation is made from the car. Duration: 4-5 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">3</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 3</div>
+        <div class="timeline-heading">Build the Car Dashboard</div>
+        <div class="timeline-text">Create <code>dashboard/index.html</code>. Add Leaflet.js map with Hyderabad coordinates. Plot all 934 stations from the database. Add the battery SoC indicator, station detail panel, and the "Reserve 30 Min" button. Style everything in Hyundai dark mode. Duration: 5-6 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">4</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 4</div>
+        <div class="timeline-heading">Connect the Reservation Flow End-to-End</div>
+        <div class="timeline-text">Wire up the full journey: Click Reserve → Backend generates PIN → Backend sends WebSocket to Kiosk → Kiosk goes Blue/Locked → Dashboard shows PIN → Driver types PIN on Kiosk → Backend verifies → Kiosk unlocks. Test that the wrong PIN shows red. Duration: 4-5 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">5</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 5</div>
+        <div class="timeline-heading">Add GNN Congestion Predictions</div>
+        <div class="timeline-text">Integrate <code>gnn_predictor.py</code> that loads the pre-trained <code>roland_final_weights_80_02.pt</code> model. Run inference for the current month. Convert the output to a congestion score (Low / Medium / High) per station. Display this as a badge on each map pin and in the station detail panel. Duration: 4-5 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">6</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 6</div>
+        <div class="timeline-heading">Add Live Charging Graph + Polish UI</div>
+        <div class="timeline-text">After unlock, simulate the charging session: SoC starts at 18% and increases every 2 seconds on both the kiosk and car screens. Plot the taper curve (fast charging to 80%, then slower to 100%). Add the 30-minute countdown timer on the car screen. Make the UI look premium. Duration: 4-5 hours.</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <div class="timeline-dot">7</div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-day">Day 7</div>
+        <div class="timeline-heading">Full Demo Rehearsal + Pitch Prep</div>
+        <div class="timeline-text">Run the demo 5 times from start to finish. Open two browser windows side by side. Practice the judge Q&A answers (see Section 12). Fix any bugs. Record a 2-minute video demo as backup. Duration: Full day.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 10: DEMO SCRIPT ============================== -->
+<div class="page">
+  <div class="section-label">Section 10 — Hackathon Demo</div>
+  <h2>Exactly What You Show Judges (Step by Step)</h2>
+  <div class="divider"></div>
+
+  <p>You will have your laptop open in front of the judges with two browser windows side by side. Here is the exact script — word by word.</p>
+
+  <div class="demo-step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-title">Open Two Windows Side by Side</div>
+      <div class="step-desc">Left window: <code>localhost:3000/car</code> — the Hyundai in-cabin dashboard. Right window: <code>localhost:3000/kiosk</code> — the physical charging station kiosk screen. Say: <em>"On the left is what the Hyundai Creta EV driver sees on their car screen. On the right is what is displayed at the actual DC fast charging station in Gachibowli."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-title">Point to the Battery Level</div>
+      <div class="step-desc">The dashboard shows battery at 18% and range at 41 km. Say: <em>"Our system detects the car's battery is critically low. It has already queried our AI model and found the best available charger 1.8 km away in Gachibowli."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-title">Show the AI Congestion Badge</div>
+      <div class="step-desc">Click the green pin on the map. Show the station popup: "60 kW DC Fast · CCS2 · AI Demand: LOW · Predicted Queue: 0 minutes." Say: <em>"Our Stanford ROLAND GNN — trained on 36 months of real Telangana data — predicts this station will have zero congestion for the next 2 hours."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-title">Click "Reserve 30-Min Exclusive Slot"</div>
+      <div class="step-desc">Click the button. Watch the right window (kiosk) instantly change from GREEN to BLUE. Say: <em>"The moment the driver taps Reserve, our OCPP engine sends a lock command to the charger. Watch the station screen change from Available to Reserved — right now, no one else can use this charger."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <div class="step-title">Show the PIN on the Car Screen</div>
+      <div class="step-desc">The dashboard now shows: "Slot Reserved! Your PIN: 4 8 2 9 1 0 | Time remaining: 29:58". Say: <em>"The driver gets a one-time 6-digit PIN shown on the car screen. Nobody else knows this PIN."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <div class="step-title">Try the Wrong PIN (Shows Lockout Working)</div>
+      <div class="step-desc">On the kiosk keypad, type 111111. Hit Enter. The kiosk screen flashes RED: "Access Denied. Contactor remains locked. 0 kW." Say: <em>"This proves the physical lock is real. Even if someone physically arrives at the station and tries to plug in, they cannot steal this charger without the correct PIN."</em></div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <div class="step-title">Type the Correct PIN — Start Charging!</div>
+      <div class="step-desc">Type 482910 on the kiosk keypad. Watch the screen go GREEN: "✅ Identity Verified! Relay Closed! Charging at 60 kW." The car dashboard starts showing a live battery graph climbing from 18%. Say: <em>"The driver's PIN is verified. The relay closes, 60 kilowatts of DC power flows into the battery. We can see the SoC rising live on both screens."</em></div>
+    </div>
+  </div>
+
+  <div class="callout callout-blue">
+    <div class="callout-title">⏱️ Total Demo Time: 90 Seconds</div>
+    From opening the laptop to showing active charging — 90 seconds of live, working, interactive demo. No slides. No pre-recorded video. Pure live software proof.
+  </div>
+</div>
+
+<!-- ============================== PAGE 11: WINNING ARGUMENTS ============================== -->
+<div class="page">
+  <div class="section-label">Section 11 — Competitive Edge</div>
+  <h2>Why This Wins the Ideathon</h2>
+  <div class="divider"></div>
+
+  <h3>How We Beat Other Teams</h3>
+  <table>
+    <tr>
+      <th>What Other Teams Will Present</th>
+      <th>What We Present</th>
+    </tr>
+    <tr>
+      <td>A Figma/PowerPoint mockup with fake screenshots</td>
+      <td><strong>A fully interactive, working live prototype</strong> that judges can touch and test</td>
+    </tr>
+    <tr>
+      <td>An idea for a mobile app to find chargers</td>
+      <td><strong>An in-cabin experience</strong> that lives inside the car — exactly what the competition asks for</td>
+    </tr>
+    <tr>
+      <td>Generic AI buzzwords with no real model</td>
+      <td><strong>Real trained GNN model with 78% R² accuracy</strong> on official government data</td>
+    </tr>
+    <tr>
+      <td>No understanding of charging protocols</td>
+      <td><strong>OCPP 1.6 protocol implementation</strong> — the same standard used by Tata Power and ChargeZone</td>
+    </tr>
+    <tr>
+      <td>Theoretical reservation concept</td>
+      <td><strong>Live PIN-based physical lockout demo</strong> that judges can physically see and try to break</td>
+    </tr>
+  </table>
+
+  <h3>Why Hyundai Specifically Loves This</h3>
+  <div class="cards-grid">
+    <div class="callout callout-green">
+      <div class="callout-title">💰 Hyundai Makes Money</div>
+      No-show fees from the reservation system create a new revenue stream. Hyundai can take a platform fee from every reservation. Idle fees reduce hogging at Hyundai dealership chargers.
+    </div>
+    <div class="callout callout-green">
+      <div class="callout-title">🚗 Sells More EVs</div>
+      Range anxiety is the #1 reason Indian consumers do not buy EVs. This system eliminates that fear. More confident buyers = more Creta EV and Ioniq 5 sales.
+    </div>
+    <div class="callout callout-green">
+      <div class="callout-title">📍 Uses Hyundai's Existing Assets</div>
+      Integrates with myHyundai app and BlueLink telematics that already exist. No new hardware in the car is needed — pure software update.
+    </div>
+    <div class="callout callout-green">
+      <div class="callout-title">📊 Gives Hyundai Valuable Data</div>
+      Anonymous heat maps of where and when people charge help Hyundai and their CPO partners decide where to install the next fast chargers in India.
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PAGE 12: JUDGE Q&A ============================== -->
+<div class="page">
+  <div class="section-label">Section 12 — Be Prepared</div>
+  <h2>Questions Judges Will Ask & Your Answers</h2>
+  <div class="divider"></div>
+
+  <h4>Q1: "How does the physical charger know to lock? You cannot install software on real chargers."</h4>
+  <div class="callout callout-blue">
+    <div class="callout-title">✅ Your Answer</div>
+    "Every modern DC fast charger in India already runs OCPP 1.6 or 2.0 firmware by law — it is required by the Ministry of Power's 2024 BEE guidelines. Our backend acts as the Central System (CSMS) and sends standard <code>ReserveNow</code> commands over WebSocket to the charger's IP address. The charger's own firmware handles the relay lockout. We are not modifying any hardware — we are using the standard protocol the charger already supports."
+  </div>
+
+  <h4>Q2: "What if the CPO (Tata Power, ChargeZone) refuses to give you API access?"</h4>
+  <div class="callout callout-blue">
+    <div class="callout-title">✅ Your Answer</div>
+    "That is why Hyundai is the right partner for this. Hyundai already has signed MoUs with ChargeZone, Statiq, and Tata Power for their dealership fast charging network. Hyundai can negotiate API access as part of the partnership terms. For the prototype, we connect to simulated OCPP charger nodes that behave identically to real hardware."
+  </div>
+
+  <h4>Q3: "Your GNN has 78% accuracy — what about the other 22%? Can we trust it?"</h4>
+  <div class="callout callout-blue">
+    <div class="callout-title">✅ Your Answer</div>
+    "We always display the prediction as a range with a confidence label, not a hard promise. The UI shows 'Predicted Queue: 0–5 minutes (High Confidence)' or '20–40 minutes (Low Confidence).' This is honest with the driver. We also show the timestamp of the last known live status so the driver knows exactly how fresh the data is."
+  </div>
+
+  <h4>Q4: "This is just an app. Why is this an in-vehicle experience?"</h4>
+  <div class="callout callout-blue">
+    <div class="callout-title">✅ Your Answer</div>
+    "The car itself detects the battery level and triggers the system automatically — the driver does not have to open any app. The interface runs on the factory-installed AVNT infotainment touchscreen using Hyundai's ccNC connected car platform. The driver uses the steering wheel controls or voice to confirm the reservation without looking away from the road. This is exactly what BlueLink's roadmap already supports."
+  </div>
+
+  <h4>Q5: "Is this even legal — deducting money without the user completing a transaction?"</h4>
+  <div class="callout callout-blue">
+    <div class="callout-title">✅ Your Answer</div>
+    "We use UPI AutoPay mandates or card pre-authorization holds — not actual deductions. The money only moves on a confirmed no-show, exactly like hotel booking cancellation fees which are fully legal under RBI guidelines. We would work with Razorpay or PayU to implement the correct mandate flow before a real launch."
+  </div>
+</div>
+
+<!-- ============================== PAGE 13: PITCH DECK OUTLINE ============================== -->
+<div class="page page-last">
+  <div class="section-label">Section 13 — Submission Pitch</div>
+  <h2>Your Ideathon Submission Outline</h2>
+  <div class="divider"></div>
+
+  <p>When you submit to <strong>hcoe-ideathon.com</strong>, structure your presentation exactly like this:</p>
+
+  <table>
+    <tr>
+      <th>Slide #</th>
+      <th>Title</th>
+      <th>What to Put on This Slide</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Cover</td>
+      <td>Hyundai SmartReserve · Category 2: AI-Powered & Digital In-Vehicle Experience · Track B: Technology & Prototype</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>The Problem</td>
+      <td>4 pain points with real stats: No live status, phone while driving, no reservation, ICE vehicle blocking</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>The Solution (1 slide)</td>
+      <td>One sentence + the system flow diagram (Car → Cloud → Charger)</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>The AI Brain</td>
+      <td>GNN architecture, 78% accuracy, 934 real stations, 36 months of data</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>The Lock Mechanism</td>
+      <td>OCPP 1.6 ReserveNow flow, charger state diagram, PIN lockout visual</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>The In-Vehicle Experience</td>
+      <td>Screenshot of car dashboard UI — show how the driver never touches their phone</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>Live Demo</td>
+      <td>Run the live prototype: Reserve → Kiosk locks → Wrong PIN → Correct PIN → Charging starts</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Why Hyundai</td>
+      <td>Existing CPO partnerships, myHyundai/BlueLink integration, dealership charger monetization</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>Business Value</td>
+      <td>Revenue from no-show fees, more EV sales, data for CPO expansion decisions</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>Roadmap</td>
+      <td>Phase 1: Demo (done) → Phase 2: Pilot 5 dealerships in Hyderabad → Phase 3: All India rollout</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-green">
+    <div class="callout-title">🏆 The Winning Formula</div>
+    <strong>Real Data</strong> (BEE + Parivahan government sources) + <strong>Real AI</strong> (Trained GNN with 78% accuracy) + <strong>Real Protocol</strong> (OCPP 1.6 standard) + <strong>Live Interactive Prototype</strong> (works in front of judges) = <strong>The team that built the most complete, credible, and real submission in the room.</strong>
+  </div>
+
+  <div class="callout callout-blue">
+    <div class="callout-title">📅 Key Dates to Remember</div>
+    <strong>Preliminary Winner Announcement:</strong> October 30, 2026 (you have about 25 days to build this)<br>
+    <strong>Final Round:</strong> December 16, 2026 in Delhi<br>
+    <strong>Prize:</strong> ₹1 Lakh for finalist + ₹3 Lakh bonus for Grand Prize Winner
+  </div>
+
+  <div style="margin-top: 50px; padding: 30px; background: #00263A; border-radius: 16px; text-align: center; color: white;">
+    <div style="font-size: 28px; font-weight: 900; margin-bottom: 8px;">Hyundai SmartReserve</div>
+    <div style="color: rgba(255,255,255,0.7); font-size: 14px;">Category 2 · Track B · Technology & Prototype</div>
+    <div style="margin-top: 20px; color: #4FC3F7; font-size: 13px;">Hyundai CoE Mobility Innovation Ideathon 2026</div>
+  </div>
+</div>
+
+<!-- ============================== PRINT BUTTON (hidden in PDF) ============================== -->
+<div class="no-print" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+  <button onclick="window.print()" style="background: #0079BE; color: white; border: none; padding: 14px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(0,121,190,0.4);">
+    🖨️ Save as PDF (Ctrl+P)
+  </button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+organisation,Ministry of Road Transport and Highways
+sectors,"Automobile, Transport"
+updated_frequency,Monthly
+granularity,"Year, Month, RTO, Vehicle Maker, Fuel Type"
+time_saved,6 hours
+source,"PARIVAHAN SEWA - Ministry of Road Transport and Highways"
+source_link,"https://vahan.parivahan.gov.in/vahan4dashboard/"
+time_period,"2014 to 2026"
+units,"value in absolute number"
+citation,"Ministry of Road Transport and Highways. Electric and Hybrid Vehicles: Year, Month, RTO, Vehicle Maker and Fuel Type wise Total number of Vehicles Registered in Telangana [Data set]. Dataful. https://dataful.in/dataset/23540"
