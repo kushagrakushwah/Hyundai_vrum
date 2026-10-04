@@ -93,6 +93,9 @@ def get_congestion_score(station_id: str) -> dict:
 # ── Core Routes ───────────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
+    car_html = os.path.join(frontend_path, "car_dashboard", "index.html")
+    if os.path.exists(car_html):
+        return FileResponse(car_html)
     return {
         "status": "ok",
         "service": "Hyundai SmartReserve API",
@@ -100,7 +103,22 @@ async def root():
         "features": ["SQLite Persistence", "OCPP 1.6J", "Razorpay Escrow", "Live OCM API"],
     }
 
+@app.get("/car")
+async def car_page():
+    car_html = os.path.join(frontend_path, "car_dashboard", "index.html")
+    if os.path.exists(car_html):
+        return FileResponse(car_html)
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
+@app.get("/kiosk")
+async def kiosk_page():
+    kiosk_html = os.path.join(frontend_path, "kiosk_simulator", "index.html")
+    if os.path.exists(kiosk_html):
+        return FileResponse(kiosk_html)
+    raise HTTPException(status_code=404, detail="Kiosk simulator not found")
+
 @app.get("/health")
+@app.get("/healthz")
 async def health():
     active_res = await database.get_all_active_reservations()
     active_ses = await database.get_all_sessions()
