@@ -248,7 +248,19 @@ async def reserve_station(req: ReserveRequest):
 
     existing = await database.get_reservation(req.station_id)
     if existing and existing["expires_at"] > time.time():
-        raise HTTPException(status_code=409, detail="Station already reserved")
+        if existing.get("user_id") == req.user_id:
+            return {
+                "success": True,
+                "reservation_id": existing["reservation_id"],
+                "pin": existing["pin"],
+                "expires_at": existing["expires_at"],
+                "station": station,
+                "message": f"Active reservation PIN: {existing['pin']}",
+                "ocpp_response": {"status": "Accepted", "message": "Reservation renewed"},
+                "payment": {"order_id": existing.get("payment_order_id"), "mock": True, "status": "active"},
+            }
+        else:
+            await database.delete_reservation(req.station_id)
 
     pin = generate_pin()
     created_at = time.time()
