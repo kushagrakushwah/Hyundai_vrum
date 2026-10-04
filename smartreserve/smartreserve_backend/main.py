@@ -156,7 +156,7 @@ async def get_stations(
     source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
-    limit: int = 200,
+    limit: int = 1000,
 ):
     """Return stations with live status and AI congestion predictions."""
     stations = db.get_stations(district=district, source=source, limit=limit)

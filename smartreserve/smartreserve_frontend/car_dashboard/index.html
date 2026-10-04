@@ -554,7 +554,7 @@
                 <button class="filter-btn" data-filter="available">Available</button>
                 <button class="filter-btn" data-filter="reserved">Reserved</button>
             </div>
-            <input type="text" class="search-box" id="search-input" placeholder="Search stations, districts..." autocomplete="off">
+            <input type="text" class="search-box" id="search-input" placeholder="Search city (Hyderabad, Bhopal, Nagpur, etc.)..." autocomplete="off">
             
             <div class="station-list" id="station-list">
                 <!-- Stations injected here -->
@@ -732,7 +732,7 @@
         // API Fetch
         async function fetchStations(source = 'all') {
             try {
-                const res = await fetch(`${API}/api/stations?source=${source}&limit=200`);
+                const res = await fetch(`${API}/api/stations?source=${source}&limit=1000`);
                 if (!res.ok) throw new Error('API down');
                 const data = await res.json();
                 const rawList = Array.isArray(data) ? data : (data.stations || []);
@@ -780,6 +780,48 @@
             }
         }
 
+        // Intelligent City Aliases and Typo Tolerance
+        const SEARCH_ALIASES = {
+            'hydrabad': 'hyderabad',
+            'hyderbad': 'hyderabad',
+            'hyd': 'hyderabad',
+            'secundrabad': 'secunderabad',
+            'cyberabad': 'hyderabad',
+            'nagpor': 'nagpur',
+            'bhopale': 'bhopal',
+            'bombay': 'mumbai',
+            'dilli': 'delhi',
+            'bangalore': 'bengaluru',
+        };
+
+        function matchQuery(st, query) {
+            if (!query) return true;
+            const q = query.toLowerCase().trim();
+            const fields = [st.name, st.district, st.address, st.operator, st.connector_type].map(f => (f || '').toLowerCase());
+            
+            // 1. Direct substring match
+            if (fields.some(f => f.includes(q))) return true;
+            
+            // 2. City Alias match (e.g. "hydrabad" -> "hyderabad")
+            const mapped = SEARCH_ALIASES[q];
+            if (mapped && fields.some(f => f.includes(mapped))) return true;
+
+            // 3. Vowel-tolerant phonetic matching for Indian cities
+            if (q.length >= 3) {
+                const qVowelFree = q.replace(/[aeiou]/g, '');
+                for (const f of fields) {
+                    const words = f.split(/[\s,–—\-.]+/);
+                    for (const word of words) {
+                        const wVowelFree = word.replace(/[aeiou]/g, '');
+                        if (wVowelFree.length >= 3 && (wVowelFree.includes(qVowelFree) || qVowelFree.includes(wVowelFree))) {
+                            if (Math.abs(word.length - q.length) <= 3) return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         // Filtering
         function applyFilters() {
             let filtered = stations;
@@ -789,16 +831,18 @@
             else if (currentFilter === 'live') filtered = filtered.filter(s => s.is_live_ocm);
 
             if (currentSearch) {
-                const term = currentSearch.toLowerCase();
-                filtered = filtered.filter(s => 
-                    (s.name && s.name.toLowerCase().includes(term)) || 
-                    (s.district && s.district.toLowerCase().includes(term)) ||
-                    (s.address && s.address.toLowerCase().includes(term))
-                );
+                filtered = filtered.filter(s => matchQuery(s, currentSearch));
             }
 
             renderStationList(filtered);
             renderMarkers(filtered);
+
+            // Auto-select and fly to first matching result on search
+            if (currentSearch && filtered.length > 0) {
+                if (!filtered.some(s => s.id === selectedStationId)) {
+                    selectStation(filtered[0].id);
+                }
+            }
         }
 
         // Rendering
