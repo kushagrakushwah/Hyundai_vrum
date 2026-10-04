@@ -111,6 +111,7 @@ class OpenChargeMapClient:
             "station_id": sid,
             "ocm_id": item.get("ID"),
             "name": ai.get("Title") or f"EV Station {sid}",
+            "city": ai.get("Town") or ai.get("StateOrProvince") or "Telangana",
             "district": ai.get("Town") or ai.get("StateOrProvince") or "Telangana",
             "state": ai.get("StateOrProvince") or "Telangana",
             "address": ai.get("AddressLine1") or f"{ai.get('Town', '')}, India",

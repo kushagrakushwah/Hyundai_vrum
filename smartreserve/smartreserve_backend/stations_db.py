@@ -104,17 +104,32 @@ class StationsDB:
                 power = float(row.get("power_kw") or row.get("charger_rating") or 60.0)
                 ports = int(float(row.get("total_ports") or row.get("total_connectors") or 2))
 
+                district = (row.get("district") or "Hyderabad").strip().title()
+                city = (row.get("city_village") or row.get("city") or district).strip().title()
+                
+                cpos = ["Tata Power EZ", "ChargeZone", "BPCL EV Hub", "Statiq Fast", "Zeon Charging", "Telangana State EV"]
+                cpo = (row.get("operator") or row.get("charge_point_operators") or "").strip()
+                if not cpo:
+                    cpo = cpos[abs(hash(sid)) % len(cpos)]
+                
+                raw_name = (row.get("name") or row.get("charger_name") or "").strip()
+                if not raw_name or "Hub" in raw_name or raw_name.startswith("Hub"):
+                    st_name = f"{cpo} — {city} Fast Hub"
+                else:
+                    st_name = f"{cpo} — {raw_name}"
+
                 self.stations[sid] = {
                     "station_id": sid,
-                    "name": row.get("name") or f"{row.get('charge_point_operators', 'EV')} Hub — {row.get('district', 'Telangana')}",
-                    "district": row.get("district", "Hyderabad"),
-                    "address": row.get("address") or f"{row.get('city', 'Hyderabad')}, {row.get('district', 'Telangana')}",
+                    "name": st_name,
+                    "city": city,
+                    "district": district,
+                    "address": row.get("address") or f"{city}, {district}, Telangana",
                     "lat": round(lat, 6),
                     "lng": round(lng, 6),
                     "power_kw": round(power, 1),
                     "connector_type": row.get("connector_type") or "CCS2",
                     "total_ports": ports,
-                    "operator": row.get("operator") or row.get("charge_point_operators") or "Tata Power",
+                    "operator": cpo,
                     "location_type": row.get("location_type") or "Public Fast Charger",
                     "monthly_units_kwh": float(row.get("monthly_units_kwh", 3200)),
                     "peak_load_kw": float(row.get("peak_load_kw", power * 0.7)),
@@ -186,6 +201,7 @@ class StationsDB:
             {"station_id": "IN_BLR_001", "name": "Tata Power Fast Hub — Electronic City", "district": "Bengaluru", "address": "Hosur Road, Electronic City Phase 1, Bengaluru, Karnataka", "lat": 12.8452, "lng": 77.6602, "power_kw": 150.0, "connector_type": "CCS2", "total_ports": 8, "operator": "Tata Power", "location_type": "IT Park", "monthly_units_kwh": 13500.0, "peak_load_kw": 130.0, "is_live_ocm": False},
         ]
         for hub in metro_hubs:
+            hub["city"] = hub["district"]
             self.stations[hub["station_id"]] = hub
 
     def get_live_ocm_stations(self, latitude: Optional[float] = None, longitude: Optional[float] = None, distance_km: float = 100, max_results: int = 50) -> List[dict]:

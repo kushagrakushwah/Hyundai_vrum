@@ -623,6 +623,10 @@
 
                 <div class="det-grid">
                     <div class="det-item">
+                        <div style="font-size:11px; color:var(--text-muted);">CITY / DISTRICT</div>
+                        <div id="det-city" style="font-weight:600; font-size:14px; color:var(--hyundai-blue);">City</div>
+                    </div>
+                    <div class="det-item">
                         <div style="font-size:11px; color:var(--text-muted);">OPERATOR</div>
                         <div id="det-operator" style="font-weight:600; font-size:14px;">Operator</div>
                     </div>
@@ -741,6 +745,7 @@
                     ...s,
                     id: s.station_id || s.id,
                     name: s.name || 'EV Fast Charger',
+                    city: s.city || s.district || 'City',
                     district: s.district || 'Telangana',
                     address: s.address || (s.district ? s.district + ', Telangana' : 'Telangana'),
                     power_kw: parseFloat(s.power_kw) || 60,
@@ -797,7 +802,7 @@
         function matchQuery(st, query) {
             if (!query) return true;
             const q = query.toLowerCase().trim();
-            const fields = [st.name, st.district, st.address, st.operator, st.connector_type].map(f => (f || '').toLowerCase());
+            const fields = [st.name, st.city, st.district, st.address, st.operator, st.connector_type].map(f => (f || '').toLowerCase());
             
             // 1. Direct substring match
             if (fields.some(f => f.includes(q))) return true;
@@ -874,17 +879,21 @@
                 card.onclick = () => selectStation(st.id);
                 
                 let liveTag = st.is_live_ocm ? `<span class="badge live-ocm">LIVE OCM</span>` : '';
+                const cityName = st.city || st.district || 'City';
                 
                 card.innerHTML = `
                     <div class="st-header">
                         <div class="st-name" title="${st.name}">${st.name}</div>
                         <div class="badge ${getStatusBadgeClass(st.status)}">${st.status}</div>
                     </div>
+                    <div style="font-size:11px; color:var(--hyundai-blue); margin: 3px 0 6px 0; display:flex; align-items:center; gap:4px;">
+                        <span>📍</span> <strong style="color:#FFF;">${cityName}</strong> <span style="color:var(--text-muted);">· ${st.district || ''}</span>
+                    </div>
                     <div class="st-details">
-                        <span class="badge district">${st.district}</span>
+                        <span class="badge district" style="color:var(--hyundai-blue); font-weight:700; border:1px solid rgba(0,170,212,0.3); background:rgba(0,170,212,0.1);">${cityName}</span>
                         <span class="badge ${getPowerBadgeClass(st.power_kw)}">${st.power_kw} kW</span>
                         ${liveTag}
-                        <span style="margin-left:auto;">${st.connector_type}</span>
+                        <span style="margin-left:auto; font-size:11px;">${st.connector_type}</span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -944,6 +953,9 @@
             
             if(st.is_live_ocm) document.getElementById('det-live-banner').classList.remove('hidden');
             else document.getElementById('det-live-banner').classList.add('hidden');
+
+            const cityEl = document.getElementById('det-city');
+            if (cityEl) cityEl.innerText = `${st.city || st.district || 'City'} (${st.district || ''})`;
 
             document.getElementById('det-operator').innerText = st.operator || 'EV Operator';
             document.getElementById('det-power').innerText = `${st.power_kw} kW`;
