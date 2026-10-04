@@ -1,13 +1,16 @@
 """
-Stations Database — loads real Telangana EV station data
-In production, reads from nodes_master.csv (934 real BEE stations)
-For demo, generates realistic synthetic data matching the real dataset shape
+Stations Database — loads real Telangana EV station data & live Open Charge Map API
+Combines:
+1. 934 BEE national registry nodes (Telangana)
+2. Live real-time Open Charge Map (OCM) telemetry via API Key: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
 """
 import csv
 import json
 import os
 import random
 from typing import List, Optional, Dict
+
+from ocm_client import OpenChargeMapClient
 
 # Telangana districts with approximate coordinates
 TELANGANA_DISTRICTS = [
@@ -62,45 +65,63 @@ LOCATION_TYPES = [
 class StationsDB:
     def __init__(self):
         self.stations: Dict[str, dict] = {}
+        self.live_ocm_stations: Dict[str, dict] = {}
+        self.ocm_client = OpenChargeMapClient()
         self._load_or_generate()
 
     def _load_or_generate(self):
-        """Try to load from CSV, else generate synthetic data."""
-        csv_path = os.path.join(
-            os.path.dirname(__file__), "..", "demo_data", "nodes_master.csv"
-        )
-        if os.path.exists(csv_path):
-            self._load_from_csv(csv_path)
-        else:
+        """Try loading from real processed BEE CSV, then demo_data, else generate."""
+        base_dir = os.path.dirname(__file__)
+        candidate_paths = [
+            os.path.join(base_dir, "..", "..", "EVCS_Demand_Forecasting", "processed", "nodes_master.csv"),
+            os.path.join(base_dir, "..", "demo_data", "nodes_master.csv"),
+        ]
+
+        loaded = False
+        for path in candidate_paths:
+            if os.path.exists(path):
+                self._load_from_csv(path)
+                loaded = True
+                print(f"  [DB] Loaded {len(self.stations)} stations from {os.path.basename(path)}")
+                break
+
+        if not loaded:
             self._generate_synthetic()
 
     def _load_from_csv(self, path: str):
         with open(path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                sid = row.get("station_id", row.get("id", ""))
-                if sid:
-                    self.stations[sid] = {
-                        "station_id": sid,
-                        "name": row.get("name", "EV Station"),
-                        "district": row.get("district", "Hyderabad"),
-                        "address": row.get("address", ""),
-                        "lat": float(row.get("lat", row.get("latitude", 17.38))),
-                        "lng": float(row.get("lng", row.get("longitude", 78.48))),
-                        "power_kw": float(row.get("power_kw", 60)),
-                        "connector_type": row.get("connector_type", "CCS2"),
-                        "total_ports": int(row.get("total_ports", 2)),
-                        "operator": row.get("operator", "Tata Power"),
-                        "location_type": row.get("location_type", "Public"),
-                    }
+                sid = row.get("station_id") or row.get("id") or row.get("charger_id")
+                if not sid:
+                    continue
+
+                lat = float(row.get("lat") or row.get("latitude") or 17.3850)
+                lng = float(row.get("lng") or row.get("longitude") or 78.4867)
+                power = float(row.get("power_kw") or row.get("charger_rating") or 60.0)
+                ports = int(float(row.get("total_ports") or row.get("total_connectors") or 2))
+
+                self.stations[sid] = {
+                    "station_id": sid,
+                    "name": row.get("name") or f"{row.get('charge_point_operators', 'EV')} Hub — {row.get('district', 'Telangana')}",
+                    "district": row.get("district", "Hyderabad"),
+                    "address": row.get("address") or f"{row.get('city', 'Hyderabad')}, {row.get('district', 'Telangana')}",
+                    "lat": round(lat, 6),
+                    "lng": round(lng, 6),
+                    "power_kw": round(power, 1),
+                    "connector_type": row.get("connector_type") or "CCS2",
+                    "total_ports": ports,
+                    "operator": row.get("operator") or row.get("charge_point_operators") or "Tata Power",
+                    "location_type": row.get("location_type") or "Public Fast Charger",
+                    "monthly_units_kwh": float(row.get("monthly_units_kwh", 3200)),
+                    "peak_load_kw": float(row.get("peak_load_kw", power * 0.7)),
+                    "is_live_ocm": False,
+                }
 
     def _generate_synthetic(self):
         """Generate 934 synthetic stations matching real Telangana geography."""
         random.seed(42)
         target = 934
-        stations_per_district = {}
-
-        # Weight districts by population/EV density
         weights = [0.20, 0.15, 0.12, 0.05] + [0.02] * (len(TELANGANA_DISTRICTS) - 4)
         total_w = sum(weights)
         weights = [w / total_w for w in weights]
@@ -109,13 +130,9 @@ class StationsDB:
             dist_idx = random.choices(range(len(TELANGANA_DISTRICTS)), weights=weights)[0]
             district_name, base_lat, base_lng = TELANGANA_DISTRICTS[dist_idx]
 
-            # Scatter around district center
             lat = base_lat + random.uniform(-0.4, 0.4)
             lng = base_lng + random.uniform(-0.4, 0.4)
-
-            power_kw = random.choices(
-                POWER_RATINGS, weights=[5, 15, 20, 30, 20, 10]
-            )[0]
+            power_kw = random.choices(POWER_RATINGS, weights=[5, 15, 20, 30, 20, 10])[0]
             connector = random.choice(CONNECTOR_TYPES)
             operator = random.choice(STATION_NAMES_PREFIXES)
             loc_type = random.choice(LOCATION_TYPES)
@@ -136,29 +153,67 @@ class StationsDB:
                 "location_type": loc_type,
                 "monthly_units_kwh": round(random.uniform(500, 8000), 1),
                 "peak_load_kw": round(power_kw * random.uniform(0.6, 0.95), 1),
+                "is_live_ocm": False,
             }
 
-    def get_stations(self, district: Optional[str] = None, limit: int = 200) -> List[dict]:
-        stations = list(self.stations.values())
+    def get_live_ocm_stations(self, latitude: Optional[float] = None, longitude: Optional[float] = None, distance_km: float = 100, max_results: int = 50) -> List[dict]:
+        """Fetch live stations via Open Charge Map API."""
+        live_list = self.ocm_client.fetch_stations(
+            country_code="IN",
+            latitude=latitude,
+            longitude=longitude,
+            distance_km=distance_km,
+            max_results=max_results,
+        )
+        for s in live_list:
+            self.live_ocm_stations[s["station_id"]] = s
+        return live_list
+
+    def get_stations(
+        self,
+        district: Optional[str] = None,
+        source: str = "all",
+        limit: int = 200,
+    ) -> List[dict]:
+        """
+        Return stations from requested source:
+        - 'bee': only base network stations
+        - 'live': only live Open Charge Map stations
+        - 'all': live OCM stations prioritized, followed by base network
+        """
+        if source == "live":
+            if not self.live_ocm_stations:
+                self.get_live_ocm_stations(max_results=limit)
+            results = list(self.live_ocm_stations.values())
+        elif source == "bee":
+            results = list(self.stations.values())
+        else:
+            # Combined: include live OCM stations + base stations
+            live = list(self.live_ocm_stations.values())
+            if not live:
+                # Trigger quick live fetch
+                live = self.get_live_ocm_stations(max_results=25)
+            results = live + list(self.stations.values())
+
         if district:
-            stations = [s for s in stations if district.lower() in s["district"].lower()]
-        return stations[:limit]
+            results = [s for s in results if district.lower() in s.get("district", "").lower() or district.lower() in s.get("address", "").lower()]
+
+        return results[:limit]
 
     def get_station(self, station_id: str) -> Optional[dict]:
+        if station_id.startswith("OCM-"):
+            if station_id in self.live_ocm_stations:
+                return self.live_ocm_stations[station_id]
+            # Try fetching if not currently cached
+            self.get_live_ocm_stations(max_results=50)
+            return self.live_ocm_stations.get(station_id)
         return self.stations.get(station_id)
-
-    def save_to_csv(self, path: str):
-        if not self.stations:
-            return
-        keys = list(next(iter(self.stations.values())).keys())
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=keys)
-            writer.writeheader()
-            writer.writerows(self.stations.values())
 
 
 if __name__ == "__main__":
     db = StationsDB()
-    print(f"Loaded {len(db.stations)} stations")
-    db.save_to_csv("../demo_data/nodes_master.csv")
-    print("Saved to demo_data/nodes_master.csv")
+    print(f"Base stations: {len(db.stations)}")
+    live = db.get_live_ocm_stations(max_results=5)
+    print(f"Live OCM stations: {len(live)}")
+    sample = db.get_station(live[0]["station_id"]) if live else None
+    print(f"Sample Live Station: {sample['name']} | Status: {sample['status']}")

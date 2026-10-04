@@ -450,9 +450,10 @@
       </div>
     </div>
 
-    <div id="search-bar">
-      <input type="text" id="search-input" placeholder="Search stations..." oninput="filterStations(this.value)">
-      <button class="filter-btn active" onclick="setFilter('all')">All</button>
+    <div id="search-bar" style="display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border);">
+      <input type="text" id="search-input" placeholder="Search..." oninput="filterStations(this.value)" style="flex:1;min-width:0;">
+      <button class="filter-btn active" id="btn-all" onclick="setSourceFilter('all')">All</button>
+      <button class="filter-btn" id="btn-live" onclick="setSourceFilter('live')" style="border-color:rgba(0,180,216,.4);color:var(--accent);">⚡ Live OCM</button>
       <button class="filter-btn" onclick="setFilter('available')">Free</button>
     </div>
 
@@ -492,6 +493,9 @@
     </div>
 
     <div id="station-detail" style="display:none">
+      <div id="detail-ocm-banner" style="display:none;background:rgba(0,180,216,.12);border:1px solid rgba(0,180,216,.3);border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:10px;color:var(--accent);">
+        ⚡ <strong>Live API Feed:</strong> Open Charge Map · Key Authenticated
+      </div>
       <div class="detail-name" id="detail-name">—</div>
       <div class="detail-address" id="detail-address">—</div>
       <div class="detail-specs">
@@ -654,7 +658,7 @@ function renderStationList(stations) {
     <div class="station-card ${selectedStation?.station_id === s.station_id ? 'active' : ''}"
          onclick="selectStation('${s.station_id}')">
       <div class="station-card-top">
-        <div class="station-name">${s.name}</div>
+        <div class="station-name">${s.name} ${s.is_live_ocm ? '<span style="background:rgba(0,180,216,.2);color:#38bdf8;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;">LIVE OCM</span>' : ''}</div>
         <div class="status-badge badge-${s.status.toLowerCase()}">${s.status}</div>
       </div>
       <div class="station-meta">
@@ -679,10 +683,19 @@ function filterStations(query) {
   renderStationList(filtered);
 }
 
+let currentSource = 'all';
+
+async function setSourceFilter(src) {
+  currentSource = src;
+  document.getElementById('btn-all')?.classList.toggle('active', src === 'all');
+  document.getElementById('btn-live')?.classList.toggle('active', src === 'live');
+  await loadStations(src);
+}
+
 function setFilter(f) {
   activeFilter = f;
   document.querySelectorAll('.filter-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && f === 'all') || (i === 1 && f === 'available'));
+    b.classList.toggle('active', (i === 0 && f === 'all') || (i === 2 && f === 'available'));
   });
   filterStations(document.getElementById('search-input').value);
 }
@@ -717,6 +730,11 @@ function selectStation(stationId) {
 function showDetail(station) {
   document.getElementById('no-selection').style.display = 'none';
   document.getElementById('station-detail').style.display = 'block';
+
+  const ocmBanner = document.getElementById('detail-ocm-banner');
+  if (ocmBanner) {
+    ocmBanner.style.display = station.is_live_ocm ? 'block' : 'none';
+  }
 
   document.getElementById('detail-name').textContent = station.name;
   document.getElementById('detail-address').textContent = station.address || station.district + ', Telangana';
@@ -996,21 +1014,21 @@ function showToast(msg, type = 'info') {
 }
 
 // ── Load Data ─────────────────────────────────────────────────────────────────
-async function loadStations() {
+async function loadStations(source = currentSource) {
   try {
-    const res = await fetch(`${API}/api/stations?limit=200`);
+    const res = await fetch(`${API}/api/stations?source=${source}&limit=200`);
     const data = await res.json();
     allStations = data.stations;
     renderMarkers(allStations);
     renderStationList(allStations);
 
     // Auto-select first available 60kW station
-    const best = allStations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50);
+    const best = allStations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50) || allStations[0];
     if (best) {
       setTimeout(() => selectStation(best.station_id), 800);
     }
 
-    addNotification(`Loaded <strong>${allStations.length}</strong> stations across Telangana.`, 'info');
+    addNotification(`Loaded <strong>${allStations.length}</strong> stations (${source === 'live' ? 'Live Open Charge Map API' : 'BEE + Live OCM'}).`, 'info');
   } catch (e) {
     console.error('Failed to load stations:', e);
     // Load demo stations if backend unavailable

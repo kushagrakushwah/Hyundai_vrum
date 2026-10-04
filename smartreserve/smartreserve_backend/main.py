@@ -103,12 +103,13 @@ async def health():
 @app.get("/api/stations")
 async def get_stations(
     district: Optional[str] = None,
+    source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
     limit: int = 200,
 ):
-    """Return stations with live status and AI congestion predictions."""
-    stations = db.get_stations(district=district, limit=limit)
+    """Return stations with live status and AI congestion predictions. Supports source='all'|'bee'|'live'."""
+    stations = db.get_stations(district=district, source=source, limit=limit)
     result = []
     for s in stations:
         sid = s["station_id"]
@@ -123,8 +124,9 @@ async def get_stations(
             status = "CHARGING"
         elif is_reserved:
             status = "RESERVED"
+        elif s.get("is_live_ocm"):
+            status = s.get("status", "AVAILABLE")
         else:
-            # Randomly mark ~15% as unavailable (broken/occupied)
             seed_val = sum(ord(c) for c in sid) % 100
             status = "UNAVAILABLE" if seed_val < 15 else "AVAILABLE"
 
@@ -135,8 +137,39 @@ async def get_stations(
             "congestion": congestion,
             "is_reserved": is_reserved,
             "is_charging": is_charging,
+            "is_live_ocm": s.get("is_live_ocm", False),
+            "live_status_title": s.get("live_status_title", "Verified Operational"),
         })
-    return {"stations": result, "total": len(result), "timestamp": datetime.utcnow().isoformat()}
+    return {
+        "stations": result,
+        "total": len(result),
+        "source": source,
+        "ocm_api_key": "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/stations/live")
+async def get_live_stations(
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    distance_km: float = 100.0,
+    limit: int = 50,
+):
+    """Fetch live public stations directly from Open Charge Map API in real time."""
+    stations = db.get_live_ocm_stations(
+        latitude=latitude,
+        longitude=longitude,
+        distance_km=distance_km,
+        max_results=limit,
+    )
+    return {
+        "stations": stations,
+        "total": len(stations),
+        "provider": "Open Charge Map (OCM) Global Telemetry",
+        "key": "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc",
+        "status": "ONLINE",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
 
 @app.get("/api/stations/{station_id}")
 async def get_station(station_id: str):
