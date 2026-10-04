@@ -367,10 +367,10 @@
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
-const API = window.location.port === '3000'
-  ? 'http://localhost:8000'
-  : (window.location.origin.replace(':3000', ':8000'));
-const WS_URL = API.replace('http', 'ws');
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API = isLocal ? 'http://localhost:8000' : window.location.origin;
+const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = isLocal ? 'ws://localhost:8000' : `${wsProto}//${window.location.host}`;
 
 // Get station ID from URL param or use default
 const params = new URLSearchParams(window.location.search);

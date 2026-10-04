@@ -654,6 +654,16 @@
                     <div class="pin-code" id="pin-code">------</div>
                     <div style="font-size: 12px; color: var(--text-muted);">Enter PIN at the charger screen</div>
                     <div class="timer" id="pin-timer">30:00</div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:8px; width:100%; margin-top:5px;">
+                        <button class="btn-unlock" id="btn-unlock-now" style="background:linear-gradient(135deg, #00AAD4, #0077b6); color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 0 15px rgba(0,170,212,0.4); transition:all 0.3s;">
+                            <span>⚡</span> Simulate Arriving & Unlock Charger
+                        </button>
+                        <a id="btn-open-kiosk" target="_blank" href="/kiosk" style="text-align:center; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:var(--text-main); padding:9px; border-radius:6px; font-size:12px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.3s;">
+                            <span>🖥️</span> Open Charger Touchscreen Kiosk
+                        </a>
+                    </div>
+
                     <button class="btn-cancel" id="btn-cancel">Cancel Reservation</button>
                 </div>
                 
@@ -982,6 +992,9 @@
             const pinSec = document.getElementById('pin-section');
             const resSec = document.getElementById('booking-section');
 
+            const kioskBtn = document.getElementById('btn-open-kiosk');
+            if (kioskBtn) kioskBtn.href = `/kiosk?station=${st.id}`;
+
             if(st.status === 'AVAILABLE') {
                 resSec.style.display = 'block';
                 pinSec.style.display = 'none';
@@ -1093,6 +1106,40 @@
         document.getElementById('btn-cancel').onclick = () => {
             if(selectedStationId) cancelReservation(selectedStationId);
         };
+
+        const unlockBtn = document.getElementById('btn-unlock-now');
+        if (unlockBtn) {
+            unlockBtn.onclick = async () => {
+                unlockBtn.disabled = true;
+                unlockBtn.innerText = 'Unlocking Relay...';
+                const pinVal = document.getElementById('pin-code').innerText.trim();
+                
+                try {
+                    const res = await fetch(`${API}/api/verify-otp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ station_id: selectedStationId, pin: pinVal })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        showToast('Contactor Relay Unlocked! Charging initiated.', 'success');
+                        updateOcppLog(`> UnlockConnector.req [Station: ${selectedStationId}]\n< UnlockConnector.conf [Status: Unlocked]`);
+                        updateOcppLog(`> RemoteStartTransaction.req\n< RemoteStartTransaction.conf [Accepted]`);
+                        showChargingPanel();
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        showToast(err.detail || 'Access denied: Invalid PIN', 'error');
+                    }
+                } catch (e) {
+                    showToast('Relay Unlocked (Demo Mode)! Charging...', 'success');
+                    showChargingPanel();
+                } finally {
+                    unlockBtn.disabled = false;
+                    unlockBtn.innerHTML = '<span>⚡</span> Simulate Arriving & Unlock Charger';
+                }
+            };
+        }
 
         // WebSocket & Charging Sim
         function initWebSocket() {
