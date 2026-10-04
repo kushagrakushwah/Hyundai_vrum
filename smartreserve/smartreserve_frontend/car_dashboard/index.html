@@ -673,8 +673,9 @@
             <div class="chip">Live OCM: <span id="stat-live">0</span></div>
             <div class="chip">Active Reservations: <span id="stat-res">0</span></div>
         </div>
-        <div>System Healthy | v1.0.0</div>
     </div>
+
+    <div class="toast-container" id="toast-container"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -720,17 +721,27 @@
 
         // Toast Notification
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerText = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            try {
+                let container = document.getElementById('toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    container.className = 'toast-container';
+                    document.body.appendChild(container);
+                }
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerText = message;
+                container.appendChild(toast);
+                
+                setTimeout(() => toast.classList.add('show'), 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            } catch (err) {
+                console.log('Toast:', message);
+            }
         }
 
         // API Fetch
@@ -991,8 +1002,10 @@
         // Booking logic (Connects to backend /api/reserve)
         async function reserveStation(id) {
             const resBtn = document.getElementById('btn-reserve');
-            resBtn.disabled = true;
-            resBtn.innerText = 'Reserving...';
+            if (resBtn) {
+                resBtn.disabled = true;
+                resBtn.innerText = 'Locking Slot...';
+            }
             
             let pin = '742911';
             try {
@@ -1011,30 +1024,38 @@
                 if (res.ok) {
                     const data = await res.json();
                     pin = data.pin;
-                    showToast(`Slot reserved! PIN: ${pin}`, 'success');
+                    showToast(`Slot Locked! Your PIN: ${pin}`, 'success');
                     updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted - PIN: ${pin}]`);
                 } else {
-                    const err = await res.json();
-                    pin = Math.floor(100000 + Math.random() * 900000);
+                    const err = await res.json().catch(() => ({}));
+                    pin = String(Math.floor(100000 + Math.random() * 900000));
                     showToast(err.detail || 'Demo slot locked!', 'info');
-                    updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Status: Accepted]`);
+                    updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted - PIN: ${pin}]`);
                 }
             } catch (e) {
-                pin = Math.floor(100000 + Math.random() * 900000);
-                showToast('Reserved in demo mode!', 'info');
+                console.warn('Booking network fallback:', e);
+                pin = String(Math.floor(100000 + Math.random() * 900000));
+                showToast(`Reserved (Demo Mode)! PIN: ${pin}`, 'info');
                 updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted]`);
             }
             
             // Update local state
             const st = stations.find(s => s.id === id);
-            if(st) st.status = 'RESERVED';
-            applyFilters();
-            
-            document.getElementById('booking-section').style.display = 'none';
-            document.getElementById('pin-section').style.display = 'flex';
-            document.getElementById('pin-code').innerText = pin;
+            if (st) st.status = 'RESERVED';
+
+            // Reveal PIN screen and hide button
+            const bookSec = document.getElementById('booking-section');
+            const pinSec = document.getElementById('pin-section');
+            const pinCode = document.getElementById('pin-code');
+
+            if (bookSec) bookSec.style.display = 'none';
+            if (pinSec) pinSec.style.display = 'flex';
+            if (pinCode) pinCode.innerText = pin;
             
             startPinTimer();
+
+            // Re-render markers with updated lock status
+            renderMarkers(stations);
         }
 
         function startPinTimer() {
@@ -1144,7 +1165,9 @@
 
         function updateOcppLog(msg) {
             const log = document.getElementById('ocpp-log');
-            log.innerText = `${msg}\n\n${log.innerText}`.substring(0, 500);
+            if (log) {
+                log.innerText = `${msg}\n\n${log.innerText || ''}`.substring(0, 500);
+            }
         }
 
         // Filter button events
