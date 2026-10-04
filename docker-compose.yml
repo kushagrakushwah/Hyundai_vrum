@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  smartreserve:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - RAZORPAY_KEY_ID=rzp_test_placeholder
+      - RAZORPAY_KEY_SECRET=placeholder
+      - OCM_API_KEY=1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+    volumes:
+      - ./smartreserve/smartreserve_backend:/app/smartreserve_backend
+      - ./smartreserve/smartreserve_frontend:/app/smartreserve_frontend
+    restart: unless-stopped

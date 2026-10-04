@@ -11,3 +11,12 @@ __pycache__/
 # Temporary dumps
 Final_Demo_dump.txt
 test.pdf
+
+# Environment & database
+.env
+smartreserve.db
+*.db
+
+# System & dependencies
+.DS_Store
+node_modules/

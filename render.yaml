@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hyundai-smartreserve
+    runtime: python
+    buildCommand: pip install -r smartreserve/requirements.txt
+    startCommand: cd smartreserve/smartreserve_backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: RAZORPAY_KEY_ID
+        value: rzp_test_placeholder
+      - key: RAZORPAY_KEY_SECRET
+        value: placeholder
+      - key: OCM_API_KEY
+        value: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+    healthCheckPath: /health
+    autoDeploy: true

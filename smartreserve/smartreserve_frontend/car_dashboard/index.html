@@ -1,1080 +1,1094 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hyundai SmartReserve — In-Cabin Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-  :root {
-    --bg:         #050c1a;
-    --surface:    #0a1628;
-    --surface2:   #0f1e35;
-    --border:     #1a2d4a;
-    --accent:     #00b4d8;
-    --accent2:    #0077b6;
-    --green:      #22c55e;
-    --amber:      #f59e0b;
-    --red:        #ef4444;
-    --blue-res:   #3b82f6;
-    --text:       #e2e8f0;
-    --muted:      #64748b;
-    --hyundai:    #002c5f;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    height: 100vh;
-    display: grid;
-    grid-template-rows: 52px 1fr;
-    overflow: hidden;
-    user-select: none;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyundai SmartReserve Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-color: #050A18;
+            --hyundai-blue: #00AAD4;
+            --electric-yellow: #FFD100;
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --status-green: #00FF66;
+            --status-amber: #FF9900;
+            --status-red: #FF3333;
+            --font-head: 'Rajdhani', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
 
-  /* ── Top Bar ── */
-  #topbar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    gap: 16px;
-  }
-  .brand { display:flex; align-items:center; gap:10px; }
-  .brand svg { width:28px; height:28px; }
-  .brand-text { font-size:13px; font-weight:700; letter-spacing:.04em; color:var(--accent); }
-  .brand-sub { font-size:10px; color:var(--muted); letter-spacing:.08em; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-  .topbar-center { display:flex; align-items:center; gap:20px; }
-  .time-display { font-family:'DM Mono',monospace; font-size:15px; color:var(--text); }
-  .date-display { font-size:11px; color:var(--muted); }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at top right, rgba(0, 170, 212, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(255, 209, 0, 0.1) 0%, transparent 40%),
+                        var(--bg-color);
+        }
 
-  .topbar-right { display:flex; align-items:center; gap:14px; }
-  .status-pill {
-    display:flex; align-items:center; gap:6px;
-    background: rgba(0,180,216,.08);
-    border: 1px solid rgba(0,180,216,.2);
-    border-radius:20px; padding: 4px 10px;
-    font-size:11px; font-weight:500; color:var(--accent);
-  }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        /* Glassmorphism */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
 
-  /* ── Main Layout ── */
-  #main {
-    display: grid;
-    grid-template-columns: 300px 1fr 280px;
-    gap: 0;
-    overflow: hidden;
-  }
+        /* Layout */
+        #app {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 60px);
+            padding: 20px;
+            gap: 20px;
+        }
 
-  /* ── Left Panel ── */
-  #left-panel {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+        .panel-left { width: 35%; display: flex; flex-direction: column; gap: 15px; }
+        .panel-center { width: 40%; display: flex; flex-direction: column; gap: 15px; }
+        .panel-right { width: 25%; display: flex; flex-direction: column; gap: 15px; }
 
-  .panel-header {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .panel-title { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
+        /* Typography */
+        h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: 0.5px; }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+        }
+        
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-  /* Battery Widget */
-  #battery-widget {
-    padding: 16px;
-    background: linear-gradient(135deg, rgba(0,180,216,.06), rgba(0,119,182,.04));
-    border-bottom: 1px solid var(--border);
-  }
-  .battery-row { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:10px; }
-  .battery-soc { font-size:40px; font-weight:800; color:var(--amber); line-height:1; }
-  .battery-soc.soc-ok { color:var(--green); }
-  .battery-soc.soc-critical { color:var(--red); }
-  .battery-unit { font-size:14px; color:var(--muted); margin-bottom:6px; }
-  .battery-range { font-size:12px; color:var(--muted); }
-  .battery-range span { color:var(--text); font-weight:600; }
-  .battery-bar-wrap { width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
-  .battery-bar { height:100%; border-radius:4px; background:var(--amber); transition: width 1s ease; }
-  .battery-bar.ok { background:var(--green); }
-  .battery-bar.critical { background:var(--red); }
-  .battery-labels { display:flex; justify-content:space-between; margin-top:4px; }
-  .battery-label { font-size:9px; color:var(--muted); }
+        .hyundai-logo {
+            width: 40px;
+            height: 30px;
+            fill: var(--hyundai-blue);
+        }
 
-  /* AI Alert */
-  #ai-alert {
-    padding: 12px 16px;
-    background: rgba(34,197,94,.06);
-    border-bottom: 1px solid rgba(34,197,94,.15);
-    display:flex; gap:10px; align-items:flex-start;
-  }
-  .ai-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
-  .ai-alert-text { font-size:11px; line-height:1.5; color:var(--text); }
-  .ai-alert-text strong { color:var(--green); }
-  #ai-alert.hidden { display:none; }
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
 
-  /* Station list */
-  #station-list { flex:1; overflow-y:auto; }
-  #station-list::-webkit-scrollbar { width:4px; }
-  #station-list::-webkit-scrollbar-track { background:transparent; }
-  #station-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+        .time-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-family: var(--font-head);
+            font-size: 20px;
+        }
 
-  .station-card {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .15s;
-    display:flex; flex-direction:column; gap:5px;
-  }
-  .station-card:hover, .station-card.active { background: var(--surface2); }
-  .station-card.active { border-left: 2px solid var(--accent); }
-  .station-card-top { display:flex; align-items:center; justify-content:space-between; }
-  .station-name { font-size:12px; font-weight:600; color:var(--text); flex:1; margin-right:6px; }
-  .status-badge {
-    font-size:9px; font-weight:700; letter-spacing:.04em;
-    padding:2px 7px; border-radius:10px; flex-shrink:0;
-    text-transform:uppercase;
-  }
-  .badge-available { background:rgba(34,197,94,.15); color:var(--green); }
-  .badge-reserved  { background:rgba(59,130,246,.15); color:var(--blue-res); }
-  .badge-charging  { background:rgba(0,180,216,.15);  color:var(--accent); }
-  .badge-unavailable { background:rgba(100,116,139,.15); color:var(--muted); }
-  .station-meta { display:flex; gap:10px; }
-  .meta-item { font-size:10px; color:var(--muted); display:flex; align-items:center; gap:3px; }
-  .congestion-dot { width:7px; height:7px; border-radius:50%; }
-  .cong-low    { background:var(--green); }
-  .cong-med    { background:var(--amber); }
-  .cong-high   { background:var(--red); }
-  .station-dist { font-size:10px; color:var(--accent); font-weight:500; }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--status-green);
+            box-shadow: 0 0 10px var(--status-green);
+            animation: pulse 2s infinite;
+        }
 
-  /* Search */
-  #search-bar {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    display:flex; gap:8px;
-  }
-  #search-input {
-    flex:1; background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:6px 10px; font-size:11px; color:var(--text);
-    outline:none; font-family:inherit;
-  }
-  #search-input:focus { border-color:var(--accent); }
-  #search-input::placeholder { color:var(--muted); }
-  .filter-btn {
-    background:var(--surface2); border:1px solid var(--border); border-radius:6px;
-    padding:6px 10px; color:var(--muted); font-size:10px; cursor:pointer;
-    font-family:inherit; transition: all .15s;
-  }
-  .filter-btn.active { border-color:var(--accent); color:var(--accent); }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 102, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
+        }
 
-  /* ── Map ── */
-  #map-wrap {
-    position:relative;
-    background: #071223;
-  }
-  #map { width:100%; height:100%; }
+        /* Filter & Search */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
 
-  .map-overlay {
-    position:absolute; z-index:1000;
-    pointer-events:none;
-  }
-  #map-header {
-    top:12px; left:12px; right:12px;
-    display:flex; justify-content:space-between; align-items:flex-start;
-    pointer-events: all;
-  }
-  .map-title {
-    background: rgba(5,12,26,.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius:8px; padding: 8px 14px;
-    font-size:12px; font-weight:600; color:var(--text);
-  }
-  .map-title span { color:var(--accent); }
-  .map-legend {
-    background: rgba(5,12,26,.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius:8px; padding: 8px 12px;
-    display:flex; flex-direction:column; gap:4px;
-  }
-  .legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
-  .legend-dot { width:8px; height:8px; border-radius:50%; }
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
 
-  /* ── Right Panel ── */
-  #right-panel {
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+        .filter-btn.active, .filter-btn:hover {
+            background: rgba(0, 170, 212, 0.2);
+            border-color: var(--hyundai-blue);
+            color: var(--hyundai-blue);
+            box-shadow: 0 0 10px rgba(0, 170, 212, 0.3);
+        }
 
-  /* Station Detail */
-  #station-detail {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink:0;
-  }
-  #no-selection {
-    padding:32px 16px; text-align:center;
-    color:var(--muted); font-size:12px; line-height:1.6;
-  }
-  .no-sel-icon { font-size:32px; margin-bottom:8px; }
-  .detail-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
-  .detail-address { font-size:11px; color:var(--muted); margin-bottom:12px; }
-  .detail-specs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-  .spec-card {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:8px 10px;
-  }
-  .spec-value { font-size:16px; font-weight:700; color:var(--accent); }
-  .spec-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
+        .search-box {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-family: var(--font-body);
+            transition: all 0.3s;
+        }
 
-  .ai-prediction-box {
-    background: rgba(0,180,216,.06);
-    border: 1px solid rgba(0,180,216,.2);
-    border-radius:8px; padding:10px 12px; margin-bottom:12px;
-  }
-  .ai-pred-header { font-size:10px; color:var(--accent); font-weight:600; margin-bottom:6px; letter-spacing:.04em; }
-  .ai-pred-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-  .ai-pred-label { font-size:11px; color:var(--muted); }
-  .ai-pred-value { font-size:11px; font-weight:600; color:var(--text); }
-  .congestion-badge {
-    display:inline-flex; align-items:center; gap:5px;
-    font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
-  }
-  .cong-badge-low  { background:rgba(34,197,94,.15); color:var(--green); }
-  .cong-badge-med  { background:rgba(245,158,11,.15); color:var(--amber); }
-  .cong-badge-high { background:rgba(239,68,68,.15);  color:var(--red);   }
+        .search-box:focus {
+            outline: none;
+            border-color: var(--hyundai-blue);
+            box-shadow: 0 0 10px rgba(0, 170, 212, 0.4);
+        }
 
-  /* Reserve Button */
-  #reserve-btn {
-    width:100%; padding:14px;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    border:none; border-radius:8px;
-    font-family:inherit; font-size:13px; font-weight:700; color:#fff;
-    cursor:pointer; transition: all .2s;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  #reserve-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0,180,216,.35);
-  }
-  #reserve-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
-  #reserve-btn.reserved {
-    background: linear-gradient(135deg, #1e3a5f, #2563eb);
-  }
+        /* Station List */
+        .station-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 5px;
+        }
 
-  /* PIN Display */
-  #pin-display {
-    padding:14px 16px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(34,197,94,.04);
-    flex-shrink:0;
-  }
-  #pin-display.hidden { display:none; }
-  .pin-header { font-size:10px; color:var(--green); font-weight:700; letter-spacing:.06em; margin-bottom:8px; text-transform:uppercase; }
-  .pin-digits {
-    display:flex; gap:6px; margin-bottom:10px;
-    justify-content:center;
-  }
-  .pin-digit {
-    width:34px; height:38px;
-    background:var(--surface2); border:1px solid var(--green);
-    border-radius:6px; display:flex; align-items:center; justify-content:center;
-    font-family:'DM Mono',monospace; font-size:18px; font-weight:600;
-    color:var(--green);
-  }
-  .pin-sub { font-size:10px; color:var(--muted); text-align:center; margin-bottom:8px; }
-  .countdown-row { display:flex; align-items:center; justify-content:space-between; }
-  .countdown-label { font-size:10px; color:var(--muted); }
-  .countdown-timer { font-family:'DM Mono',monospace; font-size:14px; color:var(--amber); font-weight:600; }
-  #cancel-btn {
-    width:100%; padding:7px;
-    background:transparent; border:1px solid var(--border);
-    border-radius:6px; font-family:inherit; font-size:11px;
-    color:var(--muted); cursor:pointer; margin-top:8px;
-    transition: all .15s;
-  }
-  #cancel-btn:hover { border-color:var(--red); color:var(--red); }
+        .station-list::-webkit-scrollbar { width: 6px; }
+        .station-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 
-  /* Charging Session */
-  #charging-display {
-    padding:14px 16px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink:0;
-  }
-  #charging-display.hidden { display:none; }
-  .charging-header { font-size:10px; color:var(--accent); font-weight:700; letter-spacing:.06em; margin-bottom:10px; text-transform:uppercase; }
-  .charging-soc { font-size:36px; font-weight:800; color:var(--green); line-height:1; margin-bottom:4px; }
-  .charging-meta { font-size:11px; color:var(--muted); margin-bottom:10px; }
-  .charging-meta span { color:var(--text); font-weight:500; }
-  .soc-bar-wrap { width:100%; height:10px; background:var(--border); border-radius:5px; overflow:hidden; margin-bottom:8px; }
-  .soc-bar { height:100%; background:linear-gradient(90deg, var(--accent2), var(--green)); border-radius:5px; transition:width 1.5s ease; }
-  #charging-chart { width:100%; height:70px; }
+        .station-card {
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-  /* Notifications */
-  #notifications {
-    flex:1; overflow-y:auto; padding:10px;
-  }
-  .notif {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:8px 10px; margin-bottom:6px;
-    font-size:11px; color:var(--muted); line-height:1.4;
-    animation: slideIn .25s ease;
-  }
-  .notif strong { color:var(--text); }
-  .notif .notif-time { font-size:9px; color:var(--muted); margin-top:2px; }
-  .notif.success { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.04); }
-  .notif.info    { border-color:rgba(0,180,216,.3);  background:rgba(0,180,216,.04); }
-  .notif.warning { border-color:rgba(245,158,11,.3); background:rgba(245,158,11,.04); }
-  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+        .station-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
 
-  /* Toast */
-  #toast {
-    position:fixed; top:64px; left:50%; transform:translateX(-50%);
-    background: rgba(10,22,40,.95); border:1px solid var(--accent);
-    backdrop-filter:blur(12px); border-radius:10px;
-    padding:12px 20px; font-size:13px; color:var(--text);
-    z-index:9999; pointer-events:none; opacity:0;
-    transition: opacity .25s; box-shadow:0 8px 32px rgba(0,0,0,.5);
-  }
-  #toast.show { opacity:1; }
+        .station-card.selected {
+            border-color: var(--electric-yellow);
+            box-shadow: 0 0 15px rgba(255, 209, 0, 0.2);
+            background: rgba(255, 209, 0, 0.05);
+        }
 
-  /* Leaflet custom markers */
-  .marker-available { background:var(--green); }
-  .marker-reserved  { background:var(--blue-res); }
-  .marker-charging  { background:var(--accent); }
-  .marker-unavailable { background:var(--muted); }
-  .marker-active { background:var(--amber); }
+        .st-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
 
-  .custom-marker {
-    width:14px; height:14px; border-radius:50%;
-    border:2px solid rgba(255,255,255,.6);
-    box-shadow: 0 0 6px rgba(0,0,0,.4);
-    cursor:pointer;
-  }
-  .custom-marker.selected {
-    width:18px; height:18px;
-    border:2px solid #fff;
-    box-shadow: 0 0 12px currentColor, 0 0 4px rgba(0,0,0,.6);
-  }
+        .st-name {
+            font-family: var(--font-head);
+            font-size: 18px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
 
-  .leaflet-popup-content-wrapper {
-    background:var(--surface) !important; border:1px solid var(--border) !important;
-    border-radius:8px !important; box-shadow:0 8px 24px rgba(0,0,0,.5) !important;
-  }
-  .leaflet-popup-content { color:var(--text) !important; font-family:'Inter',sans-serif !important; margin:10px 14px !important; }
-  .leaflet-popup-tip { background:var(--surface) !important; }
-  .popup-name { font-size:12px; font-weight:700; margin-bottom:4px; color:var(--text); }
-  .popup-meta { font-size:10px; color:var(--muted); margin-bottom:6px; }
-  .popup-select {
-    width:100%; padding:6px; background:var(--accent);
-    border:none; border-radius:4px; color:#fff; font-size:11px;
-    font-weight:600; cursor:pointer; font-family:inherit;
-  }
-</style>
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .badge.district { background: rgba(255,255,255,0.1); }
+        .badge.power-high { background: rgba(0, 255, 102, 0.2); color: var(--status-green); }
+        .badge.power-med { background: rgba(255, 209, 0, 0.2); color: var(--electric-yellow); }
+        .badge.power-low { background: rgba(255, 255, 255, 0.2); color: #CCC; }
+        
+        .badge.status-avail { background: rgba(0, 255, 102, 0.15); border: 1px solid var(--status-green); color: var(--status-green); animation: pulse-border-green 2s infinite; }
+        .badge.status-reserv { background: rgba(255, 153, 0, 0.15); border: 1px solid var(--status-amber); color: var(--status-amber); animation: pulse-border-amber 2s infinite; }
+        .badge.status-charg { background: rgba(0, 170, 212, 0.15); border: 1px solid var(--hyundai-blue); color: var(--hyundai-blue); animation: pulse-border-blue 2s infinite; }
+        .badge.status-unavail { background: rgba(255, 51, 51, 0.15); border: 1px solid var(--status-red); color: var(--status-red); }
+
+        .badge.live-ocm { background: rgba(0, 255, 255, 0.1); border: 1px solid #00FFFF; color: #00FFFF; }
+
+        @keyframes pulse-border-green { 0%, 100% { box-shadow: 0 0 5px var(--status-green); } 50% { box-shadow: 0 0 15px var(--status-green); } }
+        @keyframes pulse-border-amber { 0%, 100% { box-shadow: 0 0 5px var(--status-amber); } 50% { box-shadow: 0 0 15px var(--status-amber); } }
+        @keyframes pulse-border-blue { 0%, 100% { box-shadow: 0 0 5px var(--hyundai-blue); } 50% { box-shadow: 0 0 15px var(--hyundai-blue); } }
+
+        .st-details {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            align-items: center;
+        }
+
+        /* Center Panel - Map & Charging */
+        #map {
+            flex: 1;
+            border-radius: 16px;
+            background: #111;
+            border: 1px solid var(--glass-border);
+            z-index: 1;
+        }
+        
+        .leaflet-container {
+            background-color: #050A18 !important;
+        }
+
+        .charging-panel {
+            height: 40%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .charge-arc-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .charge-arc {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .charge-arc circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+
+        .arc-bg { stroke: rgba(255,255,255,0.1); }
+        .arc-fill {
+            stroke: var(--hyundai-blue);
+            stroke-dasharray: 502;
+            stroke-dashoffset: 502;
+            transition: stroke-dashoffset 1s ease-out;
+            filter: drop-shadow(0 0 10px var(--hyundai-blue));
+        }
+
+        .soc-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .soc-val { font-family: var(--font-head); font-size: 42px; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .soc-label { font-size: 14px; color: var(--hyundai-blue); text-transform: uppercase; letter-spacing: 2px; }
+
+        .charge-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-left: 40px;
+        }
+
+        .c-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .c-stat-val { font-family: var(--font-head); font-size: 24px; font-weight: 600; color: var(--electric-yellow); }
+        .c-stat-lbl { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+
+        .hero-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .hero-car {
+            width: 150px;
+            height: auto;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Right Panel - Details & Booking */
+        .right-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .right-content::-webkit-scrollbar { width: 4px; }
+
+        .det-title { font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+        .det-addr { color: var(--text-muted); font-size: 14px; margin-bottom: 15px; }
+
+        .det-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .det-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .live-banner {
+            background: rgba(0, 255, 255, 0.1);
+            border-left: 4px solid #00FFFF;
+            padding: 10px 15px;
+            font-size: 13px;
+            color: #00FFFF;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 4px;
+        }
+
+        .btn-reserve {
+            background: linear-gradient(135deg, #FFD100, #FFAA00);
+            border: none;
+            color: #000;
+            padding: 15px;
+            font-family: var(--font-head);
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 209, 0, 0.4);
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-reserve:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 209, 0, 0.6);
+        }
+
+        .btn-reserve:disabled {
+            background: #333;
+            color: #666;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .booking-notice {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: -10px;
+        }
+
+        .pin-display {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--electric-yellow);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            display: none; /* hidden initially */
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pin-code {
+            font-family: var(--font-head);
+            font-size: 48px;
+            letter-spacing: 10px;
+            color: var(--electric-yellow);
+            text-shadow: 0 0 15px rgba(255, 209, 0, 0.5);
+        }
+
+        .timer { font-size: 18px; color: var(--status-red); font-family: monospace; }
+        
+        .btn-cancel {
+            background: rgba(255,51,51,0.1);
+            border: 1px solid var(--status-red);
+            color: var(--status-red);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        .btn-cancel:hover { background: rgba(255,51,51,0.3); }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: auto;
+        }
+
+        .stats-chips {
+            display: flex;
+            gap: 20px;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+
+        .chip span { color: white; font-weight: 600; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: rgba(10, 15, 30, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--hyundai-blue);
+            color: white;
+            font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-color: var(--status-green); }
+        .toast.error { border-color: var(--status-red); }
+        .toast.warning { border-color: var(--status-amber); }
+
+        /* Markers */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background: #222;
+            border: 2px solid white;
+        }
+        .marker-avail { border-color: var(--status-green); box-shadow: 0 0 10px var(--status-green); }
+        .marker-reserv { border-color: var(--status-amber); box-shadow: 0 0 10px var(--status-amber); }
+        .marker-charg { border-color: var(--hyundai-blue); box-shadow: 0 0 10px var(--hyundai-blue); }
+        .marker-unavail { border-color: var(--status-red); }
+
+        .marker-icon { width: 16px; height: 16px; }
+
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
 
-<!-- Top Bar -->
-<header id="topbar">
-  <div class="brand">
-    <svg viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="48" fill="#002c5f"/>
-      <text x="50" y="62" text-anchor="middle" fill="white" font-size="44" font-weight="700" font-family="sans-serif">H</text>
-    </svg>
-    <div>
-      <div class="brand-text">SmartReserve</div>
-      <div class="brand-sub">HYUNDAI EV CO-PILOT</div>
-    </div>
-  </div>
-  <div class="topbar-center">
-    <div>
-      <div class="time-display" id="clock">--:--</div>
-      <div class="date-display" id="date-display">--</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <div class="status-pill">
-      <div class="status-dot"></div>
-      <span>AI Active</span>
-    </div>
-    <div class="status-pill" id="ws-status" style="color:var(--amber); border-color:rgba(245,158,11,.2)">
-      Connecting...
-    </div>
-  </div>
-</header>
-
-<!-- Main -->
-<div id="main">
-
-  <!-- Left: Station List -->
-  <aside id="left-panel">
-    <div id="battery-widget">
-      <div class="battery-row">
-        <div>
-          <div class="battery-soc soc-critical" id="soc-display">18%</div>
-          <div class="battery-range">Range: <span id="range-display">41 km</span></div>
+    <div class="header glass" style="margin: 20px 20px 0 20px; border-radius: 12px;">
+        <div class="logo-title">
+            <svg class="hyundai-logo" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="100" cy="60" rx="90" ry="50" fill="none" stroke="currentColor" stroke-width="12"/>
+                <path d="M 60,30 L 60,90 M 140,30 L 140,90 M 60,60 L 140,60" fill="none" stroke="currentColor" stroke-width="15" transform="skewX(-20)"/>
+            </svg>
+            <div class="title">SmartReserve <span style="color:var(--hyundai-blue); font-weight: 300;">EV</span></div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Battery</div>
-          <div style="font-size:10px;color:var(--red);font-weight:600;">⚠ Low</div>
+        <div class="time-status">
+            <div class="status-dot" id="ws-status"></div>
+            <div id="clock">00:00:00</div>
         </div>
-      </div>
-      <div class="battery-bar-wrap">
-        <div class="battery-bar critical" id="battery-bar" style="width:18%"></div>
-      </div>
-      <div class="battery-labels">
-        <span class="battery-label">0%</span>
-        <span class="battery-label">50%</span>
-        <span class="battery-label">100%</span>
-      </div>
     </div>
 
-    <div id="ai-alert">
-      <div class="ai-icon">🤖</div>
-      <div class="ai-alert-text">
-        <strong>AI recommends:</strong> Tata Power IT Park — Gachibowli<br>
-        1.8 km away · 60 kW DC · Predicted queue: <strong>0 min</strong>
-      </div>
-    </div>
-
-    <div id="search-bar" style="display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border);">
-      <input type="text" id="search-input" placeholder="Search..." oninput="filterStations(this.value)" style="flex:1;min-width:0;">
-      <button class="filter-btn active" id="btn-all" onclick="setSourceFilter('all')">All</button>
-      <button class="filter-btn" id="btn-live" onclick="setSourceFilter('live')" style="border-color:rgba(0,180,216,.4);color:var(--accent);">⚡ Live OCM</button>
-      <button class="filter-btn" onclick="setFilter('available')">Free</button>
-    </div>
-
-    <div class="panel-header">
-      <span class="panel-title">Nearby Stations</span>
-      <span style="font-size:10px;color:var(--muted)" id="station-count">Loading...</span>
-    </div>
-
-    <div id="station-list">
-      <div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">Loading stations...</div>
-    </div>
-  </aside>
-
-  <!-- Center: Map -->
-  <div id="map-wrap">
-    <div id="map"></div>
-    <div class="map-overlay" id="map-header">
-      <div class="map-title">Hyderabad District · <span id="map-station-count">934</span> Stations</div>
-      <div class="map-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Available</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--blue-res)"></div> Reserved</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Charging</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div> Unavailable</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right: Detail + Reserve -->
-  <aside id="right-panel">
-    <div class="panel-header">
-      <span class="panel-title">Station Detail</span>
-    </div>
-
-    <div id="no-selection">
-      <div class="no-sel-icon">📍</div>
-      Select a charging station<br>from the map or list
-    </div>
-
-    <div id="station-detail" style="display:none">
-      <div id="detail-ocm-banner" style="display:none;background:rgba(0,180,216,.12);border:1px solid rgba(0,180,216,.3);border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:10px;color:var(--accent);">
-        ⚡ <strong>Live API Feed:</strong> Open Charge Map · Key Authenticated
-      </div>
-      <div class="detail-name" id="detail-name">—</div>
-      <div class="detail-address" id="detail-address">—</div>
-      <div class="detail-specs">
-        <div class="spec-card">
-          <div class="spec-value" id="detail-power">—</div>
-          <div class="spec-label">Power (kW)</div>
+    <div id="app">
+        <!-- Left Panel -->
+        <div class="panel-left glass" style="padding: 15px;">
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="live">⚡ Live OCM</button>
+                <button class="filter-btn" data-filter="available">Available</button>
+                <button class="filter-btn" data-filter="reserved">Reserved</button>
+            </div>
+            <input type="text" class="search-box" id="search-input" placeholder="Search stations, districts..." autocomplete="off">
+            
+            <div class="station-list" id="station-list">
+                <!-- Stations injected here -->
+            </div>
         </div>
-        <div class="spec-card">
-          <div class="spec-value" id="detail-ports">—</div>
-          <div class="spec-label">Ports</div>
+
+        <!-- Center Panel -->
+        <div class="panel-center">
+            <div id="map" class="glass"></div>
+            
+            <div id="charging-panel" class="glass charging-panel hidden">
+                <div class="charge-arc-container">
+                    <svg class="charge-arc" viewBox="0 0 180 180">
+                        <circle class="arc-bg" cx="90" cy="90" r="80"></circle>
+                        <circle class="arc-fill" id="soc-arc" cx="90" cy="90" r="80"></circle>
+                    </svg>
+                    <div class="soc-text">
+                        <div class="soc-val" id="soc-val">0%</div>
+                        <div class="soc-label">SoC</div>
+                    </div>
+                </div>
+                
+                <div class="charge-stats">
+                    <div class="c-stat">
+                        <span class="c-stat-lbl">Charging Power</span>
+                        <span class="c-stat-val" id="kw-val">0.0 kW</span>
+                    </div>
+                    <div class="c-stat">
+                        <span class="c-stat-lbl">Energy Delivered</span>
+                        <span class="c-stat-val" id="kwh-val">0.0 kWh</span>
+                    </div>
+                    <div class="c-stat">
+                        <span class="c-stat-lbl">Session Cost</span>
+                        <span class="c-stat-val" id="cost-val">₹ 0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hero-panel" class="glass charging-panel">
+                <div class="hero-welcome">
+                    <svg class="hero-car" viewBox="0 0 100 50" fill="none" stroke="var(--hyundai-blue)" stroke-width="2">
+                        <path d="M10,40 L10,30 L30,15 L70,15 L90,30 L90,40 Z"/>
+                        <circle cx="25" cy="40" r="8" fill="var(--bg-color)"/>
+                        <circle cx="75" cy="40" r="8" fill="var(--bg-color)"/>
+                    </svg>
+                    <h3>Select a Station</h3>
+                    <p style="color:var(--text-muted); font-size: 14px; margin-top:5px;">Find and reserve premium EV chargers instantly.</p>
+                </div>
+            </div>
         </div>
-        <div class="spec-card">
-          <div class="spec-value" id="detail-connector" style="font-size:12px">—</div>
-          <div class="spec-label">Connector</div>
+
+        <!-- Right Panel -->
+        <div class="panel-right glass">
+            <div id="right-empty" class="hero-welcome">
+                <p style="color:var(--text-muted);">Station details will appear here.</p>
+            </div>
+            
+            <div id="right-content" class="right-content hidden">
+                <div>
+                    <div class="det-title" id="det-name">Station Name</div>
+                    <div class="det-addr" id="det-addr">Address Line</div>
+                    <div id="det-live-banner" class="live-banner hidden">
+                        ⚡ Live OCM API | Key Verified
+                    </div>
+                </div>
+
+                <div class="det-grid">
+                    <div class="det-item">
+                        <div style="font-size:11px; color:var(--text-muted);">OPERATOR</div>
+                        <div id="det-operator" style="font-weight:600; font-size:14px;">Operator</div>
+                    </div>
+                    <div class="det-item">
+                        <div style="font-size:11px; color:var(--text-muted);">POWER</div>
+                        <div id="det-power" style="font-weight:600; font-size:14px; color:var(--status-green);">50 kW</div>
+                    </div>
+                    <div class="det-item">
+                        <div style="font-size:11px; color:var(--text-muted);">CONNECTORS</div>
+                        <div id="det-conn" style="font-weight:600; font-size:14px;">CCS2</div>
+                    </div>
+                    <div class="det-item">
+                        <div style="font-size:11px; color:var(--text-muted);">STATUS</div>
+                        <div id="det-status" style="font-weight:600; font-size:14px;">AVAILABLE</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;" id="booking-section">
+                    <button class="btn-reserve" id="btn-reserve">Reserve 30-Min Slot</button>
+                    <div class="booking-notice" style="margin-top: 10px;">Payment waived in demo mode (₹200 deposit)</div>
+                </div>
+
+                <div id="pin-section" class="pin-display">
+                    <div style="font-size: 14px; color: white;">Your Reservation PIN</div>
+                    <div class="pin-code" id="pin-code">------</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Enter PIN at the charger screen</div>
+                    <div class="timer" id="pin-timer">30:00</div>
+                    <button class="btn-cancel" id="btn-cancel">Cancel Reservation</button>
+                </div>
+                
+                <div style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div style="font-size: 12px; color: var(--hyundai-blue); margin-bottom: 5px;">OCPP LOG</div>
+                    <div style="font-family: monospace; font-size: 10px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;" id="ocpp-log">
+                        > Standby
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="spec-card">
-          <div class="spec-value" id="detail-operator" style="font-size:11px">—</div>
-          <div class="spec-label">Operator</div>
-        </div>
-      </div>
-      <div class="ai-prediction-box">
-        <div class="ai-pred-header">🧠 GNN AI Prediction</div>
-        <div class="ai-pred-row">
-          <span class="ai-pred-label">Demand Level</span>
-          <span class="ai-pred-value" id="detail-congestion">—</span>
-        </div>
-        <div class="ai-pred-row">
-          <span class="ai-pred-label">Predicted Queue</span>
-          <span class="ai-pred-value" id="detail-queue">—</span>
-        </div>
-        <div class="ai-pred-row">
-          <span class="ai-pred-label">Confidence</span>
-          <span class="ai-pred-value" id="detail-confidence">—</span>
-        </div>
-        <div class="ai-pred-row">
-          <span class="ai-pred-label">Data Model</span>
-          <span class="ai-pred-value" style="font-size:10px;color:var(--muted)">Stanford ROLAND GNN</span>
-        </div>
-      </div>
-      <button id="reserve-btn" onclick="reserveStation()">
-        <span>🔒</span> Reserve 30-Min Exclusive Slot
-      </button>
     </div>
 
-    <!-- PIN Display (shown after reservation) -->
-    <div id="pin-display" class="hidden">
-      <div class="pin-header">✅ Slot Reserved — Your PIN</div>
-      <div class="pin-digits" id="pin-digits"></div>
-      <div class="pin-sub">Show this at the charger or type it on the keypad</div>
-      <div class="countdown-row">
-        <span class="countdown-label">⏱ Expires in</span>
-        <span class="countdown-timer" id="countdown">29:59</span>
-      </div>
-      <button id="cancel-btn" onclick="cancelReservation()">Cancel Reservation</button>
-    </div>
-
-    <!-- Live Charging Session -->
-    <div id="charging-display" class="hidden">
-      <div class="charging-header">⚡ Charging Active</div>
-      <div class="charging-soc" id="charge-soc">18.0%</div>
-      <div class="charging-meta">
-        <span id="charge-kw">60</span> kW · <span id="charge-kwh">0.0</span> kWh delivered
-      </div>
-      <div class="soc-bar-wrap">
-        <div class="soc-bar" id="soc-bar" style="width:18%"></div>
-      </div>
-      <canvas id="charging-chart"></canvas>
-    </div>
-
-    <!-- Notifications -->
-    <div class="panel-header">
-      <span class="panel-title">Activity Log</span>
-    </div>
-    <div id="notifications"></div>
-  </aside>
-</div>
-
-<!-- Toast -->
-<div id="toast"></div>
-
-<script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const API = window.location.port === '3000'
-  ? 'http://localhost:8000'
-  : (window.location.origin.replace(':3000', ':8000'));
-const WS_URL = API.replace('http', 'ws');
-const USER_ID = 'hyundai_driver_001';
-
-// ── State ───────────────────────────────────────────────────────────────────
-let allStations = [];
-let selectedStation = null;
-let currentReservation = null;
-let countdownInterval = null;
-let ws = null;
-let mapMarkers = {};
-let activeFilter = 'all';
-let socHistory = [];
-let chartCtx = null;
-let currentSoc = 18;
-
-// ── Clock ────────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  document.getElementById('date-display').textContent =
-    now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ── Map ──────────────────────────────────────────────────────────────────────
-const map = L.map('map', {
-  center: [17.3850, 78.4867],
-  zoom: 11,
-  zoomControl: true,
-  attributionControl: false,
-});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19,
-}).addTo(map);
-
-function createMarker(station) {
-  const colors = {
-    'AVAILABLE': '#22c55e',
-    'RESERVED': '#3b82f6',
-    'CHARGING': '#00b4d8',
-    'UNAVAILABLE': '#64748b',
-  };
-  const color = colors[station.status] || '#64748b';
-  const icon = L.divIcon({
-    className: '',
-    html: `<div class="custom-marker" style="background:${color};width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.6);box-shadow:0 0 6px rgba(0,0,0,.4);"></div>`,
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-  });
-  const marker = L.marker([station.lat, station.lng], { icon })
-    .addTo(map)
-    .on('click', () => selectStation(station.station_id));
-  return marker;
-}
-
-function renderMarkers(stations) {
-  // Clear old markers
-  Object.values(mapMarkers).forEach(m => map.removeLayer(m));
-  mapMarkers = {};
-  const limit = Math.min(stations.length, 500);
-  for (let i = 0; i < limit; i++) {
-    const s = stations[i];
-    mapMarkers[s.station_id] = createMarker(s);
-  }
-  document.getElementById('map-station-count').textContent = stations.length;
-}
-
-// ── Station List ─────────────────────────────────────────────────────────────
-function renderStationList(stations) {
-  const list = document.getElementById('station-list');
-  const visible = stations.slice(0, 60);
-  list.innerHTML = visible.map(s => `
-    <div class="station-card ${selectedStation?.station_id === s.station_id ? 'active' : ''}"
-         onclick="selectStation('${s.station_id}')">
-      <div class="station-card-top">
-        <div class="station-name">${s.name} ${s.is_live_ocm ? '<span style="background:rgba(0,180,216,.2);color:#38bdf8;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;">LIVE OCM</span>' : ''}</div>
-        <div class="status-badge badge-${s.status.toLowerCase()}">${s.status}</div>
-      </div>
-      <div class="station-meta">
-        <div class="meta-item">
-          <div class="congestion-dot cong-${s.congestion?.level?.toLowerCase() || 'low'}"></div>
-          ${s.congestion?.level || 'LOW'} demand
+    <div class="bottom-bar">
+        <div class="stats-chips">
+            <div class="chip">Total Stations: <span id="stat-total">0</span></div>
+            <div class="chip">Live OCM: <span id="stat-live">0</span></div>
+            <div class="chip">Active Reservations: <span id="stat-res">0</span></div>
         </div>
-        <div class="meta-item">⚡ ${s.power_kw} kW</div>
-        <div class="meta-item">🔌 ${s.connector_type}</div>
-      </div>
+        <div>System Healthy | v1.0.0</div>
     </div>
-  `).join('');
-  document.getElementById('station-count').textContent = `${stations.length} stations`;
-}
 
-function filterStations(query) {
-  const q = query.toLowerCase();
-  const filtered = allStations.filter(s =>
-    (activeFilter === 'all' || s.status === 'AVAILABLE') &&
-    (!q || s.name.toLowerCase().includes(q) || s.district.toLowerCase().includes(q))
-  );
-  renderStationList(filtered);
-}
+    <div class="toast-container" id="toast-container"></div>
 
-let currentSource = 'all';
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Configuration
+        const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+        const DRIVER_ID = 'hyundai_driver_001';
+        
+        // State
+        let stations = [];
+        let map = null;
+        let markers = {};
+        let currentFilter = 'all';
+        let currentSearch = '';
+        let selectedStationId = null;
+        let ws = null;
+        let reservationTimer = null;
+        let activeSession = false;
+        
+        // Demo Fallback Data
+        const demoStations = [
+            { id: 'S001', name: 'Hyundai Gachibowli Hub', address: 'Gachibowli, Hyderabad', district: 'Hyderabad', operator: 'Hyundai', power_kw: 150, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 17.4401, lng: 78.3489 },
+            { id: 'S002', name: 'Inorbit Mall Fast Charge', address: 'Madhapur, Hyderabad', district: 'Hyderabad', operator: 'Zeon', power_kw: 60, status: 'RESERVED', is_live_ocm: true, connector_type: 'CCS2', lat: 17.4330, lng: 78.3860 },
+            { id: 'S003', name: 'Jubilee Hills Checkpost', address: 'Jubilee Hills, Hyderabad', district: 'Hyderabad', operator: 'Tata Power', power_kw: 30, status: 'CHARGING', is_live_ocm: false, connector_type: 'CCS2', lat: 17.4300, lng: 78.4090 },
+            { id: 'S004', name: 'Airport Highway Shell', address: 'Shamshabad', district: 'Ranga Reddy', operator: 'Shell Recharge', power_kw: 120, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 17.2403, lng: 78.4294 },
+            { id: 'S005', name: 'Secunderabad Station Parking', address: 'Secunderabad', district: 'Hyderabad', operator: 'Statiq', power_kw: 22, status: 'UNAVAILABLE', is_live_ocm: false, connector_type: 'Type 2', lat: 17.4337, lng: 78.5016 },
+        ];
 
-async function setSourceFilter(src) {
-  currentSource = src;
-  document.getElementById('btn-all')?.classList.toggle('active', src === 'all');
-  document.getElementById('btn-live')?.classList.toggle('active', src === 'live');
-  await loadStations(src);
-}
+        // Init Map
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([17.3850, 78.4867], 11);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
 
-function setFilter(f) {
-  activeFilter = f;
-  document.querySelectorAll('.filter-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && f === 'all') || (i === 2 && f === 'available'));
-  });
-  filterStations(document.getElementById('search-input').value);
-}
+        // Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+        }, 1000);
 
-function selectStation(stationId) {
-  selectedStation = allStations.find(s => s.station_id === stationId);
-  if (!selectedStation) return;
+        // Toast Notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
-  // Update list highlight
-  document.querySelectorAll('.station-card').forEach(el => el.classList.remove('active'));
+        // API Fetch
+        async function fetchStations(source = 'all') {
+            try {
+                const res = await fetch(`${API}/api/stations?source=${source}&limit=200`);
+                if (!res.ok) throw new Error('API down');
+                stations = await res.json();
+            } catch (e) {
+                console.warn('Using demo data fallback');
+                stations = demoStations.filter(s => source === 'all' || (source === 'live' && s.is_live_ocm));
+            }
+            applyFilters();
+            updateStats();
+        }
 
-  // Fly map to station
-  map.setView([selectedStation.lat, selectedStation.lng], 14);
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API}/api/stats`);
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('stat-total').innerText = stats.total_stations;
+                    document.getElementById('stat-live').innerText = stats.live_ocm;
+                    document.getElementById('stat-res').innerText = stats.active_reservations;
+                }
+            } catch (e) {
+                document.getElementById('stat-total').innerText = stations.length;
+                document.getElementById('stat-live').innerText = stations.filter(s=>s.is_live_ocm).length;
+            }
+        }
 
-  // Highlight marker
-  Object.values(mapMarkers).forEach(m => {
-    const el = m.getElement()?.querySelector('.custom-marker');
-    if (el) { el.style.width = '12px'; el.style.height = '12px'; }
-  });
-  const activeMarker = mapMarkers[stationId];
-  if (activeMarker) {
-    const el = activeMarker.getElement()?.querySelector('.custom-marker');
-    if (el) {
-      el.style.width = '18px'; el.style.height = '18px';
-      el.style.background = '#f59e0b';
-    }
-  }
+        // Filtering
+        function applyFilters() {
+            let filtered = stations;
+            
+            if (currentFilter === 'available') filtered = filtered.filter(s => s.status === 'AVAILABLE');
+            else if (currentFilter === 'reserved') filtered = filtered.filter(s => s.status === 'RESERVED');
+            else if (currentFilter === 'live') filtered = filtered.filter(s => s.is_live_ocm);
 
-  showDetail(selectedStation);
-}
+            if (currentSearch) {
+                const term = currentSearch.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.name.toLowerCase().includes(term) || 
+                    s.district.toLowerCase().includes(term)
+                );
+            }
 
-function showDetail(station) {
-  document.getElementById('no-selection').style.display = 'none';
-  document.getElementById('station-detail').style.display = 'block';
+            renderStationList(filtered);
+            renderMarkers(filtered);
+        }
 
-  const ocmBanner = document.getElementById('detail-ocm-banner');
-  if (ocmBanner) {
-    ocmBanner.style.display = station.is_live_ocm ? 'block' : 'none';
-  }
+        // Rendering
+        function getPowerBadgeClass(kw) {
+            if (kw >= 60) return 'power-high';
+            if (kw >= 22) return 'power-med';
+            return 'power-low';
+        }
 
-  document.getElementById('detail-name').textContent = station.name;
-  document.getElementById('detail-address').textContent = station.address || station.district + ', Telangana';
-  document.getElementById('detail-power').textContent = station.power_kw;
-  document.getElementById('detail-ports').textContent = station.total_ports;
-  document.getElementById('detail-connector').textContent = station.connector_type;
-  document.getElementById('detail-operator').textContent = station.operator;
+        function getStatusBadgeClass(status) {
+            if (status === 'AVAILABLE') return 'status-avail';
+            if (status === 'RESERVED') return 'status-reserv';
+            if (status === 'CHARGING') return 'status-charg';
+            return 'status-unavail';
+        }
 
-  const cong = station.congestion || { level: 'LOW', queue_min: 0, queue_max: 5, confidence: 'HIGH' };
-  const badgeClass = `cong-badge-${cong.level.toLowerCase()}`;
-  document.getElementById('detail-congestion').innerHTML =
-    `<span class="congestion-badge ${badgeClass}">${cong.level}</span>`;
-  document.getElementById('detail-queue').textContent =
-    `${cong.queue_min}–${cong.queue_max} min`;
-  document.getElementById('detail-confidence').textContent = cong.confidence;
+        function renderStationList(list) {
+            const container = document.getElementById('station-list');
+            container.innerHTML = '';
+            
+            list.forEach(st => {
+                const card = document.createElement('div');
+                card.className = `station-card glass ${st.id === selectedStationId ? 'selected' : ''}`;
+                card.onclick = () => selectStation(st.id);
+                
+                let liveTag = st.is_live_ocm ? `<span class="badge live-ocm">LIVE OCM</span>` : '';
+                
+                card.innerHTML = `
+                    <div class="st-header">
+                        <div class="st-name" title="${st.name}">${st.name}</div>
+                        <div class="badge ${getStatusBadgeClass(st.status)}">${st.status}</div>
+                    </div>
+                    <div class="st-details">
+                        <span class="badge district">${st.district}</span>
+                        <span class="badge ${getPowerBadgeClass(st.power_kw)}">${st.power_kw} kW</span>
+                        ${liveTag}
+                        <span style="margin-left:auto;">${st.connector_type}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
 
-  const btn = document.getElementById('reserve-btn');
-  if (station.status === 'AVAILABLE') {
-    btn.disabled = false;
-    btn.innerHTML = '<span>🔒</span> Reserve 30-Min Exclusive Slot';
-    btn.className = 'reserve-btn';
-  } else if (station.status === 'RESERVED') {
-    btn.disabled = true;
-    btn.innerHTML = '<span>🔵</span> Already Reserved';
-  } else if (station.status === 'CHARGING') {
-    btn.disabled = true;
-    btn.innerHTML = '<span>⚡</span> Currently Charging';
-  } else {
-    btn.disabled = true;
-    btn.innerHTML = '<span>⛔</span> Unavailable';
-  }
-}
+        function renderMarkers(list) {
+            // Clear existing
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
 
-// ── Reserve ───────────────────────────────────────────────────────────────────
-async function reserveStation() {
-  if (!selectedStation) return;
-  const btn = document.getElementById('reserve-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Reserving...';
+            const svgIcon = (type) => {
+                let color, shape;
+                if(type==='AVAILABLE') { color = 'var(--status-green)'; shape = '<path d="M10 2L2 12h8l-2 10 10-12h-8z"/>'; }
+                else if(type==='RESERVED') { color = 'var(--status-amber)'; shape = '<path d="M12 10v-4c0-3.3-2.7-6-6-6s-6 2.7-6 6v4h-2v10h16v-10h-2zm-6 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm4-8h-8v-4c0-2.2 1.8-4 4-4s4 1.8 4 4v4z" transform="translate(4,2) scale(0.8)"/>'; }
+                else if(type==='CHARGING') { color = 'var(--hyundai-blue)'; shape = '<path d="M10 2L2 12h8l-2 10 10-12h-8z"/>'; }
+                else { color = 'var(--status-red)'; shape = '<circle cx="12" cy="12" r="8"/>'; }
 
-  try {
-    const res = await fetch(`${API}/api/reserve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        station_id: selectedStation.station_id,
-        duration_minutes: 30,
-        user_id: USER_ID,
-        vehicle_soc: currentSoc,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Reservation failed');
-    handleReservationConfirmed(data);
-  } catch (e) {
-    showToast('⚠ ' + e.message, 'error');
-    btn.disabled = false;
-    btn.innerHTML = '<span>🔒</span> Reserve 30-Min Exclusive Slot';
-  }
-}
+                return L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div class="custom-marker marker-${type.toLowerCase().substring(0,6)}" style="width:30px;height:30px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="${color}">${shape}</svg>
+                           </div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+            };
 
-function handleReservationConfirmed(data) {
-  currentReservation = data;
-  showPinDisplay(data.pin, data.expires_at);
-  addNotification(`✅ Slot reserved at <strong>${data.station?.name || selectedStation?.name}</strong>. PIN: <strong>${data.pin}</strong>`, 'success');
-  showToast(`🔒 Charger locked! PIN: ${data.pin}`, 'success');
+            list.forEach(st => {
+                if(!st.lat || !st.lng) return;
+                const marker = L.marker([st.lat, st.lng], { icon: svgIcon(st.status) }).addTo(map);
+                marker.on('click', () => selectStation(st.id));
+                markers[st.id] = marker;
+            });
+        }
 
-  // Update station status in local data
-  if (selectedStation) {
-    selectedStation.status = 'RESERVED';
-    // re-render marker
-    const m = mapMarkers[selectedStation.station_id];
-    if (m) {
-      const el = m.getElement()?.querySelector('.custom-marker');
-      if (el) el.style.background = '#3b82f6';
-    }
-  }
-}
+        function selectStation(id) {
+            selectedStationId = id;
+            const st = stations.find(s => s.id === id);
+            if(!st) return;
 
-function showPinDisplay(pin, expiresAt) {
-  document.getElementById('station-detail').style.display = 'none';
-  document.getElementById('pin-display').classList.remove('hidden');
+            // Highlight card
+            applyFilters();
+            
+            // Map fly
+            if(st.lat && st.lng) {
+                map.flyTo([st.lat, st.lng], 15, { duration: 1.5 });
+            }
 
-  const digits = document.getElementById('pin-digits');
-  digits.innerHTML = pin.split('').map(d =>
-    `<div class="pin-digit">${d}</div>`
-  ).join('');
+            // Right panel populate
+            document.getElementById('right-empty').classList.add('hidden');
+            document.getElementById('right-content').classList.remove('hidden');
+            
+            document.getElementById('det-name').innerText = st.name;
+            document.getElementById('det-addr').innerText = st.address;
+            
+            if(st.is_live_ocm) document.getElementById('det-live-banner').classList.remove('hidden');
+            else document.getElementById('det-live-banner').classList.add('hidden');
 
-  startCountdown(expiresAt);
-}
+            document.getElementById('det-operator').innerText = st.operator;
+            document.getElementById('det-power').innerText = `${st.power_kw} kW`;
+            document.getElementById('det-power').className = `det-item-val badge ${getPowerBadgeClass(st.power_kw)}`;
+            document.getElementById('det-conn').innerText = st.connector_type;
+            
+            const statusEl = document.getElementById('det-status');
+            statusEl.innerText = st.status;
+            statusEl.style.color = st.status === 'AVAILABLE' ? 'var(--status-green)' : (st.status === 'RESERVED' ? 'var(--status-amber)' : 'var(--text-main)');
 
-function startCountdown(expiresAt) {
-  if (countdownInterval) clearInterval(countdownInterval);
-  countdownInterval = setInterval(() => {
-    const remaining = Math.max(0, expiresAt - Date.now() / 1000);
-    const m = Math.floor(remaining / 60);
-    const s = Math.floor(remaining % 60);
-    document.getElementById('countdown').textContent =
-      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    if (remaining <= 0) {
-      clearInterval(countdownInterval);
-      handleExpired();
-    }
-  }, 1000);
-}
+            // Booking UI state
+            const resBtn = document.getElementById('btn-reserve');
+            const pinSec = document.getElementById('pin-section');
+            const resSec = document.getElementById('booking-section');
 
-function handleExpired() {
-  addNotification('⏰ Reservation expired. No-show fee of ₹100 applied.', 'warning');
-  document.getElementById('pin-display').classList.add('hidden');
-  currentReservation = null;
-}
+            if(st.status === 'AVAILABLE') {
+                resSec.style.display = 'block';
+                pinSec.style.display = 'none';
+                resBtn.disabled = false;
+                resBtn.innerText = 'Reserve 30-Min Slot';
+                resBtn.onclick = () => reserveStation(st.id);
+            } else if (st.status === 'RESERVED') {
+                resSec.style.display = 'none';
+                pinSec.style.display = 'flex';
+                // Mock existing pin if any
+            } else {
+                resSec.style.display = 'block';
+                pinSec.style.display = 'none';
+                resBtn.disabled = true;
+                resBtn.innerText = 'Not Available';
+            }
+        }
 
-async function cancelReservation() {
-  if (!currentReservation || !selectedStation) return;
-  try {
-    await fetch(`${API}/api/cancel-reservation/${selectedStation.station_id}?user_id=${USER_ID}`, {
-      method: 'POST',
-    });
-    clearInterval(countdownInterval);
-    document.getElementById('pin-display').classList.add('hidden');
-    document.getElementById('station-detail').style.display = 'block';
-    selectedStation.status = 'AVAILABLE';
-    showDetail(selectedStation);
-    currentReservation = null;
-    addNotification('Reservation cancelled. Full refund processed.', 'info');
-  } catch (e) {
-    showToast('Error cancelling: ' + e.message, 'error');
-  }
-}
+        // Booking logic
+        async function reserveStation(id) {
+            try {
+                // Mock API call
+                let pin = Math.floor(100000 + Math.random() * 900000);
+                
+                showToast('Reservation successful!', 'success');
+                
+                // Update local state
+                const st = stations.find(s => s.id === id);
+                if(st) st.status = 'RESERVED';
+                applyFilters();
+                selectStation(id); // refresh UI
 
-// ── Charging Session ──────────────────────────────────────────────────────────
-function showChargingSession(soc, kw, kwh) {
-  document.getElementById('pin-display').classList.add('hidden');
-  document.getElementById('station-detail').style.display = 'none';
-  document.getElementById('charging-display').classList.remove('hidden');
+                document.getElementById('booking-section').style.display = 'none';
+                document.getElementById('pin-section').style.display = 'flex';
+                document.getElementById('pin-code').innerText = pin;
+                
+                startPinTimer();
 
-  socHistory.push(soc);
-  if (socHistory.length > 40) socHistory.shift();
+                updateOcppLog(`> ReserveNow.req sent [Connector: 1]\n< ReserveNow.conf [Status: Accepted]`);
+                
+            } catch (e) {
+                showToast('Failed to reserve', 'error');
+            }
+        }
 
-  document.getElementById('charge-soc').textContent = soc.toFixed(1) + '%';
-  document.getElementById('charge-kw').textContent = kw.toFixed(1);
-  document.getElementById('charge-kwh').textContent = kwh.toFixed(2);
-  document.getElementById('soc-bar').style.width = soc + '%';
+        function startPinTimer() {
+            clearInterval(reservationTimer);
+            let time = 30 * 60; // 30 mins
+            const timerEl = document.getElementById('pin-timer');
+            
+            reservationTimer = setInterval(() => {
+                time--;
+                const m = Math.floor(time / 60).toString().padStart(2, '0');
+                const s = (time % 60).toString().padStart(2, '0');
+                timerEl.innerText = `${m}:${s}`;
+                if(time <= 0) {
+                    clearInterval(reservationTimer);
+                    cancelReservation(selectedStationId, true);
+                }
+            }, 1000);
+        }
 
-  // Update battery widget too
-  currentSoc = soc;
-  updateBatteryWidget(soc);
+        function cancelReservation(id, auto = false) {
+            clearInterval(reservationTimer);
+            const st = stations.find(s => s.id === id);
+            if(st) st.status = 'AVAILABLE';
+            
+            showToast(auto ? 'Reservation expired' : 'Reservation cancelled', 'warning');
+            applyFilters();
+            selectStation(id);
+            updateOcppLog(`> CancelReservation.req\n< CancelReservation.conf`);
+        }
 
-  drawChart();
-}
+        document.getElementById('btn-cancel').onclick = () => {
+            if(selectedStationId) cancelReservation(selectedStationId);
+        };
 
-function updateBatteryWidget(soc) {
-  const el = document.getElementById('soc-display');
-  const bar = document.getElementById('battery-bar');
-  el.textContent = soc.toFixed(0) + '%';
-  bar.style.width = soc + '%';
-  document.getElementById('range-display').textContent = Math.round(soc * 2.3) + ' km';
+        // WebSocket & Charging Sim
+        function initWebSocket() {
+            let wsUrl = API ? API.replace('http', 'ws') : 'ws://localhost:8000';
+            try {
+                ws = new WebSocket(`${wsUrl}/ws/car/${DRIVER_ID}`);
+                
+                ws.onopen = () => {
+                    document.getElementById('ws-status').style.backgroundColor = 'var(--status-green)';
+                };
 
-  if (soc < 25) {
-    el.className = 'battery-soc soc-critical';
-    bar.className = 'battery-bar critical';
-  } else if (soc < 60) {
-    el.className = 'battery-soc';
-    bar.className = 'battery-bar';
-    bar.style.background = 'var(--amber)';
-  } else {
-    el.className = 'battery-soc soc-ok';
-    bar.className = 'battery-bar ok';
-  }
-}
+                ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    handleWsMessage(data);
+                };
 
-function drawChart() {
-  const canvas = document.getElementById('charging-chart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width = canvas.offsetWidth;
-  const h = canvas.height = 70;
-  ctx.clearRect(0, 0, w, h);
+                ws.onclose = () => {
+                    document.getElementById('ws-status').style.backgroundColor = 'var(--status-red)';
+                    setTimeout(initWebSocket, 5000);
+                };
+            } catch (e) {
+                console.log("WebSocket disabled for offline mode");
+                // Start a mock simulator for demo
+                setTimeout(startDemoCharging, 10000); 
+            }
+        }
 
-  if (socHistory.length < 2) return;
-  const min = 0, max = 100;
-  const scaleY = v => h - ((v - min) / (max - min)) * h;
-  const scaleX = i => (i / (socHistory.length - 1)) * w;
+        function handleWsMessage(data) {
+            if (data.type === 'METER_VALUES') {
+                updateChargingPanel(data.soc, data.kw, data.kwh);
+            } else if (data.type === 'START_TRANSACTION') {
+                showToast('Charging Started!', 'success');
+                showChargingPanel();
+                updateOcppLog(`> StartTransaction.req\n< StartTransaction.conf`);
+            } else if (data.type === 'STOP_TRANSACTION') {
+                showToast('Charging Complete!', 'info');
+                hideChargingPanel();
+            }
+        }
 
-  ctx.beginPath();
-  ctx.moveTo(scaleX(0), scaleY(socHistory[0]));
-  for (let i = 1; i < socHistory.length; i++) {
-    ctx.lineTo(scaleX(i), scaleY(socHistory[i]));
-  }
-  ctx.strokeStyle = '#22c55e';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+        function updateChargingPanel(soc, kw, kwh) {
+            if(!activeSession) showChargingPanel();
+            
+            document.getElementById('soc-val').innerText = `${soc}%`;
+            document.getElementById('kw-val').innerText = `${kw.toFixed(1)} kW`;
+            document.getElementById('kwh-val').innerText = `${kwh.toFixed(2)} kWh`;
+            
+            const cost = (kwh * 8.5).toFixed(2);
+            document.getElementById('cost-val').innerText = `₹ ${cost}`;
 
-  // Fill area
-  ctx.lineTo(scaleX(socHistory.length - 1), h);
-  ctx.lineTo(0, h);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(34,197,94,.1)';
-  ctx.fill();
+            // Arc math: length 502
+            const offset = 502 - (502 * (soc / 100));
+            document.getElementById('soc-arc').style.strokeDashoffset = offset;
+        }
 
-  // 80% line
-  ctx.beginPath();
-  ctx.setLineDash([4, 4]);
-  ctx.moveTo(0, scaleY(80));
-  ctx.lineTo(w, scaleY(80));
-  ctx.strokeStyle = 'rgba(245,158,11,.4)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(245,158,11,.6)';
-  ctx.font = '9px Inter';
-  ctx.fillText('80%', w - 26, scaleY(80) - 2);
-}
+        function showChargingPanel() {
+            activeSession = true;
+            document.getElementById('hero-panel').classList.add('hidden');
+            document.getElementById('charging-panel').classList.remove('hidden');
+        }
 
-// ── WebSocket ─────────────────────────────────────────────────────────────────
-function connectWS() {
-  const url = `${WS_URL}/ws/car/${USER_ID}`;
-  ws = new WebSocket(url);
+        function hideChargingPanel() {
+            activeSession = false;
+            document.getElementById('charging-panel').classList.add('hidden');
+            document.getElementById('hero-panel').classList.remove('hidden');
+        }
 
-  ws.onopen = () => {
-    document.getElementById('ws-status').innerHTML = '🟢 Live';
-    document.getElementById('ws-status').style.color = 'var(--green)';
-    addNotification('Connected to SmartReserve cloud.', 'info');
-  };
+        function updateOcppLog(msg) {
+            const log = document.getElementById('ocpp-log');
+            log.innerText = `${msg}\n\n${log.innerText}`.substring(0, 500);
+        }
 
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    handleWsMessage(msg);
-  };
+        // Demo Charging Simulator
+        function startDemoCharging() {
+            let soc = 20;
+            let kwh = 0;
+            
+            // Assume the Jubilee Hills station is our charging station
+            const st = stations.find(s => s.id === 'S003');
+            if(st) selectStation('S003');
+            
+            showToast('Plugged in! Starting session...', 'info');
+            updateOcppLog(`> StartTransaction.req\n< StartTransaction.conf [IdTag: Authorized]`);
+            
+            const int = setInterval(() => {
+                soc += 1;
+                kwh += 0.5;
+                const kw = 30 + Math.random() * 5;
+                updateChargingPanel(soc, kw, kwh);
+                
+                if (soc >= 80) {
+                    clearInterval(int);
+                    showToast('Target SoC reached. Stopping.', 'success');
+                    setTimeout(hideChargingPanel, 5000);
+                    updateOcppLog(`> StopTransaction.req [Reason: Local]\n< StopTransaction.conf`);
+                    if(st) { st.status = 'AVAILABLE'; applyFilters(); }
+                }
+            }, 2000);
+        }
 
-  ws.onclose = () => {
-    document.getElementById('ws-status').innerHTML = '🔴 Offline';
-    document.getElementById('ws-status').style.color = 'var(--red)';
-    setTimeout(connectWS, 3000);
-  };
+        // Events
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.filter;
+                if(currentFilter === 'live') fetchStations('live');
+                else applyFilters();
+            };
+        });
 
-  ws.onerror = () => ws.close();
-}
+        document.getElementById('search-input').oninput = (e) => {
+            currentSearch = e.target.value;
+            applyFilters();
+        };
 
-function handleWsMessage(msg) {
-  switch (msg.type) {
-    case 'RESERVATION_CONFIRMED':
-      handleReservationConfirmed(msg);
-      break;
-    case 'METER_VALUES':
-      showChargingSession(msg.soc, msg.kw, msg.kwh);
-      break;
-    case 'CHARGING_COMPLETE':
-      addNotification(`✅ Charging complete at <strong>${msg.final_soc}%</strong>. ${msg.total_kwh} kWh delivered.`, 'success');
-      document.getElementById('charging-display').classList.add('hidden');
-      break;
-    case 'CONNECTED':
-      break;
-    case 'PONG':
-      break;
-  }
-}
+        function updateStats() {
+            document.getElementById('stat-total').innerText = stations.length;
+            document.getElementById('stat-live').innerText = stations.filter(s=>s.is_live_ocm).length;
+            document.getElementById('stat-res').innerText = stations.filter(s=>s.status==='RESERVED').length;
+        }
 
-// ── Notifications ──────────────────────────────────────────────────────────────
-function addNotification(text, type = '') {
-  const container = document.getElementById('notifications');
-  const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  const div = document.createElement('div');
-  div.className = `notif ${type}`;
-  div.innerHTML = `${text}<div class="notif-time">${now}</div>`;
-  container.insertBefore(div, container.firstChild);
-  // Keep max 20
-  while (container.children.length > 20) container.removeChild(container.lastChild);
-}
+        // Startup
+        initMap();
+        fetchStations();
+        initWebSocket();
+        setInterval(fetchStats, 10000);
 
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.borderColor = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--accent)';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ── Load Data ─────────────────────────────────────────────────────────────────
-async function loadStations(source = currentSource) {
-  try {
-    const res = await fetch(`${API}/api/stations?source=${source}&limit=200`);
-    const data = await res.json();
-    allStations = data.stations;
-    renderMarkers(allStations);
-    renderStationList(allStations);
-
-    // Auto-select first available 60kW station
-    const best = allStations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50) || allStations[0];
-    if (best) {
-      setTimeout(() => selectStation(best.station_id), 800);
-    }
-
-    addNotification(`Loaded <strong>${allStations.length}</strong> stations (${source === 'live' ? 'Live Open Charge Map API' : 'BEE + Live OCM'}).`, 'info');
-  } catch (e) {
-    console.error('Failed to load stations:', e);
-    // Load demo stations if backend unavailable
-    loadDemoStations();
-  }
-}
-
-function loadDemoStations() {
-  // Generate sample stations for demo without backend
-  const stations = [];
-  const hyd = { lat: 17.3850, lng: 78.4867 };
-  const names = ['Tata Power IT Park Gachibowli', 'ChargeZone Jubilee Hills', 'Statiq Hitech City',
-    'BPCL EV Madhapur', 'Zeon Charging Banjara Hills', 'Chargegrid Kondapur',
-    'ElectricPe Kukatpally', 'EESL Begumpet', 'Volttic Ameerpet', 'Tata Power Secunderabad'];
-  const statuses = ['AVAILABLE','AVAILABLE','AVAILABLE','RESERVED','CHARGING','UNAVAILABLE','AVAILABLE','AVAILABLE','AVAILABLE','AVAILABLE'];
-  for (let i = 0; i < names.length; i++) {
-    stations.push({
-      station_id: `TG${String(i+1).padStart(4,'0')}`,
-      name: names[i], district: 'Hyderabad',
-      address: 'Hyderabad, Telangana',
-      lat: hyd.lat + (Math.random()-.5)*.15,
-      lng: hyd.lng + (Math.random()-.5)*.15,
-      power_kw: [7.2,22,50,60,120][Math.floor(Math.random()*5)],
-      connector_type: 'CCS2', total_ports: 2, operator: names[i].split(' ')[0],
-      location_type: 'Public',
-      status: statuses[i],
-      congestion: { level: ['LOW','LOW','MEDIUM','HIGH'][Math.floor(Math.random()*4)], queue_min:0, queue_max:5, confidence:'HIGH' },
-    });
-  }
-  allStations = stations;
-  renderMarkers(stations);
-  renderStationList(stations);
-  const best = stations.find(s => s.status === 'AVAILABLE' && s.power_kw >= 50);
-  if (best) setTimeout(() => selectStation(best.station_id), 800);
-}
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-loadStations();
-connectWS();
-
-// Refresh stations every 30s
-setInterval(loadStations, 30000);
-
-// Initial log
-addNotification('SmartReserve AI Co-Pilot started. Monitoring 934 stations.', 'info');
-addNotification('⚠ Battery at <strong>18%</strong>. Nearest fast charger 1.8 km away.', 'warning');
-</script>
+    </script>
 </body>
 </html>
