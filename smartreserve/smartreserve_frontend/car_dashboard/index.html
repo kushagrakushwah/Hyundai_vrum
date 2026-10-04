@@ -751,19 +751,30 @@
 
         // Init Map with OpenStreetMap (100% Free, No API Key Required)
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([17.3850, 78.4867], 11);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            try {
+                if (typeof L !== 'undefined') {
+                    map = L.map('map', { zoomControl: false }).setView([17.3850, 78.4867], 11);
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(map);
+                    L.control.zoom({ position: 'bottomright' }).addTo(map);
+                }
+            } catch (e) {
+                console.warn('Map init error:', e);
+            }
         }
 
         // Clock
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-        }, 1000);
+        function updateClock() {
+            const el = document.getElementById('clock');
+            if (el) {
+                const now = new Date();
+                el.innerText = now.toLocaleTimeString('en-US', { hour12: false });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
 
         // Toast Notification
         function showToast(message, type = 'info') {
@@ -1094,7 +1105,6 @@
             }
             
             // Update local state
-            const st = stations.find(s => s.id === id);
             if (st) st.status = 'RESERVED';
 
             // Reveal PIN screen and hide button
@@ -1362,11 +1372,19 @@
         }
 
         // Startup
-        initMap();
-        fetchStations();
-        initWebSocket();
-        fetchStats();
-        setInterval(fetchStats, 10000);
+        function startApp() {
+            try { initMap(); } catch(e) { console.warn('initMap err:', e); }
+            try { fetchStations(); } catch(e) { console.warn('fetchStations err:', e); }
+            try { initWebSocket(); } catch(e) { console.warn('initWS err:', e); }
+            try { fetchStats(); } catch(e) { console.warn('fetchStats err:', e); }
+            setInterval(fetchStats, 10000);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startApp);
+        } else {
+            startApp();
+        }
 
     </script>
 </body>
