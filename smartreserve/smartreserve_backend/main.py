@@ -346,6 +346,9 @@ async def verify_otp(req: VerifyOTPRequest):
         raise HTTPException(status_code=401, detail="Wrong PIN. Connector stays locked.")
 
     # ✅ PIN correct — OCPP UnlockConnector + RemoteStartTransaction
+    station = db.get_station(req.station_id) or {}
+    power_kw = float(station.get("power_kw") or 60.0)
+
     session_id = f"CHG_{req.station_id}_{int(time.time())}"
     session_data = {
         "station_id": req.station_id,
@@ -354,7 +357,7 @@ async def verify_otp(req: VerifyOTPRequest):
         "start_soc": reservation["vehicle_soc"],
         "current_soc": reservation["vehicle_soc"],
         "start_time": time.time(),
-        "kw": 60.0,
+        "kw": power_kw,
         "kwh": 0.0,
     }
     await database.save_session(session_data)
@@ -366,7 +369,7 @@ async def verify_otp(req: VerifyOTPRequest):
         "type": "OCPP_UNLOCK_RELAY",
         "station_id": req.station_id,
         "session_id": session_id,
-        "power_kw": 60.0,
+        "power_kw": power_kw,
         "timestamp": datetime.utcnow().isoformat(),
     })
 
@@ -377,7 +380,8 @@ async def verify_otp(req: VerifyOTPRequest):
     return {
         "success": True,
         "session_id": session_id,
-        "message": "Identity verified. Relay closed. 60 kW DC charging started.",
+        "power_kw": power_kw,
+        "message": f"Identity verified. Relay closed. {power_kw:.0f} kW charging started.",
     }
 
 @app.post("/api/cancel-reservation/{station_id}")
@@ -498,23 +502,53 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
     if not session:
         return
 
-    soc = session["start_soc"]
+    station = db.get_station(station_id) or {}
+    rated_kw = float(station.get("power_kw") or 60.0)
+    station_name = station.get("name", "EV Charging Station")
+    operator = station.get("operator", "Charge Point Operator")
+    city = station.get("city") or station.get("district") or "India"
+
+    # Dynamic tariff based on hardware power class
+    if rated_kw >= 100.0:
+        tariff = 22.50  # Ultra-Fast DC
+    elif rated_kw >= 40.0:
+        tariff = 18.00  # Fast DC
+    elif rated_kw >= 20.0:
+        tariff = 14.50  # Commercial AC Fast
+    else:
+        tariff = 11.00  # Standard AC
+
+    soc = float(session.get("start_soc", 20.0))
     kwh = 0.0
     tick = 0
 
     while True:
         current_session = await database.get_session(station_id)
-        if not current_session or soc >= 100:
+        if not current_session or soc >= 100.0:
             break
         await asyncio.sleep(2)
         tick += 1
 
-        # Tapered charging curve: fast to 80%, slow after
-        kw = 60.0 - (soc * 0.2) if soc < 80 else max(5.0, 60.0 - (soc * 0.65))
-        soc_delta = (kw / 40.0) * (2 / 3600) * 100
-        soc = min(100, soc + soc_delta)
-        kwh += kw * (2 / 3600)
-        cost_rs = round(kwh * 8.5, 2)  # ₹8.5/kWh rate
+        # Realistic CC/CV charging curve tailored to the station's exact rated kW:
+        if soc < 80.0:
+            kw = max(2.5, rated_kw * (0.95 - (soc * 0.0008)))
+        else:
+            taper = max(0.15, 0.95 - 0.06 - ((soc - 80.0) * 0.035))
+            kw = max(3.0, rated_kw * taper)
+
+        # Hyundai Ioniq 5 battery pack capacity: 72.6 kWh
+        # Visual demo speedup factor (~10x) so users see dynamic progress in real time
+        kw_step = kw * (2 / 3600) * 10.0
+        soc_delta = (kw_step / 72.6) * 100.0
+        soc = min(100.0, soc + soc_delta)
+        kwh += kw_step
+        cost_rs = round(kwh * tariff, 2)
+
+        # Estimate time remaining (minutes)
+        if soc < 80.0 and kw > 0:
+            eta_mins = round((((80.0 - soc) / 100.0) * 72.6 / kw) * 60, 0)
+        else:
+            eta_mins = round((((100.0 - soc) / 100.0) * 72.6 / max(kw, 3.0)) * 60, 0)
 
         current_session["current_soc"] = round(soc, 1)
         current_session["kw"] = round(kw, 1)
@@ -525,10 +559,16 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
             "type": "METER_VALUES",
             "station_id": station_id,
             "session_id": session_id,
+            "station_name": station_name,
+            "operator": operator,
+            "city": city,
+            "rated_power_kw": rated_kw,
+            "tariff": tariff,
             "soc": round(soc, 1),
             "kw": round(kw, 1),
             "kwh": round(kwh, 2),
             "cost_rs": cost_rs,
+            "eta_mins": max(1, int(eta_mins)),
             "elapsed_minutes": round(tick * 2 / 60, 1),
             "timestamp": datetime.utcnow().isoformat(),
         }
@@ -537,7 +577,6 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
 
     # Session complete
     await database.delete_session(station_id)
-    session = await database.get_session(station_id) or {}
     await database.save_booking_history({
         "reservation_id": session_id,
         "station_id": station_id,
@@ -547,7 +586,7 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
         "expires_at": time.time(),
         "outcome": "COMPLETED",
         "total_kwh": round(kwh, 2),
-        "amount_charged_rs": round(kwh * 8.5, 2),
+        "amount_charged_rs": round(kwh * tariff, 2),
     })
 
     await ws_manager.broadcast_to_car(user_id, {
@@ -555,8 +594,8 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
         "station_id": station_id,
         "final_soc": round(soc, 1),
         "total_kwh": round(kwh, 2),
-        "cost_rs": round(kwh * 8.5, 2),
-        "message": f"Charging complete at {round(soc, 1)}% SoC. Total: ₹{round(kwh * 8.5, 2)}. Please unplug.",
+        "cost_rs": round(kwh * tariff, 2),
+        "message": f"Charging complete at {round(soc, 1)}% SoC. Total: ₹{round(kwh * tariff, 2)}. Please unplug.",
     })
 
 async def cleanup_expired_reservations():

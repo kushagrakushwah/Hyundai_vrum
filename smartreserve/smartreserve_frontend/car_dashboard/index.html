@@ -263,17 +263,36 @@
         .charging-panel {
             height: 40%;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: stretch;
             justify-content: center;
-            padding: 20px;
+            padding: 16px 22px;
             position: relative;
             overflow: hidden;
         }
 
+        .chg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        .chg-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
         .charge-arc-container {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: 150px;
+            height: 150px;
+            flex-shrink: 0;
         }
 
         .charge-arc {
@@ -284,7 +303,7 @@
 
         .charge-arc circle {
             fill: none;
-            stroke-width: 10;
+            stroke-width: 9;
             stroke-linecap: round;
         }
 
@@ -305,14 +324,15 @@
             text-align: center;
         }
 
-        .soc-val { font-family: var(--font-head); font-size: 42px; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .soc-label { font-size: 14px; color: var(--hyundai-blue); text-transform: uppercase; letter-spacing: 2px; }
+        .soc-val { font-family: var(--font-head); font-size: 34px; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .soc-label { font-size: 11px; color: var(--hyundai-blue); text-transform: uppercase; letter-spacing: 2px; }
 
         .charge-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-left: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            flex-grow: 1;
+            margin-left: 20px;
         }
 
         .c-stat {
@@ -320,8 +340,8 @@
             flex-direction: column;
         }
 
-        .c-stat-val { font-family: var(--font-head); font-size: 24px; font-weight: 600; color: var(--electric-yellow); }
-        .c-stat-lbl { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+        .c-stat-val { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--electric-yellow); }
+        .c-stat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
         .hero-welcome {
             display: flex;
@@ -566,29 +586,45 @@
             <div id="map" class="glass"></div>
             
             <div id="charging-panel" class="glass charging-panel hidden">
-                <div class="charge-arc-container">
-                    <svg class="charge-arc" viewBox="0 0 180 180">
-                        <circle class="arc-bg" cx="90" cy="90" r="80"></circle>
-                        <circle class="arc-fill" id="soc-arc" cx="90" cy="90" r="80"></circle>
-                    </svg>
-                    <div class="soc-text">
-                        <div class="soc-val" id="soc-val">0%</div>
-                        <div class="soc-label">SoC</div>
+                <div class="chg-header">
+                    <div>
+                        <div id="chg-station-name" style="font-family:var(--font-head); font-size:16px; font-weight:700; color:#fff;">⚡ EV Charging Station</div>
+                        <div id="chg-station-sub" style="font-size:11px; color:var(--text-muted);">Operator · City</div>
+                    </div>
+                    <div id="chg-power-badge" style="background:rgba(0,170,212,0.15); border:1px solid var(--hyundai-blue); color:var(--hyundai-blue); font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; font-family:monospace; letter-spacing:0.5px;">
+                        60 kW DC
                     </div>
                 </div>
-                
-                <div class="charge-stats">
-                    <div class="c-stat">
-                        <span class="c-stat-lbl">Charging Power</span>
-                        <span class="c-stat-val" id="kw-val">0.0 kW</span>
+
+                <div class="chg-body">
+                    <div class="charge-arc-container">
+                        <svg class="charge-arc" viewBox="0 0 180 180">
+                            <circle class="arc-bg" cx="90" cy="90" r="80"></circle>
+                            <circle class="arc-fill" id="soc-arc" cx="90" cy="90" r="80"></circle>
+                        </svg>
+                        <div class="soc-text">
+                            <div class="soc-val" id="soc-val">0%</div>
+                            <div class="soc-label">SoC</div>
+                        </div>
                     </div>
-                    <div class="c-stat">
-                        <span class="c-stat-lbl">Energy Delivered</span>
-                        <span class="c-stat-val" id="kwh-val">0.0 kWh</span>
-                    </div>
-                    <div class="c-stat">
-                        <span class="c-stat-lbl">Session Cost</span>
-                        <span class="c-stat-val" id="cost-val">₹ 0.00</span>
+                    
+                    <div class="charge-stats">
+                        <div class="c-stat">
+                            <span class="c-stat-lbl">Charging Power</span>
+                            <span class="c-stat-val" id="kw-val">0.0 kW</span>
+                        </div>
+                        <div class="c-stat">
+                            <span class="c-stat-lbl">Energy Delivered</span>
+                            <span class="c-stat-val" id="kwh-val">0.0 kWh</span>
+                        </div>
+                        <div class="c-stat">
+                            <span class="c-stat-lbl">Session Cost</span>
+                            <span class="c-stat-val" id="cost-val">₹ 0.00</span>
+                        </div>
+                        <div class="c-stat">
+                            <span class="c-stat-lbl">Time to 80%</span>
+                            <span class="c-stat-val" id="eta-val" style="color:var(--hyundai-blue);">-- min</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1020,6 +1056,11 @@
                 resBtn.innerText = 'Locking Slot...';
             }
             
+            // Realistic starting SoC between 18% and 29%
+            const currentSoc = 18 + Math.floor(Math.random() * 12);
+            const st = stations.find(s => (s.id || s.station_id) === id) || {};
+            st.start_soc = currentSoc;
+
             let pin = '742911';
             try {
                 const res = await fetch(`${API}/api/reserve`, {
@@ -1030,7 +1071,7 @@
                         user_id: DRIVER_ID,
                         user_name: 'Hyundai Driver',
                         duration_minutes: 30,
-                        vehicle_soc: 22.0
+                        vehicle_soc: currentSoc
                     })
                 });
                 
@@ -1113,6 +1154,9 @@
                 unlockBtn.disabled = true;
                 unlockBtn.innerText = 'Unlocking Relay...';
                 const pinVal = document.getElementById('pin-code').innerText.trim();
+                const st = stations.find(s => (s.id || s.station_id) === selectedStationId) || {};
+                const ratedKw = parseFloat(st.power_kw) || 60;
+                const tariff = ratedKw >= 100 ? 22.5 : (ratedKw >= 40 ? 18.0 : 12.0);
                 
                 try {
                     const res = await fetch(`${API}/api/verify-otp`, {
@@ -1123,17 +1167,38 @@
                     
                     if (res.ok) {
                         const data = await res.json();
-                        showToast('Contactor Relay Unlocked! Charging initiated.', 'success');
+                        const pkw = data.power_kw || ratedKw;
+                        showToast(`Contactor Unlocked! ${pkw.toFixed(0)} kW Charging Started.`, 'success');
                         updateOcppLog(`> UnlockConnector.req [Station: ${selectedStationId}]\n< UnlockConnector.conf [Status: Unlocked]`);
-                        updateOcppLog(`> RemoteStartTransaction.req\n< RemoteStartTransaction.conf [Accepted]`);
-                        showChargingPanel();
+                        updateOcppLog(`> RemoteStartTransaction.req\n< RemoteStartTransaction.conf [Accepted - ${pkw.toFixed(0)} kW]`);
+                        showChargingPanel({
+                            station_name: st.name || 'EV Fast Charger',
+                            operator: st.operator || 'CPO',
+                            city: st.city || st.district || 'India',
+                            rated_power_kw: pkw,
+                            tariff: tariff,
+                            soc: st.start_soc || 20,
+                            kw: pkw * 0.94,
+                            kwh: 0.1,
+                            cost_rs: 0.1 * tariff
+                        });
                     } else {
                         const err = await res.json().catch(() => ({}));
                         showToast(err.detail || 'Access denied: Invalid PIN', 'error');
                     }
                 } catch (e) {
                     showToast('Relay Unlocked (Demo Mode)! Charging...', 'success');
-                    showChargingPanel();
+                    showChargingPanel({
+                        station_name: st.name || 'EV Fast Charger',
+                        operator: st.operator || 'CPO',
+                        city: st.city || st.district || 'India',
+                        rated_power_kw: ratedKw,
+                        tariff: tariff,
+                        soc: st.start_soc || 20,
+                        kw: ratedKw * 0.94,
+                        kwh: 0.1,
+                        cost_rs: 0.1 * tariff
+                    });
                 } finally {
                     unlockBtn.disabled = false;
                     unlockBtn.innerHTML = '<span>⚡</span> Simulate Arriving & Unlock Charger';
@@ -1173,39 +1238,96 @@
 
         function handleWsMessage(data) {
             if (data.type === 'METER_VALUES') {
-                updateChargingPanel(data.soc, data.kw, data.kwh);
+                updateChargingPanel(data);
             } else if (data.type === 'START_TRANSACTION' || data.type === 'OCPP_UNLOCK_RELAY') {
                 showToast('Contactor Relay Closed! Charging Started.', 'success');
-                showChargingPanel();
+                showChargingPanel(data);
                 updateOcppLog(`> StartTransaction.req\n< StartTransaction.conf [Started]`);
             } else if (data.type === 'STOP_TRANSACTION' || data.type === 'CHARGING_COMPLETE') {
-                showToast('Charging Complete!', 'info');
+                showToast(`Charging Complete! Total: ₹${data.total_cost_rs || data.cost_rs || '0.00'}`, 'info');
                 hideChargingPanel();
             }
         }
 
-        function updateChargingPanel(soc, kw, kwh) {
-            if(!activeSession) showChargingPanel();
+        function updateChargingPanel(data) {
+            if (!activeSession) showChargingPanel(data);
             
-            document.getElementById('soc-val').innerText = `${soc}%`;
-            document.getElementById('kw-val').innerText = `${kw.toFixed(1)} kW`;
-            document.getElementById('kwh-val').innerText = `${kwh.toFixed(2)} kWh`;
+            const soc = data.soc !== undefined ? data.soc : 20.0;
+            const kw = data.kw !== undefined ? data.kw : 60.0;
+            const kwh = data.kwh !== undefined ? data.kwh : 0.0;
+            const cost = data.cost_rs !== undefined ? Number(data.cost_rs).toFixed(2) : (kwh * (data.tariff || 18.0)).toFixed(2);
             
-            const cost = (kwh * 8.5).toFixed(2);
-            document.getElementById('cost-val').innerText = `₹ ${cost}`;
+            const socEl = document.getElementById('soc-val');
+            if (socEl) socEl.innerText = `${soc}%`;
+            
+            const kwEl = document.getElementById('kw-val');
+            if (kwEl) {
+                kwEl.innerText = `${kw.toFixed(1)} kW`;
+                if (kw >= 100) kwEl.style.color = '#00AAD4';
+                else if (kw >= 40) kwEl.style.color = 'var(--status-green)';
+                else kwEl.style.color = 'var(--electric-yellow)';
+            }
+            
+            const kwhEl = document.getElementById('kwh-val');
+            if (kwhEl) kwhEl.innerText = `${kwh.toFixed(2)} kWh`;
+            
+            const costEl = document.getElementById('cost-val');
+            if (costEl) costEl.innerText = `₹ ${cost}`;
+
+            const etaEl = document.getElementById('eta-val');
+            if (etaEl && data.eta_mins !== undefined) {
+                etaEl.innerText = `${data.eta_mins} mins`;
+            }
+
+            const nameEl = document.getElementById('chg-station-name');
+            if (nameEl && data.station_name) {
+                nameEl.innerText = data.station_name;
+            }
+
+            const subEl = document.getElementById('chg-station-sub');
+            if (subEl && (data.operator || data.city)) {
+                subEl.innerText = `${data.operator || 'CPO'} • ${data.city || 'India'} | Tariff: ₹${data.tariff || 18}/kWh`;
+            }
+
+            const badgeEl = document.getElementById('chg-power-badge');
+            if (badgeEl && data.rated_power_kw) {
+                badgeEl.innerText = `${data.rated_power_kw} kW ${data.rated_power_kw >= 45 ? 'DC FAST' : 'AC'}`;
+            }
 
             const offset = 502 - (502 * (soc / 100));
-            document.getElementById('soc-arc').style.strokeDashoffset = offset;
+            const arcEl = document.getElementById('soc-arc');
+            if (arcEl) arcEl.style.strokeDashoffset = offset;
         }
 
-        function showChargingPanel() {
+        let localFallbackTimer = null;
+        function showChargingPanel(initialData) {
             activeSession = true;
             document.getElementById('hero-panel').classList.add('hidden');
             document.getElementById('charging-panel').classList.remove('hidden');
+
+            if (initialData) {
+                const nameEl = document.getElementById('chg-station-name');
+                if (nameEl && initialData.station_name) nameEl.innerText = initialData.station_name;
+
+                const subEl = document.getElementById('chg-station-sub');
+                if (subEl && (initialData.operator || initialData.city)) {
+                    subEl.innerText = `${initialData.operator || ''} • ${initialData.city || ''} | Tariff: ₹${initialData.tariff || 18}/kWh`;
+                }
+
+                const badgeEl = document.getElementById('chg-power-badge');
+                if (badgeEl && initialData.rated_power_kw) {
+                    badgeEl.innerText = `${initialData.rated_power_kw} kW ${initialData.rated_power_kw >= 45 ? 'DC FAST' : 'AC'}`;
+                }
+
+                if (initialData.soc !== undefined && initialData.kw !== undefined) {
+                    updateChargingPanel(initialData);
+                }
+            }
         }
 
         function hideChargingPanel() {
             activeSession = false;
+            clearInterval(localFallbackTimer);
             document.getElementById('charging-panel').classList.add('hidden');
             document.getElementById('hero-panel').classList.remove('hidden');
         }
