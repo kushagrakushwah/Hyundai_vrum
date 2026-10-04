@@ -671,10 +671,14 @@
                         </div>
                     </div>
 
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button id="btn-hero-reserve" style="flex:1; background:linear-gradient(135deg, #FFD100, #FFAA00); color:#000; font-family:var(--font-head); font-size:15px; font-weight:700; padding:10px; border-radius:6px; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 15px rgba(255,209,0,0.3); transition:all 0.2s;">
-                            ⚡ Lock 30-Min Slot
-                        </button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,170,212,0.06); border:1px solid rgba(0,170,212,0.2); border-radius:6px; padding:10px 14px; font-size:12px;">
+                        <span style="color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                            <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-green); box-shadow:0 0 8px var(--status-green);"></span>
+                            <span id="hero-footer-status">Slot Ready · OCPP 1.6J Standby</span>
+                        </span>
+                        <span style="color:var(--hyundai-blue); font-weight:600; display:flex; align-items:center; gap:4px;">
+                            <span>👉 Use Booking Panel on Right</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1095,23 +1099,14 @@
                 const hEta = document.getElementById('hero-st-eta');
                 if (hEta) hEta.innerText = `~${estMins} mins`;
 
-                const hBtn = document.getElementById('btn-hero-reserve');
-                if (hBtn) {
+                const hFooter = document.getElementById('hero-footer-status');
+                if (hFooter) {
                     if (st.status === 'AVAILABLE') {
-                        hBtn.style.display = 'block';
-                        hBtn.disabled = false;
-                        hBtn.innerText = '⚡ Lock 30-Min Slot';
-                        hBtn.onclick = () => reserveStation(st.id);
+                        hFooter.innerText = 'Slot Available · Ready for 30-Min Lock';
                     } else if (st.status === 'RESERVED') {
-                        hBtn.style.display = 'block';
-                        hBtn.disabled = false;
-                        hBtn.innerText = '⚡ Simulate Arriving & Unlock';
-                        hBtn.onclick = () => {
-                            const unlockBtn = document.getElementById('btn-unlock-now');
-                            if (unlockBtn) unlockBtn.click();
-                        };
+                        hFooter.innerText = 'Slot Reserved · Contactor Relay Locked';
                     } else {
-                        hBtn.style.display = 'none';
+                        hFooter.innerText = 'Station In Use / Occupied';
                     }
                 }
             }
@@ -1251,13 +1246,9 @@
                 hStatus.innerText = 'RESERVED';
                 hStatus.className = 'badge status-reserv';
             }
-            const hBtn = document.getElementById('btn-hero-reserve');
-            if (hBtn) {
-                hBtn.innerText = '⚡ Simulate Arriving & Unlock';
-                hBtn.onclick = () => {
-                    const unlockBtn = document.getElementById('btn-unlock-now');
-                    if (unlockBtn) unlockBtn.click();
-                };
+            const hFooter = document.getElementById('hero-footer-status');
+            if (hFooter) {
+                hFooter.innerText = 'Slot Reserved · PIN Active (See Right Panel)';
             }
 
             startPinTimer();
