@@ -58,15 +58,15 @@ def _init_gemini():
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
         _gemini_model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-3.8-flash",
             generation_config={
                 "temperature": 0.3,
                 "top_p": 0.9,
-                "max_output_tokens": 512,
+                "max_output_tokens": 1024,
             },
             system_instruction=_SYSTEM_PROMPT,
         )
-        logger.info("[LLM] Gemini 1.5 Flash initialized.")
+        logger.info("[LLM] Gemini 3.8 Flash initialized.")
         return _gemini_model
     except Exception as e:
         logger.error(f"[LLM] Gemini init failed: {e}")
@@ -94,7 +94,7 @@ def ask_gemini(
     language_mix: str = "en",
 ) -> Optional[str]:
     """
-    Send a query to Gemini 1.5 Flash with vehicle + station context injected.
+    Send a query to Gemini with vehicle + station context injected.
     Returns the model's text response, or None if unavailable (offline / no key).
     """
     model = _init_gemini()
@@ -116,6 +116,12 @@ def ask_gemini(
 
     try:
         response = model.generate_content(full_prompt)
+        if response.candidates:
+            candidate = response.candidates[0]
+            if candidate.content and candidate.content.parts:
+                text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
+                if text_parts:
+                    return " ".join(text_parts).strip()
         return response.text.strip()
     except Exception as e:
         logger.error(f"[LLM] Gemini call failed: {e}")
