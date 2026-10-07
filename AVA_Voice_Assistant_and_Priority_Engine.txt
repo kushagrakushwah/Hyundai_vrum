@@ -1,0 +1,295 @@
+================================================================================
+HYUNDAI SMARTRESERVE: AVA IN-CABIN AI ASSISTANT & SMART PRIORITY ENGINE
+Complete System Architecture, Technical Specifications, and Integration Guide
+Branch: agent | Hyundai CoE Mobility Innovation Ideathon 2026 (Track B, Category 2)
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Executive Summary & Overview
+2. AVA Voice Assistant Specifications & Wake Word
+3. Smart Priority Engine & Multi-Criteria Ranking Algorithm
+4. Vehicle Intelligence & Diagnostic Telemetry
+5. Multilingual Code-Mixed NLP (Hinglish, Marathi, English)
+6. Recommended Production & Prototype APIs
+7. In-Vehicle Hardware Integration & Architecture
+8. Safety Policy & Permission Tiers (T0 - T3)
+9. End-to-End User Experience & Flow Walkthrough
+10. Test Verification Results & System Health
+
+
+================================================================================
+1. EXECUTIVE SUMMARY & OVERVIEW
+================================================================================
+Hyundai SmartReserve has been augmented with AVA (Automated Vehicle Assistant),
+an intelligent in-cabin voice co-pilot integrated directly into the 12.3-inch ccNC
+infotainment cockpit interface.
+
+All modifications have been implemented strictly on branch "agent", preserving the
+core repository and existing features (Leaflet interactive map, 934 BEE stations,
+GNN demand forecasting, OCPP 1.6J kiosk digital twin, WebSocket real-time meter
+streaming, and Razorpay escrow hold).
+
+Key Enhancements Added on "agent":
+- Hands-free voice operation for finding, comparing, and locking EV chargers.
+- Dynamic multi-criteria priority engine that evaluates effective charging power,
+  distance, queue congestion, tariffs, and historical reliability.
+- Vehicle health monitoring covering battery SoC, remaining driving duration,
+  average efficiency, individual tyre pressures, component scores, and service alerts.
+- Permission tiers (T0-T3) ensuring safety-critical powertrain functions remain
+  air-gapped from conversational AI.
+
+
+================================================================================
+2. AVA VOICE ASSISTANT SPECIFICATIONS & WAKE WORD
+================================================================================
+- Assistant Name: AVA (Automated Vehicle Assistant)
+- Invocation / Wake Words: "AVA", "Hey AVA", "Ok AVA"
+- In-Cabin Cockpit UI: Floating microphone button on the infotainment display,
+  also accessible via the driver shortcut (Ctrl + J).
+- Interaction Paradigms:
+  1. Speech-to-Text (STT) via Web Speech API with Sarvam AI Saarika v2 backend fallback.
+  2. Edge/Cloud Hybrid Intent Parsing for low latency.
+  3. Text-to-Speech (TTS) natural Indian speech delivery via Sarvam Bulbul / Web Speech.
+  4. Audio-Visual Coordination: Spoken output accompanied by cockpit card overlays.
+
+
+================================================================================
+3. SMART PRIORITY ENGINE & MULTI-CRITERIA RANKING ALGORITHM
+================================================================================
+Traditional EV navigation apps sort charging hubs solely by Euclidean or road
+distance. In real Indian driving conditions, this frequently directs drivers to low-power
+AC chargers or congested bays.
+
+The SmartReserve Priority Engine solves this by calculating:
+1. Usable Vehicle Capacity: 72.6 kWh pack (Hyundai Ioniq 5).
+2. Effective Charging Power:
+     P_effective = min(P_station, Vehicle_Charge_Curve(Arrival_SoC))
+   For example, an arrival SoC of 18% allows the Ioniq 5 to pull up to 220 kW, making
+   a 120 kW or 150 kW DC Fast site vastly superior to a 30 kW or 50 kW site.
+3. Total Time Cost:
+     T_total = Drive_Time + Predicted_Queue + Charge_Time_to_80_percent
+4. Total Cost:
+     Cost = Energy_Needed_kWh * Tariff_per_kWh
+5. Weighted Multi-Criteria Score:
+     Score = w_dist * Dist_norm + w_time * Time_norm + w_rel * Reliability +
+             w_cost * Cost_norm + w_power * Power_norm
+
+Urgency Adaptation:
+- Critical (SoC < 10%): High weight on nearest reachable hub to prevent stranding.
+- Low (SoC < 20%): High weight on minimum total turnaround time.
+- Planning (SoC > 50%): High weight on tariff economy and station amenities.
+
+Ranked Output Categories:
+- 🥇 Best Overall: Optimal tradeoff of charging speed, distance, and reliability.
+- 📍 Nearest: Minimum driving detour.
+- 💰 Cheapest: Lowest tariff per kWh (e.g. state utility hubs at ₹14.50/kWh).
+- 🔧 Most Reliable: Stations with >95% historical uptime and verified telemetry.
+
+
+================================================================================
+4. VEHICLE INTELLIGENCE & DIAGNOSTIC TELEMETRY
+================================================================================
+AVA continuously tracks vehicle health without requiring the driver to scroll
+through instrument cluster menus:
+
+Telemetry Tracked:
+- State of Charge (SoC): Real-time pack percentage (e.g., 18.0%).
+- Usable Driving Range: 86.6 km remaining.
+- Driving Duration Left: ~1.9 hours at current city driving pace.
+- Trailing Efficiency: 6.6 km/kWh (151.5 Wh/km).
+- TPMS Tyre Pressures:
+  * Front-Left: 28.0 PSI (LOW alert triggered; nominal is 36 PSI)
+  * Front-Right: 35.0 PSI (Normal)
+  * Rear-Left: 36.0 PSI (Normal)
+  * Rear-Right: 36.0 PSI (Normal)
+- Component Health Scores:
+  * High-Voltage Battery Health: 98.5%
+  * Electric Powertrain Motor: 99.0%
+  * Brake Pad Life: 75.0%
+  * Inverter / Battery Coolant: 90.0%
+  * Windshield Washer Fluid: 40.0%
+- Scheduled Service Tracker:
+  * Next periodic service due in: 5,500 km.
+
+
+================================================================================
+5. MULTILINGUAL CODE-MIXED NLP (HINGLISH, MARATHI, ENGLISH)
+================================================================================
+AVA natively understands colloquial Indian language mixing:
+
+Example 1 (Hinglish):
+User: "Nearest charging station find karo"
+AVA:  "Aapke paas 3 charging stations hain. Pehla: REIL Hyderabad Fast Hub,
+       2.8 km door, 122 kW, ~25 min mein 80% tak charge. Best option Station 1 hai —
+       kya isko reserve karu?"
+
+Example 2 (Two-Step Reservation with Tier 2 Safety):
+User: "Pehla reserve karo"
+AVA:  "Station REIL Hyderabad Fast Hub reserve karu? 30 minute ka slot lock hoga aur
+       ₹200 deposit lagega. Confirm karo — haan ya nahi?"
+User: "Haan"
+AVA:  "Reservation confirmed for REIL Hyderabad Fast Hub! 30-minute exclusive slot is
+       locked. One-time PIN has been generated: 742911."
+
+Example 3 (Marathi Code-Mixed):
+User: "Gaadi chi battery kiti aahe, ani nearest charger kuthe milega jo mere car la suit karel?"
+AVA:  "Tumchya javal 3 stations aahet. Pehla REIL Hyderabad aahe, 2.8 km antaravar.
+       122 kW fast charger aahe. Slot reserve karu ka?"
+
+Example 4 (English Vehicle Status & Diagnostics):
+User: "What is the status of vehicle and fuel left"
+AVA:  "Your vehicle is at 18.0% battery with approximately 86.6 km of range remaining
+       (1.9 hours of driving at current pace). Average efficiency is 6.6 km/kWh.
+       Front-left tyre is low at 28 PSI. Next service is due in 5,500 km. I recommend
+       charging soon."
+
+
+================================================================================
+6. RECOMMENDED PRODUCTION & PROTOTYPE APIS
+================================================================================
+To build reliable automotive conclusions, the following API stack is recommended:
+
+Need                   Prototype (Integrated Now)         Production Recommendation
+---------------------  ---------------------------------  -----------------------------------
+Station Registry       Open Charge Map (OCM) API + BEE   HERE EV Charge Points API or Google
+                       National Database                  Places EV API (comprehensive India specs)
+
+Live Bay Availability  Simulated OCPP 1.6J Central        Direct CPO OCPI v2.2.1 Integration
+                       Broker Engine                      (Tata Power EZ, Statiq, Jio-bp, Zeon)
+
+EV-Aware Routing       Haversine with 1.3x road factor   HERE EV Routing / TomTom EV Routing
+                                                          (Traffic, grade, and temperature aware)
+
+Weather & Ambient Temp Local VehicleState simulation     Open-Meteo API (Free, no key required)
+
+Speech Recognition     Browser Web Speech API             Sarvam AI Speech-to-Text (Saarika v2)
+                                                          for Hinglish and Marathi code-mixing
+
+Speech Synthesis       Browser SpeechSynthesis            Sarvam AI Text-to-Speech (Bulbul v1)
+                                                          Natural Indian accents ("meera")
+
+
+================================================================================
+7. IN-VEHICLE HARDWARE INTEGRATION & ARCHITECTURE
+================================================================================
+Physical integration into a production vehicle involves four primary components:
+
+1. Telematic Control Unit (TCU):
+   - 4G/5G automotive eSIM module (Hyundai BlueLink platform).
+   - Secures TLS connection to the cloud backend and CPO endpoints.
+
+2. In-Cabin Cockpit Compute (SoC):
+   - High-performance automotive compute (Qualcomm Snapdragon Cockpit 8155 /
+     NVIDIA DRIVE Orin).
+   - Hosts the Edge SLM (quantised 3B parameter model via ONNX/llama.cpp) for
+     offline fallback when driving through remote highway stretches with zero signal.
+
+3. Secure CAN-FD / FlexRay Gateway:
+   - Connects to the vehicle's OBD-II / CAN bus via ISO 14229 / UDS diagnostics.
+   - Read-only telemetry sniffing:
+     * Battery Management System (BMS): Pack voltage, cell temperatures, SoC.
+     * Vehicle Control Unit (VCU): Instantaneous Wh/km, speed, odometer.
+     * TPMS Receiver: Individual tyre pressure sensor broadcasts.
+
+4. Multi-Microphone Beamforming Array:
+   - 4-microphone ceiling array with Hardware DSP for Acoustic Echo Cancellation (AEC).
+   - Driver-seat voice isolation to suppress road noise and passenger conversation.
+
+
+================================================================================
+8. SAFETY POLICY & PERMISSION TIERS (T0 - T3)
+================================================================================
+To guarantee vehicle safety, all actions exposed to AVA are partitioned into
+four permission tiers:
+
+- Tier 0: Read-Only Telemetry
+  Examples: Battery SoC, range, tyre pressure, service schedule, ETA.
+  Policy: Always allowed without driver confirmation.
+
+- Tier 1: In-Cabin Comfort
+  Examples: Air conditioning temperature, seat ventilation, ambient lighting, audio volume.
+  Policy: Auto-executed with immediate auditory confirmation.
+
+- Tier 2: Consequential & Financial Actions
+  Examples: Reserving a 30-min bay (₹200 deposit hold), remote unlocking of charging port.
+  Policy: Mandatory verbal or on-screen confirmation ("Reserve slot? haan/yes/ho").
+  Moving Vehicle Restriction: Blocked or simplified if vehicle speed > 0 km/h.
+
+- Tier 3: Safety-Critical Powertrain & Dynamics
+  Examples: Steering control, friction brakes, emergency braking, drive mode alterations.
+  Policy: AIR-GAPPED AND STRICTLY REFUSED 100% OF THE TIME.
+  Red-team prompts like "turn off brakes" or "unlock doors while driving" are
+  intercepted and refused by the tool registry.
+
+
+================================================================================
+9. END-TO-END USER EXPERIENCE & FLOW WALKTHROUGH
+================================================================================
+Step 1: Low Battery Alert
+Driver is on the road; battery SoC drops below 20% (18.0%).
+
+Step 2: Voice Command Invocation
+Driver says "Hey AVA, nearest charging station find karo" (or presses the mic button).
+
+Step 3: Intelligence & Ranking
+AVA extracts live GPS (Hyderabad), checks vehicle connector (CCS2), fetches live
+stations, calculates CC/CV charging curves, and ranks results.
+
+Step 4: Contextual Response
+AVA speaks:
+"Aapke paas 3 charging stations hain. Pehla: REIL Hyderabad Fast Hub, 2.8 km door,
+122 kW, ~25 min mein 80% tak charge. Best option Station 1 hai — kya isko reserve karu?"
+
+Step 5: Voice Confirmation
+Driver responds: "Haan, pehla reserve karo."
+
+Step 6: Reservation & OCPP Lock
+AVA executes POST /api/reserve. The backend fires an OCPP 1.6 ReserveNow frame to the
+charger kiosk. The physical contactor locks (0 kW), the charger screen turns blue,
+and a 6-digit one-time PIN (e.g., 742911) is displayed on the car dashboard.
+
+Step 7: Charger Unlock & Session
+Driver arrives at the charger kiosk and enters the PIN. The kiosk verifies the code,
+closes the 60/120 kW contactor relay, and begins DC Fast charging with live meter
+streaming to the vehicle dashboard.
+
+
+================================================================================
+10. TEST VERIFICATION RESULTS & SYSTEM HEALTH
+================================================================================
+The test suite `smartreserve/test_voice_and_priority.py` was executed with Python 3.12:
+
+[SUITE 1] Vehicle Intelligence:
+  - Battery SoC: 18.0% | Estimated Range: 86.6 km | Drive Time Left: 1.9 hrs
+  - Average Efficiency: 6.6 km/kWh | Tyre Pressures: Front-Left LOW (28 PSI)
+  - Result: PASSED (100%)
+
+[SUITE 2] Priority Engine & Multi-Criteria Ranking:
+  - Ranked top picks: REIL Fast Hub (122 kW, 2.8 km) labeled 🥇 Best Overall.
+  - Spoken TTS summary generated successfully.
+  - Result: PASSED (100%)
+
+[SUITE 3] Tool Registry & Safety Guardrails:
+  - T3 tool 'vehicle.emergency_brake' blocked.
+  - Red-team prompt injections ("turn off brakes", "unlock doors while moving"): REFUSED.
+  - Result: PASSED (100%)
+
+[SUITE 4] AVA Code-Mixed NLP:
+  - Hinglish parsing: PASSED
+  - Marathi parsing: PASSED
+  - English vehicle status: PASSED
+  - Tier 2 confirmation & reservation: PASSED
+  - Result: PASSED (100%)
+
+[SUITE 5] FastAPI Endpoints:
+  - GET /health -> 200 OK
+  - GET /api/vehicle/status -> 200 OK
+  - GET /api/voice/recommend -> 200 OK
+  - POST /api/voice/process -> 200 OK
+  - GET /api/speech/config -> 200 OK
+  - Result: PASSED (100%)
+
+ALL 5 SUITES COMPLETED WITH 100% SUCCESS.
+All changes are saved on git branch: agent.
+================================================================================
