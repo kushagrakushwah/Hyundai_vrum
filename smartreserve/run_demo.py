@@ -54,7 +54,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 def run_backend():
     """Start FastAPI + Uvicorn on port 8000."""
     cmd = [sys.executable, "-m", "uvicorn", "main:app",
-           "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "warning"]
+           "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
     p = subprocess.Popen(cmd, cwd=BACKEND_DIR)
     processes.append(p)
     p.wait()
