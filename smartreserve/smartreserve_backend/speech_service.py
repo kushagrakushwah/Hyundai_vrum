@@ -3,6 +3,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
+# ── Load .env (repo root, two levels up from this file) ──────────────────────
+try:
+    from dotenv import load_dotenv
+    _env = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+    load_dotenv(dotenv_path=_env)
+except ImportError:
+    pass
+
 try:
     import httpx
     HAS_HTTPX = True
@@ -11,6 +19,7 @@ except ImportError:
     HAS_HTTPX = False
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class SpeechConfig:

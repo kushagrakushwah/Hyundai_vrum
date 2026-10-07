@@ -1,8 +1,9 @@
 """
-Stations Database — loads real Telangana EV station data & live Open Charge Map API
-Combines:
-1. 934 BEE national registry nodes (Telangana)
-2. Live real-time Open Charge Map (OCM) telemetry via API Key: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+Stations Database — loads real EV station data from multiple sources:
+1. BEE nodes_master.csv (934 Telangana network nodes from EVCS Demand Forecasting)
+2. Dataful dataset: state-district-city-wise EV charging stations across India
+   (1382 Telangana rows, 375 in Hyderabad — real CPO/location/connector/power data)
+3. Live Open Charge Map (OCM) API — real-time availability overlay
 """
 import csv
 import json
@@ -10,7 +11,23 @@ import os
 import random
 from typing import List, Optional, Dict
 
+# ── Load .env at repo root ────────────────────────────────────────────────────
+try:
+    from dotenv import load_dotenv
+    _env = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+    load_dotenv(dotenv_path=_env)
+except ImportError:
+    pass
+
 from ocm_client import OpenChargeMapClient
+
+# Dataful dataset path (repo root → data_ev_charging_stations_india/)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATAFUL_CSV = os.path.join(
+    _REPO_ROOT,
+    "data_ev_charging_stations_india",
+    "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv",
+)
 
 # Telangana districts with approximate coordinates
 TELANGANA_DISTRICTS = [
@@ -70,7 +87,7 @@ class StationsDB:
         self._load_or_generate()
 
     def _load_or_generate(self):
-        """Try loading from real processed BEE CSV, then demo_data, else generate."""
+        """Load from real BEE CSV + real Dataful dataset. Synthetic only as last resort."""
         base_dir = os.path.dirname(__file__)
         candidate_paths = [
             os.path.join(base_dir, "..", "..", "EVCS_Demand_Forecasting", "processed", "nodes_master.csv"),
@@ -86,10 +103,111 @@ class StationsDB:
                 break
 
         if not loaded:
+            print("  [DB] BEE CSV not found — using synthetic fallback (limited)")
             self._generate_synthetic()
-        
-        # Always inject verified Pan-India fast hubs (Bhopal, Nagpur, Mumbai, Delhi, etc.)
+
+        # ── Load real Dataful dataset (Hyderabad / Telangana real CPO data) ──
+        before = len(self.stations)
+        self._load_from_dataful()
+        added = len(self.stations) - before
+        if added > 0:
+            print(f"  [DB] +{added} real Dataful stations loaded (India CPO registry)")
+
+        # Always inject verified Pan-India fast hubs
         self._add_pan_india_metro_hubs()
+
+    def _load_from_dataful(self):
+        """
+        Load real EV charging station data from the Dataful / BEE national registry CSV.
+        Columns: data_as_of, charge_point_operators, govt_private, state, district_as_per_source,
+                 district_as_per_lgd, district_lgd_code, city_village, location_name,
+                 latitude, longitude, chargers_type, charger_rating, connector_rating, total_connectors
+        We prioritise Telangana rows but load all India for routing across states.
+        """
+        if not os.path.exists(DATAFUL_CSV):
+            print(f"  [DB] Dataful CSV not found at: {DATAFUL_CSV}")
+            return
+
+        # Map Dataful connector type strings → normalized internal connector type
+        _CONNECTOR_MAP = {
+            "CCS-II": "CCS2",
+            "CCS": "CCS2",
+            "Combo (CCS-II+CHAdeMO)": "CCS2+CHAdeMO",
+            "Combo (CCS-II + CHAdeMo + Type II)": "CCS2+CHAdeMO",
+            "CHAdeMO": "CHAdeMO",
+            "Type-II AC": "AC Type 2",
+            "Type II": "AC Type 2",
+            "Bharat AC-001": "Bharat AC",
+            "Bharat AC": "Bharat AC",
+            "Bharat DC-001": "Bharat DC",
+            "LEV AC Charge point": "LEV AC",
+            "LEV DC Charge Point (IS-17017-2-7)": "LEV DC",
+            "LEV DC Charge Point (IS-17017-2-6)": "LEV DC",
+            "LEV DC": "LEV DC",
+        }
+
+        try:
+            with open(DATAFUL_CSV, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for idx, row in enumerate(reader):
+                    try:
+                        lat = float(row.get("latitude") or 0)
+                        lng = float(row.get("longitude") or 0)
+                        if lat == 0 or lng == 0:
+                            continue  # skip rows with missing coordinates
+
+                        power = float(row.get("charger_rating") or row.get("connector_rating") or 7.4)
+                        total_conn = int(float(row.get("total_connectors") or 1))
+                        cpo = (row.get("charge_point_operators") or "Unknown CPO").strip()
+                        state = (row.get("state") or "").strip()
+                        district = (row.get("district_as_per_lgd") or row.get("district_as_per_source") or "").strip()
+                        city = (row.get("city_village") or district).strip().title()
+                        loc_name = (row.get("location_name") or "").strip()
+                        raw_connector = (row.get("chargers_type") or "").strip()
+                        connector = _CONNECTOR_MAP.get(raw_connector, raw_connector or "CCS2")
+
+                        # Build a deterministic station_id from CPO + lat/lng
+                        sid = f"DF_{state[:2].upper()}_{abs(hash(f'{lat:.4f}{lng:.4f}{cpo}')) % 999999:06d}"
+
+                        # Skip if already loaded (BEE CSV might overlap)
+                        if sid in self.stations:
+                            continue
+
+                        # Build human-readable name
+                        name_parts = [cpo]
+                        if loc_name and len(loc_name) < 120:
+                            # Truncate very long location strings
+                            name_parts.append(loc_name[:60].rstrip(",. "))
+                        elif city:
+                            name_parts.append(city)
+                        st_name = " — ".join(name_parts)
+
+                        self.stations[sid] = {
+                            "station_id": sid,
+                            "name": st_name,
+                            "city": city,
+                            "district": district,
+                            "state": state,
+                            "address": loc_name or f"{city}, {district}, {state}",
+                            "lat": round(lat, 6),
+                            "lng": round(lng, 6),
+                            "power_kw": round(power, 1),
+                            "connector_type": connector,
+                            "total_ports": total_conn,
+                            "operator": cpo,
+                            "govt_private": (row.get("govt_private") or "").strip(),
+                            "location_type": "Public EV Charger",
+                            "monthly_units_kwh": round(power * total_conn * 12, 1),  # rough estimate
+                            "peak_load_kw": round(power * total_conn * 0.75, 1),
+                            "is_live_ocm": False,
+                            "source": "dataful",
+                        }
+                    except (ValueError, TypeError):
+                        continue  # skip malformed rows
+
+        except Exception as e:
+            print(f"  [DB] Error loading Dataful CSV: {e}")
+
 
     def _load_from_csv(self, path: str):
         with open(path, newline="", encoding="utf-8") as f:

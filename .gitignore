@@ -14,6 +14,9 @@ test.pdf
 
 # Environment & database
 .env
+.env.*
+!.env.example
+*.env
 smartreserve.db
 *.db
 

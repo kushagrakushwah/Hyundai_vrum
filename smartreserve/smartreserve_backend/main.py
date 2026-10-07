@@ -1,6 +1,7 @@
 """
 Hyundai SmartReserve — FastAPI Backend v2.0
 Production-grade: SQLite persistence + OCPP 1.6J + Razorpay escrow + Live OCM API
+AVA Voice Assistant + Gemini LLM + Sarvam STT/TTS + Real Dataful EV station data
 """
 import asyncio
 import json
@@ -10,6 +11,14 @@ import string
 import time
 from datetime import datetime
 from typing import Optional
+
+# ── Load .env first (repo root) — must be before any module that reads env vars ──
+try:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+except ImportError:
+    pass
+
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -27,6 +36,7 @@ from voice_assistant import VoiceAssistant
 from priority_engine import PriorityEngine
 from vehicle_intelligence import VehicleIntelligence
 from speech_service import SpeechService
+from llm_service import ask_gemini, is_available as llm_available
 
 # ── App Setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -60,7 +70,11 @@ try:
     priority_eng = PriorityEngine(db, vehicle_intel)
     voice_assistant = VoiceAssistant()
     speech_svc = SpeechService()
-    print("  [VOICE] AVA Voice Assistant initialized")
+    _llm_ok = llm_available()
+    _sarvam_ok = bool(speech_svc.config.sarvam_api_key)
+    print(f"  [VOICE] AVA Voice Assistant initialized")
+    print(f"  [LLM]  Gemini Cloud Reasoning : {'Active' if _llm_ok else 'Disabled (no key)'}")
+    print(f"  [STT]  Sarvam STT/TTS          : {'Active' if _sarvam_ok else 'Disabled (no key)'}")
 except Exception as e:
     vehicle_intel = None
     priority_eng = None
@@ -68,7 +82,7 @@ except Exception as e:
     speech_svc = None
     print(f"  [VOICE] Voice assistant init error (non-fatal): {e}")
 
-OCM_API_KEY = "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
+OCM_API_KEY = os.getenv("OCM_API_KEY", "")
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────────
@@ -98,6 +112,20 @@ class VoiceInputRequest(BaseModel):
 class VoiceConfirmRequest(BaseModel):
     user_id: str = "hyundai_driver_001"
     confirmed: bool = True
+
+class TTSRequest(BaseModel):
+    text: str
+    language: str = "hi-IN"  # en-IN | hi-IN | mr-IN
+
+class VehicleStateUpdate(BaseModel):
+    """Allows the frontend/car SDK to push live telemetry into the VehicleState."""
+    soc: Optional[float] = None
+    range_km: Optional[float] = None
+    speed_kmh: Optional[float] = None
+    gps_lat: Optional[float] = None
+    gps_lng: Optional[float] = None
+    battery_temp_celsius: Optional[float] = None
+    odometer_km: Optional[float] = None
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
@@ -790,7 +818,7 @@ async def startup():
     print(f"   🎙️  Voice Assistant    : {'AVA Active' if voice_assistant else 'Unavailable'}")
     print(f"   🏆 Priority Engine    : {'Active' if priority_eng else 'Unavailable'}")
     print(f"   💳 Payment             : {'Razorpay Mock (demo mode)' if payment_engine.mock_mode else 'Razorpay LIVE'}")
-    print(f"   🌐 OCM API Key         : {OCM_API_KEY[:8]}...")
+    print(f"   🌐 OCM API Key         : {'Configured' if OCM_API_KEY else 'None (mock/fallback)'}")
     print(f"   📡 WebSockets          : /ws/car/{{user}} | /ws/kiosk/{{station}}")
     print("=" * 60)
 

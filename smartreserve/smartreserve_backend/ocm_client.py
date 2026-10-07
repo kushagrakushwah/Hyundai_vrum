@@ -1,7 +1,7 @@
 """
 Open Charge Map (OCM) API Client
 Fetches real-time public EV charging station telemetry and operational status.
-API Key: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+Uses OCM_API_KEY environment variable if configured.
 """
 import json
 import os
@@ -9,7 +9,7 @@ import time
 import urllib.request
 from typing import Dict, List, Optional
 
-DEFAULT_API_KEY = "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
+DEFAULT_API_KEY = os.getenv("OCM_API_KEY", "")
 OCM_BASE_URL = "https://api.openchargemap.io/v3/poi/"
 
 

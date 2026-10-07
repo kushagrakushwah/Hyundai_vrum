@@ -172,14 +172,10 @@ def test_fastapi_endpoints():
     print("FastAPI Endpoints: PASSED")
 
 if __name__ == "__main__":
-    print("==================================================================")
-    print("  HYUNDAI SMARTRESERVE: VERIFICATION SUITE (AGENT BRANCH)")
-    print("==================================================================")
+
     test_vehicle_intelligence()
     test_priority_engine()
     test_tool_registry_and_safety()
     test_voice_assistant_code_mixing()
     test_fastapi_endpoints()
-    print("\n==================================================================")
-    print("  ALL 5 VERIFICATION SUITES COMPLETED WITH 100% SUCCESS!")
-    print("==================================================================")
+
