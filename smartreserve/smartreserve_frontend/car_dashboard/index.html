@@ -547,6 +547,217 @@
         .marker-icon { width: 16px; height: 16px; }
 
         .hidden { display: none !important; }
+
+        /* Voice Assistant */
+        .voice-btn {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00AAD4, #0066AA);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,170,212,0.5);
+            transition: all 0.3s;
+        }
+        .voice-btn:hover { transform: translateX(-50%) scale(1.1); box-shadow: 0 6px 30px rgba(0,170,212,0.7); }
+        .voice-btn.listening {
+            background: linear-gradient(135deg, #FF3333, #CC0000);
+            animation: voice-pulse 1.5s ease-in-out infinite;
+            box-shadow: 0 4px 20px rgba(255,51,51,0.5);
+        }
+        @keyframes voice-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,51,51,0.7); }
+            50% { box-shadow: 0 0 0 15px rgba(255,51,51,0); }
+        }
+        
+        .voice-overlay {
+            position: fixed;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 700px;
+            max-height: 60vh;
+            z-index: 9997;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .voice-overlay.active { display: flex; }
+        
+        .voice-transcript {
+            background: rgba(5,10,24,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0,170,212,0.3);
+            border-radius: 16px;
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--text-main);
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .voice-transcript .interim { color: var(--text-muted); font-style: italic; }
+        .voice-transcript .final { color: var(--hyundai-blue); font-weight: 500; }
+        
+        .voice-response {
+            background: rgba(5,10,24,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,209,0,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 14px;
+            color: var(--text-main);
+            line-height: 1.6;
+            max-height: 45vh;
+            overflow-y: auto;
+        }
+        .voice-response .assistant-label {
+            font-family: var(--font-head);
+            font-size: 12px;
+            color: var(--hyundai-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .recommendation-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 8px 0;
+            transition: all 0.3s;
+        }
+        .recommendation-card:hover {
+            background: rgba(0,170,212,0.08);
+            border-color: rgba(0,170,212,0.3);
+        }
+        .recommendation-card.best {
+            border-color: rgba(255,209,0,0.4);
+            background: rgba(255,209,0,0.05);
+        }
+        .rec-label {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .rec-label.gold { background: rgba(255,209,0,0.2); color: var(--electric-yellow); }
+        .rec-label.blue { background: rgba(0,170,212,0.2); color: var(--hyundai-blue); }
+        .rec-label.green { background: rgba(0,255,102,0.2); color: var(--status-green); }
+        
+        .rec-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+        .rec-name {
+            font-family: var(--font-head);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .rec-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .rec-stats span { display: flex; align-items: center; gap: 4px; }
+        .rec-reason {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+        .rec-action {
+            background: linear-gradient(135deg, #FFD100, #FFAA00);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--font-head);
+        }
+        .rec-action:hover { transform: scale(1.05); }
+        
+        .confirm-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .confirm-bar button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-head);
+            font-size: 14px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .confirm-yes {
+            background: linear-gradient(135deg, #00FF66, #00CC44);
+            color: #000;
+        }
+        .confirm-no {
+            background: rgba(255,51,51,0.2);
+            border: 1px solid var(--status-red) !important;
+            color: var(--status-red);
+        }
+        
+        .vehicle-insights {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .insight-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .insight-card .insight-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .insight-card .insight-value {
+            font-family: var(--font-head);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--electric-yellow);
+        }
+        .insight-warning {
+            background: rgba(255,153,0,0.1);
+            border-left: 3px solid var(--status-amber);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--status-amber);
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -761,6 +972,19 @@
             <div class="chip">Live OCM: <span id="stat-live">0</span></div>
             <div class="chip">Active Reservations: <span id="stat-res">0</span></div>
         </div>
+    </div>
+
+    <!-- AVA Voice Assistant -->
+    <button class="voice-btn" id="voice-btn" title="AVA Voice Assistant (Hey AVA)">
+        🎙️
+    </button>
+
+    <div class="voice-overlay" id="voice-overlay">
+        <div class="voice-transcript" id="voice-transcript" style="display:none;">
+            <span class="interim" id="voice-interim"></span>
+            <span class="final" id="voice-final"></span>
+        </div>
+        <div class="voice-response" id="voice-response" style="display:none;"></div>
     </div>
 
     <div class="toast-container" id="toast-container"></div>
@@ -1520,6 +1744,328 @@
         } else {
             startApp();
         }
+
+        // ── AVA Voice Assistant ────────────────────────────────────────────
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceOverlay = document.getElementById('voice-overlay');
+        const voiceTranscript = document.getElementById('voice-transcript');
+        const voiceInterim = document.getElementById('voice-interim');
+        const voiceFinal = document.getElementById('voice-final');
+        const voiceResponse = document.getElementById('voice-response');
+        
+        let recognition = null;
+        let isListening = false;
+        let lastRecommendations = [];
+        let pendingConfirmation = false;
+        
+        // Initialize Web Speech API
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('Speech Recognition not supported');
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-IN';
+            recognition.maxAlternatives = 1;
+            
+            recognition.onstart = () => {
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceBtn.innerHTML = '⏹️';
+                voiceTranscript.style.display = 'block';
+                voiceOverlay.classList.add('active');
+                voiceInterim.innerText = 'Listening...';
+                voiceFinal.innerText = '';
+            };
+            
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                voiceInterim.innerText = interimTranscript;
+                if (finalTranscript) {
+                    voiceFinal.innerText = finalTranscript;
+                    processVoiceCommand(finalTranscript);
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.warn('Speech error:', event.error);
+                stopListening();
+                if (event.error === 'not-allowed') {
+                    showToast('Microphone access denied. Please allow microphone.', 'error');
+                }
+            };
+            
+            recognition.onend = () => {
+                stopListening();
+            };
+        }
+        
+        function startListening() {
+            if (!recognition) initSpeechRecognition();
+            if (!recognition) {
+                // Fallback: show text input
+                showTextInputFallback();
+                return;
+            }
+            try {
+                recognition.start();
+            } catch(e) {
+                console.warn('Recognition start error:', e);
+            }
+        }
+        
+        function stopListening() {
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceBtn.innerHTML = '🎙️';
+            try { if (recognition) recognition.stop(); } catch(e) {}
+        }
+        
+        function showTextInputFallback() {
+            voiceOverlay.classList.add('active');
+            voiceTranscript.style.display = 'block';
+            voiceTranscript.innerHTML = `
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="voice-text-input" placeholder="Type a command (e.g., 'nearest charging station find karo')..." 
+                        style="flex:1; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:8px; padding:10px; color:white; font-family:var(--font-body);">
+                    <button onclick="submitTextCommand()" style="background:var(--hyundai-blue); color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">→</button>
+                </div>
+            `;
+            setTimeout(() => {
+                const inp = document.getElementById('voice-text-input');
+                if (inp) {
+                    inp.focus();
+                    inp.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') submitTextCommand();
+                    });
+                }
+            }, 100);
+        }
+        
+        function submitTextCommand() {
+            const inp = document.getElementById('voice-text-input');
+            if (inp && inp.value.trim()) {
+                voiceFinal.innerText = inp.value.trim();
+                processVoiceCommand(inp.value.trim());
+            }
+        }
+        
+        // Process voice command through backend
+        async function processVoiceCommand(text) {
+            voiceResponse.style.display = 'block';
+            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA Processing...</div><div style="color:var(--text-muted);font-size:13px;">Analysing: "${text}"</div>`;
+            
+            // Check for confirmation responses
+            if (pendingConfirmation) {
+                const yesWords = ['yes', 'haan', 'ho', 'ha', 'ok', 'sure', 'confirm', 'karo', 'kar do', 'reserve'];
+                const noWords = ['no', 'nahi', 'nako', 'cancel', 'mat', 'band', 'stop', 'ruk'];
+                const lower = text.toLowerCase().trim();
+                
+                const isYes = yesWords.some(w => lower.includes(w));
+                const isNo = noWords.some(w => lower.includes(w));
+                
+                if (isYes || isNo) {
+                    await handleConfirmation(isYes);
+                    return;
+                }
+            }
+            
+            try {
+                const res = await fetch(`${API}/api/voice/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, user_id: DRIVER_ID })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    displayVoiceResponse(data);
+                    speakResponse(data.text);
+                } else {
+                    voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>Sorry, I couldn't process that. Try: "nearest charging station" or "vehicle status"</div>`;
+                }
+            } catch (e) {
+                // Offline fallback
+                console.warn('Voice API error:', e);
+                handleOfflineCommand(text);
+            }
+        }
+        
+        function displayVoiceResponse(data) {
+            let html = `<div class="assistant-label">🤖 AVA</div>`;
+            
+            // Main response text
+            html += `<div style="margin-bottom:10px;">${data.text}</div>`;
+            
+            // Recommendation cards
+            if (data.display_data && data.display_data.recommendations) {
+                const recs = data.display_data.recommendations;
+                lastRecommendations = recs;
+                recs.forEach((rec, idx) => {
+                    const labelClass = idx === 0 ? 'gold' : (idx === 1 ? 'blue' : 'green');
+                    const cardClass = idx === 0 ? 'best' : '';
+                    html += `
+                        <div class="recommendation-card ${cardClass}">
+                            <span class="rec-label ${labelClass}">${rec.label || ('⭐ Pick ' + (idx+1))}</span>
+                            <div class="rec-row">
+                                <div>
+                                    <div class="rec-name">${rec.station_name || rec.name || 'Station'}</div>
+                                    <div class="rec-stats">
+                                        <span>📍 ${(rec.distance_km || 0).toFixed(1)} km</span>
+                                        <span>⚡ ${rec.rated_power_kw || rec.effective_power_kw || 60} kW</span>
+                                        <span>⏱ ~${Math.round(rec.estimated_total_time_min || rec.estimated_charge_time_min || 30)} min</span>
+                                        <span>💰 ₹${(rec.estimated_cost_rs || 0).toFixed(0)}</span>
+                                    </div>
+                                </div>
+                                <button class="rec-action" onclick="voiceReserveStation('${rec.station_id}', ${idx})">🔒 Reserve</button>
+                            </div>
+                            ${rec.reasoning ? `<div class="rec-reason">${rec.reasoning}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Vehicle status insights
+            if (data.display_data && data.display_data.vehicle_status) {
+                const vs = data.display_data.vehicle_status;
+                html += `<div class="vehicle-insights">`;
+                if (vs.soc !== undefined) html += `<div class="insight-card"><div class="insight-label">Battery</div><div class="insight-value">${vs.soc}%</div></div>`;
+                if (vs.range_km !== undefined) html += `<div class="insight-card"><div class="insight-label">Range</div><div class="insight-value">${vs.range_km} km</div></div>`;
+                if (vs.efficiency !== undefined) html += `<div class="insight-card"><div class="insight-label">Efficiency</div><div class="insight-value">${vs.efficiency} km/kWh</div></div>`;
+                if (vs.hours_remaining !== undefined) html += `<div class="insight-card"><div class="insight-label">Drive Time Left</div><div class="insight-value">${vs.hours_remaining}h</div></div>`;
+                html += `</div>`;
+                
+                // Warnings
+                if (vs.insights && vs.insights.length > 0) {
+                    vs.insights.forEach(insight => {
+                        html += `<div class="insight-warning">⚠️ ${insight}</div>`;
+                    });
+                }
+            }
+            
+            // Confirmation UI
+            if (data.needs_confirmation) {
+                pendingConfirmation = true;
+                html += `
+                    <div class="confirm-bar">
+                        <button class="confirm-yes" onclick="handleConfirmation(true)">✅ Haan / Yes</button>
+                        <button class="confirm-no" onclick="handleConfirmation(false)">❌ Nahi / No</button>
+                    </div>
+                `;
+            } else {
+                pendingConfirmation = false;
+            }
+            
+            voiceResponse.innerHTML = html;
+        }
+        
+        async function handleConfirmation(confirmed) {
+            pendingConfirmation = false;
+            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);">${confirmed ? 'Confirming...' : 'Cancelled.'}</div>`;
+            
+            try {
+                const res = await fetch(`${API}/api/voice/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: DRIVER_ID, confirmed: confirmed })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    displayVoiceResponse(data);
+                    speakResponse(data.text);
+                }
+            } catch (e) {
+                voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>${confirmed ? 'Reservation confirmed!' : 'Action cancelled.'}</div>`;
+            }
+        }
+        
+        function voiceReserveStation(stationId, idx) {
+            processVoiceCommand(`reserve station ${idx + 1}`);
+        }
+        
+        // Text-to-Speech
+        function speakResponse(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-IN';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                // Try to find an Indian English voice
+                const voices = window.speechSynthesis.getVoices();
+                const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+                if (indianVoice) utterance.voice = indianVoice;
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+        
+        // Offline fallback for basic commands
+        function handleOfflineCommand(text) {
+            const lower = text.toLowerCase();
+            let response = { text: '', display_data: {}, action_type: 'info', needs_confirmation: false };
+            
+            if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
+                response.text = 'Vehicle is at 18% state of charge with approximately 59 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
+                response.display_data = { vehicle_status: { soc: 18, range_km: 59, efficiency: 6.6, hours_remaining: 1.3 } };
+            } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
+                response.text = 'Looking for nearest charging stations. Open the map to see available stations near you.';
+                // Trigger the existing filter
+                const filterBtn = document.querySelector('[data-filter="available"]');
+                if (filterBtn) filterBtn.click();
+            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
+                response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve assistant. Battery status, charging stations, ya reservations ke baare mein poochiye.';
+            } else {
+                response.text = 'I can help with: "Vehicle status", "Find nearest charging station", "Reserve a slot", or "Vehicle diagnostics". Try one of these!';
+            }
+            
+            displayVoiceResponse(response);
+            speakResponse(response.text);
+        }
+        
+        // Voice button handler
+        voiceBtn.onclick = () => {
+            if (isListening) {
+                stopListening();
+            } else if (voiceOverlay.classList.contains('active') && !isListening) {
+                // Toggle overlay off
+                voiceOverlay.classList.remove('active');
+                voiceResponse.style.display = 'none';
+                voiceTranscript.style.display = 'none';
+                pendingConfirmation = false;
+            } else {
+                startListening();
+            }
+        };
+        
+        // Keyboard shortcut: Space to toggle voice (when not typing)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyJ' && e.ctrlKey) {
+                e.preventDefault();
+                voiceBtn.click();
+            }
+        });
+        
+        // Load voices
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+        
+        // Initialize speech recognition on load
+        initSpeechRecognition();
 
     </script>
 </body>

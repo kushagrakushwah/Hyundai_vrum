@@ -23,6 +23,10 @@ from ocpp_engine import OCPPEngine
 from payment import PaymentEngine
 from websocket_manager import WebSocketManager
 from stations_db import StationsDB
+from voice_assistant import VoiceAssistant
+from priority_engine import PriorityEngine
+from vehicle_intelligence import VehicleIntelligence
+from speech_service import SpeechService
 
 # ── App Setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -50,6 +54,20 @@ db = StationsDB()
 ocpp_engine = OCPPEngine()
 payment_engine = PaymentEngine()
 
+# ── Voice Assistant Instances ─────────────────────────────────────────────────
+try:
+    vehicle_intel = VehicleIntelligence()
+    priority_eng = PriorityEngine(db, vehicle_intel)
+    voice_assistant = VoiceAssistant()
+    speech_svc = SpeechService()
+    print("  [VOICE] AVA Voice Assistant initialized")
+except Exception as e:
+    vehicle_intel = None
+    priority_eng = None
+    voice_assistant = None
+    speech_svc = None
+    print(f"  [VOICE] Voice assistant init error (non-fatal): {e}")
+
 OCM_API_KEY = "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 
 
@@ -70,6 +88,16 @@ class PaymentVerifyRequest(BaseModel):
     order_id: str
     payment_id: str
     signature: str
+
+
+class VoiceInputRequest(BaseModel):
+    text: str
+    user_id: str = "hyundai_driver_001"
+    language: str = "auto"
+
+class VoiceConfirmRequest(BaseModel):
+    user_id: str = "hyundai_driver_001"
+    confirmed: bool = True
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
@@ -447,6 +475,139 @@ async def verify_payment(req: PaymentVerifyRequest):
     return {"verified": valid}
 
 
+# ── Voice Assistant Routes ─────────────────────────────────────────────────────
+@app.post("/api/voice/process")
+async def process_voice_input(req: VoiceInputRequest):
+    """Process voice/text input through the AVA assistant."""
+    if not voice_assistant:
+        raise HTTPException(status_code=503, detail="Voice assistant not available")
+    
+    response = voice_assistant.process_input(req.text, req.user_id)
+    
+    # If the assistant wants to reserve, wire it to the actual reserve API
+    if response.action_type == 'action_complete' and response.display_data.get('action') == 'reserve':
+        station_id = response.display_data.get('station_id')
+        if station_id:
+            try:
+                reserve_req = ReserveRequest(
+                    station_id=station_id,
+                    user_id=req.user_id,
+                    user_name="Hyundai Driver",
+                    duration_minutes=30,
+                    vehicle_soc=vehicle_intel.state.soc if vehicle_intel else 18.0
+                )
+                reserve_result = await reserve_station(reserve_req)
+                response.display_data['reservation'] = reserve_result
+                response.display_data['pin'] = reserve_result.get('pin')
+            except Exception as e:
+                response.display_data['reserve_error'] = str(e)
+    
+    return {
+        "text": response.text,
+        "display_data": response.display_data,
+        "action_type": response.action_type,
+        "tool_calls": response.tool_calls,
+        "language": response.language,
+        "needs_confirmation": response.needs_confirmation,
+    }
+
+@app.post("/api/voice/confirm")
+async def confirm_voice_action(req: VoiceConfirmRequest):
+    """Confirm or deny a pending T2 action (reservation, etc.)."""
+    if not voice_assistant:
+        raise HTTPException(status_code=503, detail="Voice assistant not available")
+    
+    response = voice_assistant.confirm_action(req.user_id, req.confirmed)
+    
+    # Execute the confirmed reservation
+    if req.confirmed and response.display_data.get('action') == 'reserve':
+        station_id = response.display_data.get('station_id')
+        if station_id:
+            try:
+                reserve_req = ReserveRequest(
+                    station_id=station_id,
+                    user_id=req.user_id,
+                    user_name="Hyundai Driver",
+                    duration_minutes=30,
+                    vehicle_soc=vehicle_intel.state.soc if vehicle_intel else 18.0
+                )
+                reserve_result = await reserve_station(reserve_req)
+                response.display_data['reservation'] = reserve_result
+                response.text += f" PIN: {reserve_result.get('pin', 'N/A')}"
+            except Exception as e:
+                response.display_data['reserve_error'] = str(e)
+    
+    return {
+        "text": response.text,
+        "display_data": response.display_data,
+        "action_type": response.action_type,
+        "needs_confirmation": response.needs_confirmation,
+    }
+
+@app.get("/api/voice/recommend")
+async def get_voice_recommendations(
+    target_soc: float = 80.0,
+    top_k: int = 3,
+    urgency: str = "normal",
+):
+    """Get AI-ranked charging station priority list with spoken summary."""
+    if not priority_eng:
+        raise HTTPException(status_code=503, detail="Priority engine not available")
+    
+    recommendations = priority_eng.recommend(target_soc=target_soc, top_k=top_k, urgency=urgency)
+    spoken = priority_eng.get_spoken_recommendation()
+    
+    return {
+        "recommendations": [vars(r) if hasattr(r, '__dict__') else r for r in recommendations],
+        "spoken_summary": spoken,
+        "vehicle_soc": vehicle_intel.state.soc if vehicle_intel else 18.0,
+        "vehicle_range_km": vehicle_intel.state.range_km if vehicle_intel else 59.0,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/vehicle/status")
+async def get_vehicle_status():
+    """Get comprehensive vehicle status — the AVA vehicle intelligence."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    status = vehicle_intel.get_vehicle_status()
+    diagnostics = vehicle_intel.get_diagnostic_summary()
+    
+    return {
+        "status": status,
+        "diagnostics_summary": diagnostics,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/vehicle/diagnostics")
+async def get_vehicle_diagnostics():
+    """Get vehicle component health and service status."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    status = vehicle_intel.get_vehicle_status()
+    return {
+        "component_health": status.get("component_health", {}),
+        "insights": status.get("insights", []),
+        "service_status": status.get("service_status", {}),
+        "diagnostics_text": vehicle_intel.get_diagnostic_summary(),
+    }
+
+@app.get("/api/speech/config")
+async def get_speech_config():
+    """Get speech service configuration for frontend."""
+    if speech_svc:
+        return speech_svc.get_frontend_config()
+    return {
+        "stt_available": True,
+        "stt_languages": ["en-IN", "hi-IN", "mr-IN"],
+        "wake_words": ["hey hyundai", "ok hyundai"],
+        "sarvam_available": False,
+        "tts_available": True,
+    }
+
+
 # ── WebSocket Endpoints ────────────────────────────────────────────────────────
 @app.websocket("/ws/car/{user_id}")
 async def car_websocket(websocket: WebSocket, user_id: str):
@@ -626,6 +787,8 @@ async def startup():
     print(f"   📍 Stations loaded    : {len(db.stations)} BEE base nodes")
     print(f"   🗄️  Database           : SQLite (persistent)")
     print(f"   ⚡ OCPP Engine         : 1.6J Mock (ReserveNow, Unlock, StartTx)")
+    print(f"   🎙️  Voice Assistant    : {'AVA Active' if voice_assistant else 'Unavailable'}")
+    print(f"   🏆 Priority Engine    : {'Active' if priority_eng else 'Unavailable'}")
     print(f"   💳 Payment             : {'Razorpay Mock (demo mode)' if payment_engine.mock_mode else 'Razorpay LIVE'}")
     print(f"   🌐 OCM API Key         : {OCM_API_KEY[:8]}...")
     print(f"   📡 WebSockets          : /ws/car/{{user}} | /ws/kiosk/{{station}}")
