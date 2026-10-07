@@ -19,9 +19,17 @@ import threading
 import time
 import signal
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(BASE_DIR, "smartreserve_backend")
 FRONTEND_DIR = os.path.join(BASE_DIR, "smartreserve_frontend")
+
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════════════╗

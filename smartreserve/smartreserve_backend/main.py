@@ -8,9 +8,17 @@ import json
 import os
 import random
 import string
+import sys
 import time
 from datetime import datetime
 from typing import Optional
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # ── Load .env first (repo root) — must be before any module that reads env vars ──
 try:
