@@ -826,19 +826,17 @@ class SmartReserveBrain:
 
         if lang in ("hi", "hi+en"):
             txt = (
-                f"Aapki current vehicle location {city}, Maharashtra{lm_desc} hai "
-                f"(coordinates: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Aapki current vehicle location {city}, Maharashtra{lm_desc} hai. "
                 f"Nagpur mein aapke paas 137 se zyada verified fast charging hubs available hain."
             )
         elif lang == "mr":
             txt = (
-                f"Aapli sadyachi location {city}, Maharashtra{lm_desc} aahe (GPS: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Aapli sadyachi location {city}, Maharashtra{lm_desc} aahe. "
                 f"Nagpur madhe 137 peksha jasta verified EV charging hubs uplabdh aahet."
             )
         else:
             txt = (
-                f"Your vehicle is currently positioned in {city}, Maharashtra{lm_desc} "
-                f"(GPS coordinates: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Your vehicle is currently positioned in {city}, Maharashtra{lm_desc}. "
                 f"There are over 137 verified EV charging hubs within range in the Nagpur metropolitan area."
             )
         return (txt, "LOCATION_INFO", {
@@ -870,11 +868,11 @@ class SmartReserveBrain:
                 pass
                 
             if lang in ("hi", "hi+en"):
-                txt = f"Vehicle location update ho gayi hai! Aapki Hyundai Ioniq 5 ab {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E) par locate ho gayi hai. Map par car marker update kar diya gaya hai."
+                txt = f"Vehicle location update ho gayi hai! Aapki Hyundai Ioniq 5 ab {dest_name} par locate ho gayi hai. Navigation map update kar diya gaya hai."
             elif lang == "mr":
-                txt = f"Vehicle location update zali! Tumchi Hyundai Ioniq 5 aata {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E) var locate keli aahe."
+                txt = f"Vehicle location update zali! Tumchi Hyundai Ioniq 5 aata {dest_name} var locate keli aahe."
             else:
-                txt = f"Vehicle location updated! Your Hyundai Ioniq 5 is now located at {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E). The navigation map has centered on your exact position."
+                txt = f"Vehicle location updated! Your Hyundai Ioniq 5 is now positioned at {dest_name}. The navigation map has centered on your exact position."
                 
             return (txt, "SET_LOCATION", {
                 "location_name": dest_name,

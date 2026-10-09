@@ -77,13 +77,23 @@ class SmartReserveHandler(http.server.SimpleHTTPRequestHandler):
         print(f"  [HTTP] {self.address_string()} - {fmt % args}")
 
 
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
 def run(port=3000):
-    with socketserver.TCPServer(("", port), SmartReserveHandler) as httpd:
-        httpd.allow_reuse_address = True
-        print(f"  Frontend serving on http://localhost:{port}")
-        print(f"  Car Dashboard → http://localhost:{port}/car")
-        print(f"  Kiosk Sim     → http://localhost:{port}/kiosk?station=TG0001")
-        httpd.serve_forever()
+    socketserver.TCPServer.allow_reuse_address = True
+    try:
+        with ReusableTCPServer(("", port), SmartReserveHandler) as httpd:
+            print(f"  Frontend serving on http://localhost:{port}")
+            print(f"  Car Dashboard → http://localhost:{port}/car")
+            print(f"  Kiosk Sim     → http://localhost:{port}/kiosk?station=TG0001")
+            httpd.serve_forever()
+    except OSError as e:
+        if getattr(e, 'winerror', None) == 10048 or "10048" in str(e):
+            print(f"  [INFO] Port {port} is already in use by another running frontend process.")
+            print(f"  You can open http://localhost:{port}/car directly in your browser!")
+        else:
+            raise e
 
 
 if __name__ == "__main__":

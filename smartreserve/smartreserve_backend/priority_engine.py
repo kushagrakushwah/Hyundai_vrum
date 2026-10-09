@@ -166,13 +166,18 @@ class PriorityEngine:
             st_lat = float(station.get('lat') or station.get('latitude') or vehicle_lat)
             st_lon = float(station.get('lng') or station.get('lon') or station.get('longitude') or vehicle_lon)
             
-            # Distance
-            dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
+            # Fast straight-line pre-filter to discard stations outside search radius
+            crow_dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
             max_dist = 40.0 if norm_city else 85.0
-            if dist > max_dist:  # Skip stations beyond target locality/drive limit
+            if crow_dist > max_dist:  # Skip stations beyond target locality/drive limit
                 continue
             
-            # Energy to reach station
+            # Fast urban/highway road network model (instant 0.001ms, no network blocking)
+            circuity = 1.30 if crow_dist <= 15.0 else (1.25 if crow_dist <= 40.0 else 1.18)
+            dist = 0.1 if crow_dist < 0.04 else round(crow_dist * circuity, 1)
+            drive_time = round((dist / (28.0 if crow_dist <= 15.0 else 45.0)) * 60.0, 0)
+
+            # Energy to reach station by road
             energy_to_reach = dist * consumption_per_km
             soc_drop = (energy_to_reach / battery_capacity) * 100.0
             arrival_soc = current_soc - soc_drop
@@ -187,9 +192,6 @@ class PriorityEngine:
                 continue
                 
             rated_power = float(station.get('power_kw') or station.get('rated_power_kw') or 60.0)
-            
-            # Drive time (assume 40 km/h city + highway transit)
-            drive_time = (dist / 40.0) * 60.0
             
             # Effective charging power using vehicle charge curve
             if hasattr(self.vehicle, 'get_charge_curve'):
@@ -224,18 +226,20 @@ class PriorityEngine:
             # Multi-criteria weighted normalization
             time_norm = max(0.0, 1.0 - (total_time / 150.0))
             cost_norm = max(0.0, 1.0 - (cost / 1800.0))
-            dist_norm = max(0.0, 1.0 - (dist / 45.0))
+            dist_norm = max(0.0, 1.0 / (1.0 + (dist / 2.0)))
             power_norm = min(1.0, effective_power / 150.0)
             
             # Urgency weights
-            if urgency == 'critical':
-                w_dist, w_time, w_rel, w_cost, w_power = 0.45, 0.25, 0.20, 0.05, 0.05
+            if urgency in ('nearest', 'proximity'):
+                w_dist, w_time, w_rel, w_cost, w_power = 0.85, 0.05, 0.05, 0.03, 0.02
+            elif urgency == 'critical':
+                w_dist, w_time, w_rel, w_cost, w_power = 0.60, 0.20, 0.10, 0.05, 0.05
             elif urgency == 'low' or current_soc < 20.0:
-                w_dist, w_time, w_rel, w_cost, w_power = 0.30, 0.35, 0.15, 0.10, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.45, 0.25, 0.15, 0.08, 0.07
             elif urgency == 'planning':
-                w_dist, w_time, w_rel, w_cost, w_power = 0.10, 0.20, 0.20, 0.40, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.15, 0.20, 0.20, 0.35, 0.10
             else:  # normal
-                w_dist, w_time, w_rel, w_cost, w_power = 0.20, 0.35, 0.20, 0.15, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.35, 0.30, 0.15, 0.10, 0.10
                 
             score = (w_dist * dist_norm + 
                      w_time * time_norm + 
@@ -268,11 +272,30 @@ class PriorityEngine:
             )
             recommendations.append(rec)
             
-        recommendations.sort(key=lambda x: x.overall_score, reverse=True)
+        if urgency in ('nearest', 'proximity'):
+            recommendations.sort(key=lambda x: (x.distance_km, -x.overall_score))
+        else:
+            recommendations.sort(key=lambda x: x.overall_score, reverse=True)
+
+        # Refine top recommendations with live OSRM turn-by-turn road route
+        try:
+            from road_routing import get_road_route
+            all_st = self.stations_db.stations if hasattr(self.stations_db, 'stations') else {}
+            for r in recommendations[:min(len(recommendations), top_k + 1)]:
+                st_obj = all_st.get(r.station_id)
+                if st_obj and st_obj.get('lat') and st_obj.get('lng'):
+                    rr = get_road_route(vehicle_lat, vehicle_lon, float(st_obj['lat']), float(st_obj['lng']))
+                    r.distance_km = round(rr.get('road_distance_km', r.distance_km), 1)
+                    r.drive_time_min = round(rr.get('drive_time_min', r.drive_time_min), 0)
+        except Exception:
+            pass
         
         # Assign Distinct Labels and Spoken Reasoning
         if recommendations:
-            recommendations[0].label = '🥇 Best Overall'
+            if urgency in ('nearest', 'proximity'):
+                recommendations[0].label = '📍 Nearest'
+            else:
+                recommendations[0].label = '🥇 Best Overall'
             
             # Find nearest
             nearest = min(recommendations, key=lambda x: x.distance_km)

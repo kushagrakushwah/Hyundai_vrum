@@ -1,7 +1,14 @@
 import os
+import re
 import logging
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
+
+try:
+    import edge_tts
+    HAS_EDGE_TTS = True
+except ImportError:
+    HAS_EDGE_TTS = False
 
 # ── Load .env (repo root, two levels up from this file) ──────────────────────
 try:
@@ -82,14 +89,52 @@ class SpeechService:
             logger.error(f"Error in transcription: {e}")
             return {"text": "", "language": language, "confidence": 0.0}
 
-    async def synthesize(self, text: str, language: str = 'hi-IN') -> Optional[bytes]:
+    async def synthesize(self, text: str, language: str = 'en-IN') -> Optional[bytes]:
+        """
+        High-fidelity Text-to-Speech synthesis.
+        Primary: edge-tts (100% Free Microsoft Neural Voices for Indian Languages, zero subscription).
+        Secondary: Sarvam AI Bulbul (if SARVAM_API_KEY is configured).
+        """
+        if not text or not text.strip():
+            return None
+
+        clean_text = re.sub(r'[*_#`]', '', text).strip()
+
+        # 1. Primary Free Neural TTS via edge-tts
+        if HAS_EDGE_TTS:
+            voice_map = {
+                'hi-IN': 'hi-IN-SwaraNeural',
+                'hi': 'hi-IN-SwaraNeural',
+                'mr-IN': 'mr-IN-AarohiNeural',
+                'mr': 'mr-IN-AarohiNeural',
+                'en-IN': 'en-IN-NeerjaNeural',
+                'en': 'en-IN-NeerjaNeural',
+                'ta-IN': 'ta-IN-PallaviNeural',
+                'te-IN': 'te-IN-ShrutiNeural',
+                'kn-IN': 'kn-IN-SapnaNeural',
+                'gu-IN': 'gu-IN-DhwaniNeural',
+                'bn-IN': 'bn-IN-TanishaaNeural',
+            }
+            voice = voice_map.get(language, 'en-IN-NeerjaNeural')
+            try:
+                communicate = edge_tts.Communicate(clean_text, voice)
+                chunks = []
+                async for chunk in communicate.stream():
+                    if chunk['type'] == 'audio':
+                        chunks.append(chunk['data'])
+                if chunks:
+                    return b''.join(chunks)
+            except Exception as e:
+                logger.warning(f"edge-tts synthesis failed ({e}), attempting Sarvam fallback")
+
+        # 2. Secondary: Sarvam AI if API key is present
         if not self.config.sarvam_api_key:
-            logger.warning("Sarvam API key not set, synthesis unavailable")
+            logger.info("Sarvam API key not set and edge-tts was unavailable")
             return None
             
         url = "https://api.sarvam.ai/text-to-speech"
         payload = {
-            "inputs": [text],
+            "inputs": [clean_text],
             "target_language_code": language,
             "speaker": self.config.tts_voice,
             "model": "bulbul:v1"
@@ -99,16 +144,16 @@ class SpeechService:
             if HAS_HTTPX:
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
-                        url,
-                        headers=self._get_headers('application/json'),
+                        url, 
+                        headers=self._get_headers('application/json'), 
                         json=payload
                     )
                     response.raise_for_status()
                     result = response.json()
             else:
                 response = requests.post(
-                    url,
-                    headers=self._get_headers('application/json'),
+                    url, 
+                    headers=self._get_headers('application/json'), 
                     json=payload
                 )
                 response.raise_for_status()
@@ -119,9 +164,8 @@ class SpeechService:
                 return base64.b64decode(result["audios"][0])
             return None
         except Exception as e:
-            logger.error(f"Error in synthesis: {e}")
+            logger.error(f"Error in Sarvam synthesis: {e}")
             return None
-
     async def translate(self, text: str, source_lang: str, target_lang: str) -> str:
         if not self.config.sarvam_api_key:
             logger.warning("Sarvam API key not set, translation unavailable")
@@ -176,6 +220,8 @@ class SpeechService:
             'continuous_listening': False,
             'interim_results': True,
             'sarvam_available': bool(self.config.sarvam_api_key),
+            'edge_tts_available': HAS_EDGE_TTS,
+            'free_tts_active': True,
             'tts_available': True
         }
 

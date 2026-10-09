@@ -30,7 +30,7 @@ except ImportError:
 
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -42,7 +42,8 @@ from payment import PaymentEngine
 from websocket_manager import WebSocketManager
 from stations_db import StationsDB
 from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
-from priority_engine import PriorityEngine
+from priority_engine import PriorityEngine, haversine
+from road_routing import get_road_distance, get_road_route
 from vehicle_intelligence import VehicleIntelligence
 from speech_service import SpeechService
 from llm_service import ask_gemini, is_available as llm_available
@@ -287,7 +288,15 @@ async def get_stations(
             continue
         dist_km = None
         if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
-            dist_km = round(math.hypot((s["lat"] - target_lat) * 111.0, (s["lng"] - target_lon) * 103.0), 1)
+            crow = haversine(target_lat, target_lon, s["lat"], s["lng"])
+            if crow < 0.04:
+                dist_km = 0.1
+            elif crow <= 15.0:
+                dist_km = round(crow * 1.30, 1)
+            elif crow <= 40.0:
+                dist_km = round(crow * 1.25, 1)
+            else:
+                dist_km = round(crow * 1.18, 1)
 
         result.append({
             **s,
@@ -300,12 +309,25 @@ async def get_stations(
             "live_status_title": s.get("live_status_title", "Verified Operational"),
         })
 
+    if target_lat is not None and target_lon is not None:
+        result.sort(key=lambda x: (x["distance_km"] if x.get("distance_km") is not None else 9999, -x.get("power_kw", 0)))
+
     return {
         "stations": result,
         "total": len(result),
         "source": source,
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+@app.get("/api/route")
+async def get_navigation_route(
+    from_lat: float = Query(...),
+    from_lon: float = Query(...),
+    to_lat: float = Query(...),
+    to_lon: float = Query(...),
+):
+    """Get real-world road navigation route, driving distance, duration and polyline coordinates."""
+    return get_road_route(from_lat, from_lon, to_lat, to_lon)
 
 @app.get("/api/stations/live")
 async def get_live_stations(
@@ -572,7 +594,8 @@ async def process_voice_input(req: VoiceInputRequest):
         selected_station_id=req.selected_station_id,
         city=req.city,
         user_lat=req.latitude,
-        user_lon=req.longitude
+        user_lon=req.longitude,
+        language=req.language
     )
     
     # If the assistant wants to reserve, wire it to the actual reserve API
@@ -605,6 +628,17 @@ async def process_voice_input(req: VoiceInputRequest):
         "language": response.language,
         "needs_confirmation": response.needs_confirmation,
     }
+
+@app.post("/api/voice/tts")
+async def generate_speech_tts(req: TTSRequest):
+    """Synthesize high-fidelity Indian speech audio using free Edge-TTS (or Sarvam if configured)."""
+    if not speech_svc:
+        raise HTTPException(status_code=503, detail="Speech service unavailable")
+    audio = await speech_svc.synthesize(req.text, req.language)
+    if not audio:
+        raise HTTPException(status_code=500, detail="TTS synthesis failed")
+    from fastapi.responses import Response
+    return Response(content=audio, media_type="audio/mpeg")
 
 @app.post("/api/voice/confirm")
 async def confirm_voice_action(req: VoiceConfirmRequest):

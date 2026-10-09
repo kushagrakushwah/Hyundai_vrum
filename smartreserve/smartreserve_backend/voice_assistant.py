@@ -203,12 +203,13 @@ class VoiceAssistant:
 
         # Fuzzy station name lookup from query
         _KNOWN_STATION_LANDMARKS = [
+            ("vnit campus", "Tata Power Fast Hub — VNIT Campus Bajaj Nagar"),
+            ("vnit nagpur", "Tata Power Fast Hub — VNIT Campus Bajaj Nagar"),
+            ("vnit", "Tata Power Fast Hub — VNIT Campus Bajaj Nagar"),
+            ("bajaj nagar", "Tata Power Fast Hub — VNIT Campus Bajaj Nagar"),
             ("congress nagar", "EESL — Congress Nagar Metro Station"),
             ("kasturchand", "EESL — Kasturchand Park Metro Station"),
             ("sitabuldi", "Tata Power — Sitabuldi Interchange"),
-            ("vnit", "EESL — Congress Nagar Metro Station"),
-            ("vnit nagpur", "EESL — Congress Nagar Metro Station"),
-            ("bajaj nagar", "Tata Power Superfast Hub — Sitabuldi"),
             ("wardha road", "ChargeZone — Wardha Road Hotel Pride"),
             ("airport", "ChargeZone — Airport Hotel Pride Nagpur"),
             ("jhansi rani", "EESL — Jhansi Rani Square Metro Station"),
@@ -308,6 +309,7 @@ class VoiceAssistant:
                 "nearest", "charging station", "charger", "find station", "see", "show", "view",
                 "slot", "slots", "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
                 "stations nearby", "ev station", "stations", "dikhao", "dekho", "dekhna",
+                "look for", "look", "search", "inside", "dhundo", "khoj"
             ],
             "VEHICLE_STATUS": [
                 "status", "kitni battery", "kiti battery", "range", "fuel left",
@@ -369,6 +371,10 @@ class VoiceAssistant:
                 best_score = score
                 best_intent = intent
 
+        if best_intent == "UNKNOWN" and (entities.get("station_name_hint") or entities.get("station_landmark")):
+            best_intent = "FIND_CPO"
+            best_score = 2
+
         confidence = min(best_score * 0.4, 1.0) if best_score > 0 else 0.0
 
         return IntentResult(
@@ -387,19 +393,35 @@ class VoiceAssistant:
         selected_station_id: Optional[str] = None,
         city: Optional[str] = None,
         user_lat: Optional[float] = None,
-        user_lon: Optional[float] = None
+        user_lon: Optional[float] = None,
+        language: Optional[str] = None
     ) -> VoiceAssistantResponse:
         # Check pending confirmation first using whole-word tokens to avoid false matches (e.g. 'sure' in 'pressure')
         if user_id in self._pending_confirmations:
             words = set(re.findall(r"\b[a-zA-Z0-9_\'-]+\b", text.lower()))
-            yes_words = {"haan", "yes", "ho", "ya", "yup", "sure", "ok", "okay", "confirm", "karo", "lock", "book"}
-            no_words = {"nahi", "no", "nako", "nope", "nah", "mat", "band", "cancel"}
-            if words.intersection(yes_words) and not words.intersection(no_words):
+            yes_phrases = {"haan", "yes", "ho", "ya", "yup", "sure", "ok", "okay", "confirm", "lock"}
+            no_phrases = {"nahi", "no", "nako", "nope", "nah", "mat", "band", "cancel", "dont", "don't"}
+            is_simple_confirm = len(words) <= 3 and any(w in words for w in yes_phrases) and not any(w in words for w in no_phrases)
+            is_simple_reject = len(words) <= 3 and any(w in words for w in no_phrases) and not any(w in words for w in yes_phrases)
+            if is_simple_confirm:
                 return self.confirm_action(user_id, True)
-            elif words.intersection(no_words) and not words.intersection(yes_words):
+            elif is_simple_reject:
                 return self.confirm_action(user_id, False)
+            else:
+                # User asked a different query or gave a new specific command — cancel pending confirmation
+                self._pending_confirmations.pop(user_id, None)
 
         intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
+
+        # Explicit language override from frontend language toggle (e.g. 'hi-IN', 'mr-IN', 'en-IN')
+        if language and language not in ("auto", ""):
+            l_code = language.lower()
+            if "hi" in l_code:
+                intent_res.language_mix = "hi"
+            elif "mr" in l_code:
+                intent_res.language_mix = "mr"
+            elif "en" in l_code:
+                intent_res.language_mix = "en" 
 
         # Merge city / coordinates: explicit device GPS coordinates take absolute precedence
         if user_lat is not None and user_lon is not None:
@@ -534,12 +556,15 @@ class VoiceAssistant:
             if action == "reserve":
                 st_name = pending.get("station_name", "the selected station")
                 st_id = pending.get("station_id", "")
+                c_name = pending.get("city", "")
+                loc_str = f" in {c_name.capitalize()}" if c_name else ""
                 return VoiceAssistantResponse(
-                    text=f"Reservation confirmed for {st_name}. 30-minute exclusive slot is locked. Your PIN will appear on screen.",
+                    text=f"Reservation confirmed for {st_name}{loc_str}. 30-minute exclusive slot is locked. Your PIN will appear on screen.",
                     display_data={
                         "action": "reserve",
                         "station_id": st_id,
                         "station_name": st_name,
+                        "city": c_name,
                     },
                     action_type="action_complete",
                 )
@@ -555,12 +580,54 @@ class VoiceAssistant:
 
         # 1. Try priority engine (real data)
         stations: List[dict] = []
+        cleaned = (intent_res.raw_text or "").lower()
+        is_nearest = any(w in cleaned for w in ["nearest", "closest", "paas", "sabse paas", "near me", "first", "pehle", "1st", "inside vnit", "vnit"])
+        urgency = "nearest" if is_nearest else "normal"
         try:
-            from priority_engine import get_engine
+            from priority_engine import get_engine, haversine
             engine = get_engine()
             if engine:
-                recs_list = engine.recommend(top_k=3, city=city, user_lat=user_lat, user_lon=user_lon)
+                recs_list = engine.recommend(top_k=3, city=city, user_lat=user_lat, user_lon=user_lon, urgency=urgency)
                 stations = [vars(r) if hasattr(r, "__dict__") else r for r in recs_list]
+
+                # If user explicitly asked for a specific landmark/station name, prioritize it to rank 1
+                hint = intent_res.entities.get("station_name_hint")
+                landmark = (intent_res.entities.get("station_landmark") or "").lower()
+                if (hint or landmark) and hasattr(engine, "stations_db"):
+                    hint_low = (hint or "").lower()
+                    distinctive = [w for w in re.split(r"\W+", hint_low) if len(w) >= 3 and w not in {"tata", "power", "fast", "hub", "station", "charging", "superfast", "express", "metro"}]
+                    matches = []
+                    all_st = {**engine.stations_db.stations, **engine.stations_db.live_ocm_stations}
+                    for sid, sobj in all_st.items():
+                        s_nm = (sobj.get("name") or "").lower()
+                        s_addr = (sobj.get("address") or "").lower()
+                        score = 0
+                        if landmark and (landmark in s_nm or landmark in s_addr):
+                            score += 50
+                        for d in distinctive:
+                            if d in s_nm:
+                                score += 10
+                            elif d in s_addr:
+                                score += 5
+                        if score > 0:
+                            matches.append((score, sid, sobj))
+                    if matches:
+                        matches.sort(key=lambda x: -x[0])
+                        top_sid, top_sobj = matches[0][1], matches[0][2]
+                        matched_station = dict(top_sobj)
+                        matched_station["station_id"] = top_sid
+                        matched_station["station_name"] = top_sobj.get("name")
+                        if user_lat is not None and user_lon is not None and top_sobj.get("lat") and top_sobj.get("lng"):
+                            from road_routing import get_road_distance
+                            matched_station["distance_km"] = round(get_road_distance(user_lat, user_lon, top_sobj["lat"], top_sobj["lng"]), 1)
+                        else:
+                            matched_station["distance_km"] = 0.5
+                        matched_station["effective_power_kw"] = float(top_sobj.get("power_kw", 60.0))
+                        matched_station["rated_power_kw"] = float(top_sobj.get("power_kw", 60.0))
+                        matched_station["label"] = "📍 Requested Hub"
+                        matched_station["estimated_charge_time_min"] = 35.0
+                        stations = [s for s in stations if s.get("station_id") != top_sid]
+                        stations.insert(0, matched_station)
         except Exception as e:
             logger.warning(f"[AVA] Priority engine error: {e}")
 
@@ -782,11 +849,13 @@ class VoiceAssistant:
         st_dist = 0.0
         st_kw = 60.0
 
+        is_nearest_req = any(w in (intent_res.raw_text or "").lower() for w in ["nearest", "closest", "paas", "sabse paas", "near me", "first", "pehle", "1st", "inside vnit", "vnit"]) or rank == 1
+        urgency = "nearest" if is_nearest_req else "normal"
         try:
             from priority_engine import get_engine
             engine = get_engine()
             if engine:
-                recs = engine.recommend(top_k=15, city=city, user_lat=user_lat, user_lon=user_lon)
+                recs = engine.recommend(top_k=15, city=city, user_lat=user_lat, user_lon=user_lon, urgency=urgency)
                 
                 # 1. Match by selected station on screen if requested
                 if use_selected and selected_station_id:
@@ -866,16 +935,36 @@ class VoiceAssistant:
                         st_kw = matched.effective_power_kw
 
                 # 4b. Match by station name hint (landmark-based fuzzy search)
-                if not st_name and intent_res.entities.get('station_name_hint'):
-                    hint = intent_res.entities['station_name_hint'].lower()
-                    for sid, sobj in (engine.stations_db.stations if hasattr(engine, 'stations_db') else {}).items():
+                if not st_name and (intent_res.entities.get('station_name_hint') or intent_res.entities.get('station_landmark')):
+                    hint_low = (intent_res.entities.get('station_name_hint') or '').lower()
+                    landmark = (intent_res.entities.get('station_landmark') or '').lower()
+                    distinctive = [w for w in re.split(r'\W+', hint_low) if len(w) >= 3 and w not in {'tata', 'power', 'fast', 'hub', 'station', 'charging', 'superfast', 'express', 'metro'}]
+                    matches = []
+                    all_st = {**(engine.stations_db.stations if hasattr(engine, 'stations_db') else {}), **(engine.stations_db.live_ocm_stations if hasattr(engine, 'stations_db') else {})}
+                    for sid, sobj in all_st.items():
                         s_nm = (sobj.get('name') or '').lower()
-                        if hint[:15] in s_nm or any(w in s_nm for w in hint.split()[:3]):
-                            st_name = sobj.get('name')
-                            st_id = sid
-                            st_dist = 1.5
-                            st_kw = float(sobj.get('power_kw', 60.0))
-                            break
+                        s_addr = (sobj.get('address') or '').lower()
+                        score = 0
+                        if landmark and (landmark in s_nm or landmark in s_addr):
+                            score += 50
+                        for d in distinctive:
+                            if d in s_nm:
+                                score += 10
+                            elif d in s_addr:
+                                score += 5
+                        if score > 0:
+                            matches.append((score, sid, sobj))
+                    if matches:
+                        matches.sort(key=lambda x: -x[0])
+                        top_sid, top_sobj = matches[0][1], matches[0][2]
+                        st_name = top_sobj.get('name')
+                        st_id = top_sid
+                        if user_lat is not None and user_lon is not None and top_sobj.get('lat') and top_sobj.get('lng'):
+                            from road_routing import get_road_distance
+                            st_dist = round(get_road_distance(user_lat, user_lon, top_sobj['lat'], top_sobj['lng']), 1)
+                        else:
+                            st_dist = 0.5
+                        st_kw = float(top_sobj.get('power_kw', 60.0))
 
                 # 5. Match by rank / nearest
                 if not st_name and recs:
