@@ -63,51 +63,131 @@ class VoiceAssistant:
         return "en"
 
     # ── Intent parsing ────────────────────────────────────────────────────────
-    def _parse_intent(self, text: str) -> IntentResult:
-        text_lower = text.lower()
+    # ── Intent parsing ────────────────────────────────────────────────────────
+    def _parse_intent(self, text: str, selected_station_id: Optional[str] = None) -> IntentResult:
+        text_lower = text.lower().strip()
 
+        # Strip common wake words
+        wake_words = ["hey ava", "ok ava", "ava", "hey hyundai", "ok hyundai", "hello ava", "hi ava"]
+        cleaned_text = text_lower
+        for ww in wake_words:
+            if cleaned_text.startswith(ww):
+                cleaned_text = cleaned_text[len(ww):].strip(",. ")
+                break
+
+        # 1. Cancellation check
+        cancel_kws = ["cancel", "band karo", "stop", "hatao", "nahi chahiye", "ruk jao", "cancel reservation"]
+        if any(kw in cleaned_text for kw in cancel_kws):
+            return IntentResult(
+                intent="CANCEL",
+                confidence=0.95,
+                raw_text=text,
+                language_mix=self._detect_language(text)
+            )
+
+        # 2. Reservation check (prioritize direct booking actions)
+        reserve_kws = [
+            "reserve", "book", "lock", "slot", "rok do", "karna hai",
+            "reserve the nearest", "book the nearest", "lock nearest",
+            "reserve nearest", "book nearest", "lock the closest",
+            "sabse paas wala reserve", "paas wala reserve", "slot book",
+            "slot reserve", "reserve station", "book station", "lock slot",
+            "reserve kardo", "book kardo", "lock kardo", "reserve first",
+            "pehla reserve", "doosra reserve", "teesra reserve"
+        ]
+        is_reserve = any(kw in cleaned_text for kw in reserve_kws)
+
+        entities: Dict[str, Any] = {}
+
+        # Check if user refers to currently selected station
+        if any(w in cleaned_text for w in ["this", "selected", "current", "yeh", "ye", "ye wala", "yeh wala", "it"]):
+            entities["use_selected"] = True
+            entities["selected_station_id"] = selected_station_id
+        elif selected_station_id and is_reserve and not any(w in cleaned_text for w in ["nearest", "paas", "closest", "first", "pehla", "second", "doosra", "third", "teesra"]):
+            # If user selected a station on screen and simply says "reserve" / "book slot"
+            entities["use_selected"] = True
+            entities["selected_station_id"] = selected_station_id
+
+        # Extract rank / nearest
+        if any(w in cleaned_text for w in ["nearest", "paas", "closest", "first", "pehla", "pehle", "1", "one"]):
+            entities["rank"] = 1
+        elif any(w in cleaned_text for w in ["second", "doosra", "doosre", "2", "two"]):
+            entities["rank"] = 2
+        elif any(w in cleaned_text for w in ["third", "teesra", "teesre", "3", "three"]):
+            entities["rank"] = 3
+        else:
+            entities["rank"] = 1
+
+        # Extract operator if mentioned
+        known_cpos = [
+            "tata power", "reil", "iocl", "bpcl", "hpcl", "chargezone",
+            "statiq", "zeon", "e-fill", "ather", "kazam", "relux",
+            "fortum", "jio-bp", "jio bp", "magenta", "glida", "adani", "bolt"
+        ]
+        for cpo in known_cpos:
+            if cpo in cleaned_text:
+                entities["operator"] = cpo
+                break
+
+        # Extract station ID if mentioned
+        id_match = re.search(r'\b(chg_\d+|tg\d+|ocm-\d+|df_[a-z0-9_]+|in_[a-z0-9_]+)\b', cleaned_text)
+        if id_match:
+            entities["station_id"] = id_match.group(1).upper()
+
+        # Extract potential station name or location query from text
+        if is_reserve:
+            q_text = cleaned_text
+            stop_words = [
+                "reserve", "book", "lock", "slot", "the", "a", "an", "this", "that", "these",
+                "it", "station", "charger", "kardo", "karo", "please", "at", "wala", "mein",
+                "for", "to", "my", "me", "yeh", "ye", "current", "selected", "one", "kar", "do"
+            ]
+            for kw in stop_words:
+                q_text = re.sub(r'\b' + re.escape(kw) + r'\b', '', q_text)
+            q_text = re.sub(r'\s+', ' ', q_text).strip()
+            if len(q_text) >= 3 and q_text not in ["nearest", "closest", "first", "second", "third", "pehla", "doosra", "teesra", "paas", "sabse paas"]:
+                entities["target_query"] = q_text
+
+            return IntentResult(
+                intent="RESERVE_SLOT",
+                confidence=0.95,
+                entities=entities,
+                language_mix=self._detect_language(text),
+                raw_text=text,
+            )
+
+        # General intent dictionary for discovery, vehicle status, AC, etc.
         intents = {
             "FIND_CPO": [
                 "nearest", "charging station", "charger", "find station",
                 "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
+                "stations nearby", "ev station", "stations",
             ],
             "VEHICLE_STATUS": [
                 "status", "kitni battery", "kiti battery", "range", "fuel left",
                 "charge level", "gaadi ka", "how much charge", "battery kiti",
-            ],
-            "RESERVE_SLOT": [
-                "reserve", "book", "lock", "slot", "pehla reserve", "doosra reserve",
-                "pehle wala", "first one", "station book",
+                "battery", "battery status",
             ],
             "GET_DIAGNOSTICS": [
                 "diagnostic", "health", "service", "tyre", "tire", "check",
-                "condition", "maintenance", "pressure",
+                "condition", "maintenance", "pressure", "tpms",
             ],
             "SET_AC": [
                 "ac", "temperature", "cooling", "heating", "thanda", "garam",
                 "aircon", "climate",
             ],
-            "CANCEL": ["cancel", "band karo", "stop", "hatao", "nahi chahiye"],
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
 
         best_intent = "UNKNOWN"
         best_score = 0
         for intent, keywords in intents.items():
-            score = sum(1 for kw in keywords if kw in text_lower)
+            score = sum(1 for kw in keywords if kw in cleaned_text)
             if score > best_score:
                 best_score = score
                 best_intent = intent
 
         confidence = min(best_score * 0.4, 1.0) if best_score > 0 else 0.0
-
-        entities: Dict[str, Any] = {}
-        if "pehla" in text_lower or "first" in text_lower or "1" in text_lower:
-            entities["rank"] = 1
-        elif "doosra" in text_lower or "second" in text_lower or "2" in text_lower:
-            entities["rank"] = 2
-        elif "teesra" in text_lower or "third" in text_lower or "3" in text_lower:
-            entities["rank"] = 3
 
         return IntentResult(
             intent=best_intent,
@@ -119,19 +199,19 @@ class VoiceAssistant:
 
     # ── Main entry point ──────────────────────────────────────────────────────
     def process_input(
-        self, text: str, user_id: str = "hyundai_driver_001"
+        self, text: str, user_id: str = "hyundai_driver_001", selected_station_id: Optional[str] = None
     ) -> VoiceAssistantResponse:
-        # Check pending confirmation first
+        # Check pending confirmation first using whole-word tokens to avoid false matches (e.g. 'sure' in 'pressure')
         if user_id in self._pending_confirmations:
-            text_lower = text.lower()
-            yes_words = {"haan", "yes", "ho", "ya", "yup", "sure", "ok", "confirm"}
+            words = set(re.findall(r"\b[a-zA-Z0-9_\'-]+\b", text.lower()))
+            yes_words = {"haan", "yes", "ho", "ya", "yup", "sure", "ok", "okay", "confirm", "karo", "lock", "book"}
             no_words = {"nahi", "no", "nako", "nope", "nah", "mat", "band", "cancel"}
-            if any(w in text_lower for w in yes_words):
+            if words.intersection(yes_words) and not words.intersection(no_words):
                 return self.confirm_action(user_id, True)
-            elif any(w in text_lower for w in no_words):
+            elif words.intersection(no_words) and not words.intersection(yes_words):
                 return self.confirm_action(user_id, False)
 
-        intent_res = self._parse_intent(text)
+        intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
 
         if intent_res.intent == "FIND_CPO":
             return self._handle_find_cpo(intent_res, user_id)
@@ -390,52 +470,146 @@ class VoiceAssistant:
     # ── RESERVE handler ───────────────────────────────────────────────────────
     def _handle_reserve(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
         rank = intent_res.entities.get("rank", 1)
+        target_operator = intent_res.entities.get("operator")
+        target_station_id = intent_res.entities.get("station_id")
+        use_selected = intent_res.entities.get("use_selected", False)
+        selected_station_id = intent_res.entities.get("selected_station_id")
+        target_query = intent_res.entities.get("target_query")
+
         st_name = None
         st_id = ""
+        st_dist = 0.0
+        st_kw = 60.0
 
         try:
             from priority_engine import get_engine
             engine = get_engine()
             if engine:
-                recs = engine.recommend(top_k=3)
-                if recs and len(recs) >= rank:
-                    rec = recs[rank - 1]
+                recs = engine.recommend(top_k=15)
+                
+                # 1. Match by selected station on screen if requested
+                if use_selected and selected_station_id:
+                    matched = next((r for r in recs if (getattr(r, 'station_id', '') or '').upper() == selected_station_id.upper()), None)
+                    if matched:
+                        st_name = matched.station_name
+                        st_id = matched.station_id
+                        st_dist = matched.distance_km
+                        st_kw = matched.effective_power_kw
+                    elif hasattr(engine, 'stations_db'):
+                        st_obj = engine.stations_db.get_station(selected_station_id)
+                        if st_obj:
+                            st_name = st_obj.get("name")
+                            st_id = selected_station_id
+                            st_dist = 1.0
+                            st_kw = float(st_obj.get("power_kw", 60.0))
+                    if not st_name:
+                        st_id = selected_station_id
+                        st_name = f"Station {selected_station_id}"
+                        st_dist = 1.0
+                        st_kw = 60.0
+
+                # 2. Match by explicit station ID if provided
+                if not st_name and target_station_id:
+                    matched = next((r for r in recs if (getattr(r, 'station_id', '') or '').upper() == target_station_id), None)
+                    if not matched and hasattr(engine, 'stations_db'):
+                        st_obj = engine.stations_db.get_station(target_station_id)
+                        if st_obj:
+                            st_name = st_obj.get("name")
+                            st_id = target_station_id
+                            st_dist = 2.0
+                            st_kw = float(st_obj.get("power_kw", 60.0))
+                    elif matched:
+                        st_name = matched.station_name
+                        st_id = matched.station_id
+                        st_dist = matched.distance_km
+                        st_kw = matched.effective_power_kw
+                        
+                # 3. Match by operator if requested (e.g. "reserve Tata Power")
+                elif not st_name and target_operator:
+                    matched = next((r for r in recs if target_operator.lower() in (getattr(r, 'operator', '') or '').lower() or target_operator.lower() in (getattr(r, 'station_name', '') or '').lower()), None)
+                    if not matched and hasattr(engine, 'stations_db'):
+                        for sid, sobj in engine.stations_db.stations.items():
+                            s_op = sobj.get("operator", "").lower()
+                            s_nm = sobj.get("name", "").lower()
+                            if target_operator.lower() in s_op or target_operator.lower() in s_nm:
+                                st_name = sobj.get("name")
+                                st_id = sid
+                                st_dist = 2.5
+                                st_kw = float(sobj.get("power_kw", 60.0))
+                                break
+                    elif matched:
+                        st_name = matched.station_name
+                        st_id = matched.station_id
+                        st_dist = matched.distance_km
+                        st_kw = matched.effective_power_kw
+
+                # 4. Match by name or location query (e.g. "reserve Gachibowli", "reserve Novotel")
+                elif not st_name and target_query:
+                    matched = next((r for r in recs if target_query.lower() in (getattr(r, 'station_name', '') or '').lower() or target_query.lower() in (getattr(r, 'address', '') or '').lower()), None)
+                    if not matched and hasattr(engine, 'stations_db'):
+                        for sid, sobj in engine.stations_db.stations.items():
+                            s_name = sobj.get("name", "").lower()
+                            s_addr = sobj.get("address", "").lower()
+                            s_city = sobj.get("city", "").lower()
+                            s_distr = sobj.get("district", "").lower()
+                            if target_query.lower() in s_name or target_query.lower() in s_addr or target_query.lower() in s_city or target_query.lower() in s_distr:
+                                st_name = sobj.get("name")
+                                st_id = sid
+                                st_dist = 2.5
+                                st_kw = float(sobj.get("power_kw", 60.0))
+                                break
+                    elif matched:
+                        st_name = matched.station_name
+                        st_id = matched.station_id
+                        st_dist = matched.distance_km
+                        st_kw = matched.effective_power_kw
+
+                # 5. Match by rank / nearest
+                if not st_name and recs:
+                    pick_idx = min(len(recs) - 1, max(0, rank - 1))
+                    rec = recs[pick_idx]
                     st_name = rec.station_name
                     st_id = rec.station_id
+                    st_dist = rec.distance_km
+                    st_kw = rec.effective_power_kw
         except Exception as e:
             logger.warning(f"[AVA] Priority engine error in reserve: {e}")
 
         if not st_name:
-            # No real station data available
             if intent_res.language_mix in ("hi", "hi+en"):
-                msg = "Reservation ke liye pehle 'nearest charging station' command try karein taaki stations load ho sakein."
+                msg = "Reservation ke liye koi charging station nahi mila. Kripya dobara try karein."
             elif intent_res.language_mix == "mr":
-                msg = "Reserve karna sathi aadhi 'nearest charging station' command vhapra."
+                msg = "Reservation sathi station sapadle nahi. Parat try kara."
             else:
-                msg = "Please first ask me to find charging stations so I can load the available options."
+                msg = "Could not locate a suitable charging station to reserve. Please try again."
             return VoiceAssistantResponse(text=msg, action_type="info", language=intent_res.language_mix)
 
-        if intent_res.language_mix in ("hi", "hi+en"):
-            text = f"Station {st_name} reserve karu? 30 minute ka slot lock hoga. Confirm karo — haan ya nahi?"
-        elif intent_res.language_mix == "mr":
-            text = f"Station {st_name} sathi 30 min slot reserve karu ka? Ho ki nahi sanga."
-        else:
-            text = f"Shall I reserve {st_name}? A 30-minute exclusive slot will be locked. Please confirm — yes or no."
+        # Clear any previous pending confirmation since this is an immediate reservation action
+        self._pending_confirmations.pop(user_id, None)
 
-        self._pending_confirmations[user_id] = {
-            "action": "reserve",
-            "station_id": st_id,
-            "station_name": st_name,
-            "rank": rank,
-        }
+        # Build immediate voice reservation response
+        if intent_res.language_mix in ("hi", "hi+en"):
+            text = f"Nearest station {st_name} ({st_dist:.1f} km door, {st_kw:.0f} kW) ke liye 30-minute slot lock kar diya hai."
+        elif intent_res.language_mix == "mr":
+            text = f"Javalcya {st_name} ({st_dist:.1f} km, {st_kw:.0f} kW) sathi 30 min exclusive slot book kela aahe."
+        else:
+            text = f"Locked exclusive 30-minute slot at {st_name} ({st_dist:.1f} km away, {st_kw:.0f} kW)."
 
         return VoiceAssistantResponse(
             text=text,
-            action_type="confirmation_needed",
+            display_data={
+                "action": "reserve",
+                "station_id": st_id,
+                "station_name": st_name,
+                "rank": rank,
+                "distance_km": st_dist,
+                "power_kw": st_kw,
+            },
+            action_type="action_complete",
             language=intent_res.language_mix,
-            needs_confirmation=True,
-            pending_action=self._pending_confirmations[user_id],
-            tool_calls=["priority_engine.recommend"],
+            needs_confirmation=False,
+            pending_action=None,
+            tool_calls=["charging.reserve_slot", "priority_engine.recommend"],
         )
 
     # ── CANCEL handler ────────────────────────────────────────────────────────

@@ -931,11 +931,15 @@
             <div class="title">SmartReserve <span style="color:var(--hyundai-blue); font-weight: 300;">EV</span></div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
+            <button id="btn-hands-free" class="telematics-pill" onclick="toggleHandsFree()" style="border-color:#22c55e; background:rgba(34,197,94,0.18); color:#22c55e; font-weight:700;" title="Hands-Free Continuous Voice: speak commands or 'Hey AVA' without clicking">
+                <span id="hf-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; margin-right:4px;"></span>
+                <span id="hf-label">🎙️ Hands-Free: ON</span>
+            </button>
             <button id="btn-vehicle-diag" class="telematics-pill" onclick="openVehicleModal()" title="View Vehicle Health & TPMS">
                 🚗 Ioniq 5 · <span id="hdr-soc" style="color:var(--electric-yellow); font-weight:700;">18%</span> · <span id="hdr-range">87 km</span> · <span style="color:#22c55e;">TPMS</span>
             </button>
             <button class="telematics-pill" onclick="toggleVoiceOverlay()" style="border-color:var(--hyundai-blue); background:rgba(0,170,212,0.12);" title="Toggle AVA Voice Co-Pilot">
-                🎙️ AVA Co-Pilot
+                🤖 AVA Co-Pilot
             </button>
             <div class="time-status" style="margin-left:6px;">
                 <div class="status-dot" id="ws-status"></div>
@@ -1154,8 +1158,12 @@
                 <span style="font-size:18px;">🤖</span>
                 <span style="font-family:var(--font-head); font-weight:700; color:var(--hyundai-blue); font-size:14px; letter-spacing:1px;">AVA IN-CABIN CO-PILOT</span>
                 <span style="font-size:10px; background:rgba(255,209,0,0.15); color:var(--electric-yellow); padding:2px 6px; border-radius:4px; font-weight:600;">EN · HI · MR</span>
+                <span id="handsfree-status-badge" style="font-size:10px; background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid #22c55e; padding:2px 8px; border-radius:10px; font-weight:700;">⚡ ALWAYS LISTENING</span>
             </div>
-            <button onclick="closeVoiceOverlay()" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:0 4px;" title="Close">✕</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="toggleHandsFree()" id="hf-modal-toggle" style="background:rgba(34,197,94,0.15); border:1px solid #22c55e; color:#22c55e; font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer; font-weight:600;" title="Toggle hands-free listening">Hands-Free: ON</button>
+                <button onclick="closeVoiceOverlay()" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:0 4px;" title="Close">✕</button>
+            </div>
         </div>
 
         <!-- Quick Prompt Chips -->
@@ -1586,13 +1594,19 @@
         }
 
         function selectStation(id) {
+            if (!id) return;
             selectedStationId = id;
-            const st = stations.find(s => s.id === id);
-            if (!st) return;
+            const targetId = String(id).toUpperCase();
+            let st = stations.find(s => (s.id && String(s.id).toUpperCase() === targetId) || (s.station_id && String(s.station_id).toUpperCase() === targetId)) || stations.find(s => s.id === id);
+            if (!st) {
+                st = { id: id, name: `Charging Station ${id}`, city: 'Hyderabad', district: 'Telangana', address: 'Telangana Hub', power_kw: 60, status: 'AVAILABLE', connector_type: 'CCS2', operator: 'Fast Charger', lat: 17.3850, lng: 78.4867 };
+                stations.push(st);
+            }
 
             // Highlight card
             document.querySelectorAll('.station-card').forEach(c => {
-                c.classList.toggle('selected', c.dataset.stationId === id || c.getAttribute('data-station-id') === id);
+                const cId = (c.dataset.stationId || c.getAttribute('data-station-id') || '').toUpperCase();
+                c.classList.toggle('selected', cId === targetId || cId === String(id).toUpperCase());
             });
             
             // Map fly safely
@@ -2116,32 +2130,105 @@
             }
         }
         
+        // Hands-Free Continuous Voice Engine
+        let handsFreeActive = true;
+        let isSpeakingTTS = false;
+        let restartTimer = null;
+
+        function toggleHandsFree() {
+            handsFreeActive = !handsFreeActive;
+            if (handsFreeActive) {
+                startListening();
+                showToast('🎙️ Hands-Free Voice ON: Speak anytime without clicking', 'success');
+            } else {
+                stopListening();
+                showToast('Hands-Free Voice Paused', 'info');
+            }
+            updateHandsFreeUI(handsFreeActive);
+        }
+
+        function updateHandsFreeUI(active) {
+            const hfBtn = document.getElementById('btn-hands-free');
+            const hfDot = document.getElementById('hf-dot');
+            const hfLabel = document.getElementById('hf-label');
+            const hfBadge = document.getElementById('handsfree-status-badge');
+            const hfModalBtn = document.getElementById('hf-modal-toggle');
+
+            if (active) {
+                if (hfBtn) {
+                    hfBtn.style.borderColor = '#22c55e';
+                    hfBtn.style.background = 'rgba(34,197,94,0.18)';
+                    hfBtn.style.color = '#22c55e';
+                }
+                if (hfDot) {
+                    hfDot.style.background = '#22c55e';
+                    hfDot.style.boxShadow = '0 0 10px #22c55e';
+                }
+                if (hfLabel) hfLabel.innerText = '🎙️ Hands-Free: ON';
+                if (hfBadge) {
+                    hfBadge.style.display = 'inline-block';
+                    hfBadge.innerText = '⚡ ALWAYS LISTENING';
+                    hfBadge.style.borderColor = '#22c55e';
+                    hfBadge.style.color = '#22c55e';
+                }
+                if (hfModalBtn) {
+                    hfModalBtn.innerText = 'Hands-Free: ON';
+                    hfModalBtn.style.borderColor = '#22c55e';
+                    hfModalBtn.style.color = '#22c55e';
+                }
+                if (voiceBtn) voiceBtn.classList.add('listening');
+            } else {
+                if (hfBtn) {
+                    hfBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                    hfBtn.style.background = 'rgba(255,255,255,0.05)';
+                    hfBtn.style.color = 'var(--text-muted)';
+                }
+                if (hfDot) {
+                    hfDot.style.background = '#888';
+                    hfDot.style.boxShadow = 'none';
+                }
+                if (hfLabel) hfLabel.innerText = '🎙️ Hands-Free: OFF';
+                if (hfBadge) {
+                    hfBadge.innerText = 'PAUSED';
+                    hfBadge.style.borderColor = '#888';
+                    hfBadge.style.color = '#888';
+                }
+                if (hfModalBtn) {
+                    hfModalBtn.innerText = 'Hands-Free: OFF';
+                    hfModalBtn.style.borderColor = '#888';
+                    hfModalBtn.style.color = '#888';
+                }
+                if (voiceBtn) voiceBtn.classList.remove('listening');
+            }
+        }
+        
         // Initialize Web Speech API
         function initSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 console.warn('Speech Recognition not supported in this browser. Text input active.');
+                updateHandsFreeUI(false);
                 return;
             }
             try {
                 recognition = new SpeechRecognition();
-                recognition.continuous = false;
+                recognition.continuous = true;
                 recognition.interimResults = true;
                 recognition.lang = 'en-IN';
                 recognition.maxAlternatives = 1;
                 
                 recognition.onstart = () => {
                     isListening = true;
-                    voiceBtn.classList.add('listening');
-                    voiceBtn.innerHTML = '⏹️';
+                    if (voiceBtn) {
+                        voiceBtn.classList.add('listening');
+                        voiceBtn.innerHTML = '🎙️';
+                    }
                     if (micToggleBtn) micToggleBtn.classList.add('listening');
-                    voiceTranscript.style.display = 'block';
-                    voiceOverlay.classList.add('active');
-                    voiceInterim.innerText = 'Listening...';
-                    voiceFinal.innerText = '';
+                    updateHandsFreeUI(true);
                 };
                 
                 recognition.onresult = (event) => {
+                    if (isSpeakingTTS) return; // Prevent hearing self
                     let interimTranscript = '';
                     let finalTranscript = '';
                     for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -2152,23 +2239,40 @@
                             interimTranscript += transcript;
                         }
                     }
-                    voiceInterim.innerText = interimTranscript;
-                    if (finalTranscript) {
+                    if (interimTranscript) {
+                        voiceTranscript.style.display = 'block';
+                        voiceInterim.innerText = interimTranscript;
+                    }
+                    if (finalTranscript && finalTranscript.trim()) {
+                        voiceTranscript.style.display = 'block';
                         voiceFinal.innerText = finalTranscript;
-                        processVoiceCommand(finalTranscript);
+                        processVoiceCommand(finalTranscript.trim());
                     }
                 };
                 
                 recognition.onerror = (event) => {
-                    console.warn('Speech error:', event.error);
-                    stopListening();
+                    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        console.warn('Speech error:', event.error);
+                    }
                     if (event.error === 'not-allowed') {
-                        showToast('Microphone permission blocked. You can type query below.', 'warning');
+                        handsFreeActive = false;
+                        updateHandsFreeUI(false);
+                        showToast('Microphone access blocked. Click mic or type below.', 'warning');
                     }
                 };
                 
                 recognition.onend = () => {
-                    stopListening();
+                    isListening = false;
+                    if (handsFreeActive && !isSpeakingTTS) {
+                        clearTimeout(restartTimer);
+                        restartTimer = setTimeout(() => {
+                            if (handsFreeActive && !isSpeakingTTS) {
+                                try { recognition.start(); } catch(e) {}
+                            }
+                        }, 250);
+                    } else {
+                        updateHandsFreeUI(false);
+                    }
                 };
             } catch(e) {
                 console.warn('Speech recognition init error:', e);
@@ -2185,17 +2289,23 @@
             }
             try {
                 recognition.start();
+                updateHandsFreeUI(true);
             } catch(e) {
-                console.warn('Recognition start error:', e);
-                voiceOverlay.classList.add('active');
+                if (e.name !== 'InvalidStateError') {
+                    console.warn('Recognition start error:', e);
+                }
             }
         }
         
         function stopListening() {
             isListening = false;
-            voiceBtn.classList.remove('listening');
-            voiceBtn.innerHTML = '🎙️';
+            handsFreeActive = false;
+            if (voiceBtn) {
+                voiceBtn.classList.remove('listening');
+                voiceBtn.innerHTML = '🎙️';
+            }
             if (micToggleBtn) micToggleBtn.classList.remove('listening');
+            updateHandsFreeUI(false);
             try { if (recognition) recognition.stop(); } catch(e) {}
         }
         
@@ -2224,7 +2334,11 @@
                 const res = await fetch(`${API}/api/voice/process`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, user_id: DRIVER_ID })
+                    body: JSON.stringify({ 
+                        text: text, 
+                        user_id: DRIVER_ID,
+                        selected_station_id: selectedStationId
+                    })
                 });
                 
                 if (res.ok) {
@@ -2233,13 +2347,18 @@
                     speakResponse(data.text);
                     
                     // If action was executed directly
-                    if (data.display_data && data.display_data.action === 'reserve' && data.display_data.reservation) {
-                        const resv = data.display_data.reservation;
-                        const sid = data.display_data.station_id || (resv.station && resv.station.station_id);
+                    if (data.display_data && data.display_data.action === 'reserve') {
+                        const sid = data.display_data.station_id || (data.display_data.reservation && data.display_data.reservation.station_id);
                         if (sid) selectStation(sid);
-                        currentReservation = resv;
-                        if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        if (data.display_data.reservation) {
+                            const resv = data.display_data.reservation;
+                            currentReservation = resv;
+                            if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        } else if (data.display_data.pin) {
+                            showReservationPIN(data.display_data.pin, Date.now() / 1000 + 1800);
+                        }
                         fetchStations();
+                        showToast(`⚡ Slot Locked: ${data.display_data.station_name || sid}! PIN: ${data.display_data.pin || 'Created'}`, 'success');
                     }
                 } else {
                     voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>Sorry, I couldn't process that. Try: "nearest charging station" or "vehicle status"</div>`;
@@ -2359,11 +2478,17 @@
             }
         }
         
-        // Text-to-Speech
+        // Text-to-Speech with Hands-Free Audio Loop Prevention
         function speakResponse(text) {
             if ('speechSynthesis' in window) {
                 try {
                     window.speechSynthesis.cancel();
+                    isSpeakingTTS = true;
+                    // Pause recognition so AVA never hears herself speak
+                    if (recognition && isListening) {
+                        try { recognition.abort(); } catch(e) {}
+                    }
+
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = 'en-IN';
                     utterance.rate = 1.0;
@@ -2372,9 +2497,26 @@
                     const voices = window.speechSynthesis.getVoices();
                     const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
                     if (indianVoice) utterance.voice = indianVoice;
+
+                    utterance.onend = () => {
+                        isSpeakingTTS = false;
+                        if (handsFreeActive) {
+                            clearTimeout(restartTimer);
+                            restartTimer = setTimeout(startListening, 300);
+                        }
+                    };
+                    utterance.onerror = () => {
+                        isSpeakingTTS = false;
+                        if (handsFreeActive) {
+                            clearTimeout(restartTimer);
+                            restartTimer = setTimeout(startListening, 300);
+                        }
+                    };
                     
                     window.speechSynthesis.speak(utterance);
-                } catch(e) {}
+                } catch(e) {
+                    isSpeakingTTS = false;
+                }
             }
         }
         
@@ -2474,6 +2616,20 @@
         // Initialize speech recognition & header status on load
         initSpeechRecognition();
         fetchVehicleHeaderStatus();
+
+        // Auto-start hands-free voice engine
+        setTimeout(() => {
+            if (handsFreeActive && !isListening) {
+                try { startListening(); } catch(e) {}
+            }
+        }, 600);
+
+        // First click/touch anywhere starts mic listening if browser autoplay policy blocked initial start
+        document.addEventListener('click', function initAudioGesture() {
+            if (handsFreeActive && !isListening) {
+                try { startListening(); } catch(e) {}
+            }
+        }, { once: true });
 
     </script>
 </body>

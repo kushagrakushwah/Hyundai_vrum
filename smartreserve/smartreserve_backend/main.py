@@ -121,6 +121,7 @@ class VoiceInputRequest(BaseModel):
     text: str
     user_id: str = "hyundai_driver_001"
     language: str = "auto"
+    selected_station_id: Optional[str] = None
 
 class VoiceConfirmRequest(BaseModel):
     user_id: str = "hyundai_driver_001"
@@ -523,7 +524,9 @@ async def process_voice_input(req: VoiceInputRequest):
     if not voice_assistant:
         raise HTTPException(status_code=503, detail="Voice assistant not available")
     
-    response = voice_assistant.process_input(req.text, req.user_id)
+    response = voice_assistant.process_input(
+        req.text, req.user_id, selected_station_id=req.selected_station_id
+    )
     
     # If the assistant wants to reserve, wire it to the actual reserve API
     if response.action_type == 'action_complete' and response.display_data.get('action') == 'reserve':
@@ -539,7 +542,10 @@ async def process_voice_input(req: VoiceInputRequest):
                 )
                 reserve_result = await reserve_station(reserve_req)
                 response.display_data['reservation'] = reserve_result
-                response.display_data['pin'] = reserve_result.get('pin')
+                pin = reserve_result.get('pin')
+                response.display_data['pin'] = pin
+                if pin and str(pin) not in response.text:
+                    response.text += f" Your confirmation PIN is {pin}."
             except Exception as e:
                 response.display_data['reserve_error'] = str(e)
     
