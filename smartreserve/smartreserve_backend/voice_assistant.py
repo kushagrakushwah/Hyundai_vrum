@@ -190,6 +190,25 @@ class VoiceAssistant:
                     pass
                 break
 
+        # Fuzzy station name lookup from query
+        _KNOWN_STATION_LANDMARKS = [
+            ("congress nagar", "EESL — Congress Nagar Metro Station"),
+            ("kasturchand", "EESL — Kasturchand Park Metro Station"),
+            ("sitabuldi", "Tata Power — Sitabuldi Interchange"),
+            ("wardha road", "ChargeZone — Wardha Road Hotel Pride"),
+            ("airport", "ChargeZone — Airport Hotel Pride Nagpur"),
+            ("jhansi rani", "EESL — Jhansi Rani Square Metro Station"),
+            ("chhatrapati", "EESL — Chhatrapati Sq Metro Station"),
+            ("zero mile", "EESL — Zero Mile Metro Station"),
+            ("rahate colony", "EESL — Rahate Colony Metro Station"),
+            ("lad colony", "EESL — Lad Colony Metro Station"),
+        ]
+        for landmark, full_name in _KNOWN_STATION_LANDMARKS:
+            if landmark in cleaned_text:
+                entities['station_landmark'] = landmark
+                entities['station_name_hint'] = full_name
+                break
+
         # 4. Browsing vs Reservation check
         is_question = cleaned_text.startswith(("what", "how", "why", "explain", "about", "who")) or any(
             cleaned_text.startswith(p) for p in ["can you explain", "tell me about", "what is", "how does", "why do"]
@@ -261,6 +280,16 @@ class VoiceAssistant:
 
         # General intent dictionary for discovery, vehicle status, AC, etc.
         intents = {
+            "NEARBY_AMENITIES": [
+                "hospital", "cafe", "restaurant", "food", "atm", "pharmacy", "medical store", "mechanic", "tyre shop", "puncture shop",
+                "nearest parking", "parking nearby", "parking", "car park"
+            ],
+            "BATTERY_PRECONDITIONING": [
+                "battery preconditioning", "pre-conditioning", "preconditioning", "precondition", "warm up battery", "prepare battery"
+            ],
+            "NETWORK_COMPARISON": [
+                "which charger is best", "vs", "which network is better", "best charging network", "compare charger", "fastest"
+            ],
             "FIND_CPO": [
                 "nearest", "charging station", "charger", "find station", "see", "show", "view",
                 "slot", "slots", "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
@@ -269,7 +298,7 @@ class VoiceAssistant:
             "VEHICLE_STATUS": [
                 "status", "kitni battery", "kiti battery", "range", "fuel left",
                 "charge level", "gaadi ka", "how much charge", "battery kiti",
-                "battery", "battery status",
+                "battery status", "battery level", "battery percentage",
             ],
             "GET_DIAGNOSTICS": [
                 "diagnostic", "health", "service", "tyre", "tire", "check",
@@ -292,6 +321,13 @@ class VoiceAssistant:
             "CHARGING_COST": [
                 "cost of", "tariff of", "how much does it cost", "charging cost", "cost to charge",
                 "rate per kwh", "kharcha kitna", "charge kiti lagel", "tata power cost", "tata power tariff"
+            ],
+            "DESTINATION_RANGE": [
+                "can i reach", "can we reach", "will i make it", "enough range", "will battery last",
+                "kya main pahunch", "range enough", "pohochta ka",
+            ],
+            "CABIN_CONTROL": [
+                "set ac", "set temperature", "ac on", "ac off", "turn on ac", "thanda karo", "garam karo", "climate",
             ],
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
@@ -353,6 +389,9 @@ class VoiceAssistant:
             intent_res.entities["user_lat"] = float(user_lat)
             intent_res.entities["user_lon"] = float(user_lon)
 
+        if intent_res.entities.get("station_landmark") and intent_res.intent in ("FIND_CPO", "RESERVE_SLOT"):
+            intent_res.entities["target_query"] = intent_res.entities["station_name_hint"]
+
         # 1. Primary Action Handlers: Repeat PIN, Cancel, AC, Booking, and Finding Chargers
         if intent_res.intent == "REPEAT_PIN":
             return self._handle_repeat_pin(intent_res, user_id)
@@ -368,6 +407,10 @@ class VoiceAssistant:
             return self._handle_vehicle_status(intent_res)
         elif intent_res.intent == "GET_DIAGNOSTICS":
             return self._handle_diagnostics(intent_res)
+        elif intent_res.intent == "DESTINATION_RANGE":
+            return self._handle_destination_range(intent_res, user_id)
+        elif intent_res.intent == "CABIN_CONTROL":
+            return self._handle_cabin_control(intent_res)
 
         # 2. Deep Cognitive Brain (Location, Petrol Pumps, Tariffs, Architecture, Telematics)
         brain_ans = brain.answer_query(text, vehicle_status=self._get_vehicle_context(), language=intent_res.language_mix)
@@ -795,6 +838,18 @@ class VoiceAssistant:
                         st_dist = matched.distance_km
                         st_kw = matched.effective_power_kw
 
+                # 4b. Match by station name hint (landmark-based fuzzy search)
+                if not st_name and intent_res.entities.get('station_name_hint'):
+                    hint = intent_res.entities['station_name_hint'].lower()
+                    for sid, sobj in (engine.stations_db.stations if hasattr(engine, 'stations_db') else {}).items():
+                        s_nm = (sobj.get('name') or '').lower()
+                        if hint[:15] in s_nm or any(w in s_nm for w in hint.split()[:3]):
+                            st_name = sobj.get('name')
+                            st_id = sid
+                            st_dist = 1.5
+                            st_kw = float(sobj.get('power_kw', 60.0))
+                            break
+
                 # 5. Match by rank / nearest
                 if not st_name and recs:
                     pick_idx = min(len(recs) - 1, max(0, rank - 1))
@@ -926,6 +981,34 @@ class VoiceAssistant:
             action_type="info",
             language=intent_res.language_mix
         )
+
+    def _handle_destination_range(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
+        v_status = self._get_vehicle_context()
+        brain_ans = brain.answer_query(intent_res.raw_text, vehicle_status=v_status, language=intent_res.language_mix)
+        if brain_ans:
+            spoken_txt, intent_name, display_d = brain_ans
+            return VoiceAssistantResponse(
+                text=spoken_txt,
+                display_data=display_d,
+                action_type="info",
+                language=intent_res.language_mix,
+                tool_calls=[f"brain.{intent_name.lower()}"]
+            )
+        return self._handle_unknown_with_llm(intent_res)
+
+    def _handle_cabin_control(self, intent_res: IntentResult) -> VoiceAssistantResponse:
+        v_status = self._get_vehicle_context()
+        brain_ans = brain.answer_query(intent_res.raw_text, vehicle_status=v_status, language=intent_res.language_mix)
+        if brain_ans:
+            spoken_txt, intent_name, display_d = brain_ans
+            return VoiceAssistantResponse(
+                text=spoken_txt,
+                display_data=display_d,
+                action_type="action_complete",
+                language=intent_res.language_mix,
+                tool_calls=[f"brain.{intent_name.lower()}"]
+            )
+        return self._handle_set_ac(intent_res)
 
     # ── Helper: vehicle context dict for LLM ─────────────────────────────────
     def _get_vehicle_context(self) -> Optional[dict]:

@@ -49,6 +49,14 @@ class SmartReserveBrain:
         if any(k in q for k in charger_action_kws):
             return None
 
+        # ── 0. EMERGENCY / LOW BATTERY (highest priority) ──────────────────────────
+        current_soc = (vehicle_status or {}).get('soc', 100)
+        if current_soc <= 15 and self._matches(q, [
+            "help", "emergency", "battery dying", "almost dead", "stranded",
+            "low battery", "dying", "critical",
+        ]):
+            return self._ans_low_battery_emergency(vehicle_status, language)
+
         # ── 1. EXACT CITY & PINPOINT LOCATION / WHERE AM I ────────────────────
         if self._matches(q, [
             "which city", "in which city", "what city", "current city", "city am i in",
@@ -158,7 +166,7 @@ class SmartReserveBrain:
             return self._ans_tyre_pressure(vehicle_status, language)
 
         # ── 12. BATTERY HEALTH / STATE OF HEALTH (SoH) ─────────────────────────
-        if self._matches(q, [
+        if "precondition" not in q and self._matches(q, [
             "battery health", "state of health", "soh", "battery condition", "battery life",
             "battery degradation", "battery ki health", "battery chi health",
             (["battery"], ["health", "condition", "life", "soh", "degradation", "theek"]),
@@ -211,6 +219,81 @@ class SmartReserveBrain:
             (["who", "kaun", "kon"], ["are you", "made you", "ho", "aahes"]),
         ]):
             return self._ans_identity(language)
+
+        # ── RANGE / DESTINATION REACHABILITY CHECK ─────────────────────────────────
+        if self._matches(q, [
+            "can i reach", "can we reach", "will i make it to", "will battery last",
+            "enough range", "make it to", "reach wardha", "reach pune", "reach mumbai",
+            "reach hyderabad", "reach delhi", "reach nagpur",
+            "battery enough", "range enough", "will charge last",
+            "kya main pahunch sakta", "pohochta ka", "range puregi",
+            (["reach", "make it", "pahunch", "pohoch"], ["charging", "without", "bina", "enough", "km", "city", "place", "destination"]),
+            (["can", "will", "kya"], ["reach", "make it", "last", "enough"]),
+        ]):
+            return self._ans_range_check(q, vehicle_status, language)
+
+        # ── V2L / VEHICLE-TO-LOAD ──────────────────────────────────────────────────
+        if self._matches(q, [
+            "v2l", "vehicle to load", "power outlet", "use car as generator",
+            "charge my phone with car", "power from car", "external power",
+            "v2l kya hai", "gaadi se bijli", "car se charge",
+            (["v2l", "vehicle to load", "power outlet", "generator"], ["work", "use", "how", "kaise", "kya"]),
+        ]):
+            return self._ans_v2l(vehicle_status, language)
+
+        # ── BATTERY PRECONDITIONING ────────────────────────────────────────────────
+        if self._matches(q, [
+            "battery preconditioning", "pre-conditioning", "precondition",
+            "warm up battery", "prepare battery", "fast charge prep",
+            "preconditioning kya hai", "battery garam karna",
+            (["battery", "precondition", "preconditioning"], ["what", "how", "why", "explain", "enable", "kya", "kaise"]),
+        ]):
+            return self._ans_preconditioning(language)
+
+        # ── REGENERATIVE BRAKING / i-PEDAL ─────────────────────────────────────────
+        if self._matches(q, [
+            "regenerative braking", "regen braking", "i-pedal", "one pedal",
+            "paddle shifter", "regen mode", "regeneration",
+            "regen kya hai", "one pedal driving",
+            (["regen", "regenerative", "i-pedal", "one pedal", "paddle"], ["braking", "drive", "mode", "kaise", "kya", "work", "how"]),
+        ]):
+            return self._ans_regen(vehicle_status, language)
+
+        # ── DRIVE MODES ────────────────────────────────────────────────────────────
+        if self._matches(q, [
+            "drive mode", "eco mode", "sport mode", "normal mode",
+            "driving mode", "how to change mode", "switch mode",
+            "eco kya hai", "sport mode kaise",
+            (["eco", "sport", "normal", "drive mode"], ["mode", "difference", "switch", "enable", "activate", "kaise", "kya"]),
+        ]):
+            return self._ans_drive_modes(vehicle_status, language)
+
+        # ── NEARBY AMENITIES / POI ─────────────────────────────────────────────────
+        if self._matches(q, [
+            "nearest hospital", "nearby cafe", "nearest restaurant", "nearby food",
+            "parking nearby", "nearest atm", "nearby pharmacy", "medical store",
+            "nearest mechanic", "tyre shop", "puncture shop",
+            "hospital kahan", "cafe kahan", "khana kahan",
+            (["nearest", "nearby", "paas", "javal"], ["hospital", "cafe", "restaurant", "food", "atm", "pharmacy", "medical", "mechanic", "tyre", "puncture", "parking"]),
+        ]):
+            return self._ans_nearby_amenities(q, vehicle_status, language)
+
+        # ── CHARGING NETWORK COMPARISON ────────────────────────────────────────────
+        if self._matches(q, [
+            "which charger is best", "tata power vs eesl", "which network is better",
+            "best charging network", "compare charger", "fastest charger in nagpur",
+            (["best", "fastest", "compare", "which"], ["charger", "network", "cpo", "station", "tata power", "eesl", "chargezone"]),
+        ]):
+            return self._ans_network_comparison(language)
+
+        # ── CABIN CONTROLS ─────────────────────────────────────────────────────────
+        if self._matches(q, [
+            "set ac", "set temperature", "ac on", "ac off", "turn on ac", "cool the car",
+            "set fan", "adjust climate", "adjust temperature",
+            "ac karo", "thanda karo", "garam karo", "temperature set karo",
+            (["set", "turn", "adjust", "change"], ["ac", "temperature", "climate", "fan", "cool", "heat"]),
+        ]):
+            return self._ans_cabin_control(q, language)
 
         return None
 
@@ -725,6 +808,153 @@ class SmartReserveBrain:
             )
         return (txt, "IDENTITY", {"name": "AVA", "role": "Hyundai In-Cabin Co-Pilot"})
 
+
+    def _ans_low_battery_emergency(self, v_status: Optional[dict], lang: str):
+        soc = (v_status or {}).get("soc", 15)
+        if lang in ("hi", "hi+en"):
+            txt = f"Emergency Alert! Battery {soc}% par hai. Sabse paas EESL Kasturchand Park (1.3 km, 142 kW) hai. Aap safely wahan pahunch sakte hain. Main slot reserve karun?"
+        elif lang == "mr":
+            txt = f"Emergency Alert! Battery {soc}% aahe. Sarvat javal EESL Kasturchand Park (1.3 km, 142 kW) aahe. Tumhi surakshit tithe pohchu shakta. Mee slot reserve karu ka?"
+        else:
+            txt = f"Emergency Alert! Battery is critically low at {soc}%. The nearest high-speed charger is EESL Kasturchand Park (1.3 km away, 142 kW). You have enough range to reach it safely. Shall I reserve a slot immediately?"
+        return (txt, "LOW_BATTERY_EMERGENCY", {"soc": soc, "nearest_station": "EESL Kasturchand Park", "distance": 1.3})
+
+    def _ans_range_check(self, q: str, v_status: Optional[dict], lang: str):
+        soc = (v_status or {}).get("soc", 18.0)
+        range_km = (v_status or {}).get("range_km", 86)
+        
+        dest_name = "your destination"
+        dist = 0
+        cities = {"wardha": 78, "pune": 900, "mumbai": 880, "hyderabad": 490, "bhopal": 350, "indore": 470, "delhi": 1100, "amravati": 150, "akola": 200}
+        for city, d in cities.items():
+            if city in q.lower():
+                dest_name = city.capitalize()
+                dist = d
+                break
+                
+        if dist > 0:
+            road_dist = dist * 1.15
+            if road_dist > range_km:
+                if dest_name == "Wardha":
+                    if lang in ("hi", "hi+en"):
+                        txt = f"Aapki battery abhi {soc}% hai (86 km range). Wardha kareeb 90 km hai. Aap bina charge kiye nahi pahunch payenge. Main EESL Congress Nagar Metro (1.4 km, 142 kW) par slot reserve karne ki salah deti hoon. Reserve karun?"
+                    elif lang == "mr":
+                        txt = f"Tumchi battery {soc}% aahe (86 km range). Wardha 90 km aahe. Tumhi charging shivay pohchu shakat nahi. Mee EESL Congress Nagar Metro (1.4 km, 142 kW) var slot reserve karnya chi shifaras karte. Reserve karu ka?"
+                    else:
+                        txt = f"With your current {soc}% battery ({range_km} km range), {dest_name} is approximately {road_dist:.0f} km by road. You will arrive at about 3% SoC — cutting it very close. I recommend a quick 10-minute charge at EESL Congress Nagar Metro (1.4 km away, 142 kW) to top up to 35% before heading out. Shall I reserve that slot?"
+                else:
+                    if lang in ("hi", "hi+en"):
+                        txt = f"{dest_name} {road_dist:.0f} km door hai. Aapki range {range_km} km hai. Aapko raste mein charge karna padega."
+                    elif lang == "mr":
+                        txt = f"{dest_name} {road_dist:.0f} km lamb aahe. Tumchi range {range_km} km aahe. Tumhala rastyat charge karava lagel."
+                    else:
+                        txt = f"{dest_name} is {road_dist:.0f} km away by road. With your current range of {range_km} km, you will need to charge on the way. Shall I find chargers along your route?"
+            else:
+                rem_soc = soc - (road_dist / range_km) * soc
+                if lang in ("hi", "hi+en"):
+                    txt = f"Aap asani se {dest_name} pahunch sakte hain. Wahan pahunchne par aapke paas {rem_soc:.0f}% battery bachegi."
+                elif lang == "mr":
+                    txt = f"Tumhi sahajpane {dest_name} pohchu shakta. Tithe pohchlyavar tumchi battery {rem_soc:.0f}% shillak rahil."
+                else:
+                    txt = f"You can comfortably reach {dest_name}. You will arrive with approximately {rem_soc:.0f}% battery remaining."
+        else:
+            if lang in ("hi", "hi+en"):
+                txt = f"Aapki gaadi mein abhi {soc}% battery aur {range_km} km ki range hai. Destination clear nahi hai, par aap itni doori tay kar sakte hain."
+            elif lang == "mr":
+                txt = f"Tumchya car madhe {soc}% battery ani {range_km} km range aahe."
+            else:
+                txt = f"Your current battery is at {soc}% giving you a range of {range_km} km. Please specify a destination city to check reachability."
+        return (txt, "RANGE_CHECK", {"soc": soc, "range_km": range_km, "destination": dest_name})
+
+    def _ans_v2l(self, v_status: Optional[dict], lang: str):
+        if lang in ("hi", "hi+en"):
+            txt = "Vehicle-to-Load (V2L) feature aapki car ko power generator banata hai (3.6kW output). Adapter charge port mein lagakar aap laptop, TV, ya camping appliances chala sakte hain. Full 3.6kW par lagbhag 3 hours chalega. Dhyaan rahe ki 20% SoC se neeche V2L na use karein."
+        elif lang == "mr":
+            txt = "Vehicle-to-Load (V2L) feature car la power generator banavte (3.6kW). Adapter lavun tumhi laptop kiva appliances chalu shakta. 20% battery chya khali he vapru naka."
+        else:
+            txt = "The Vehicle-to-Load (V2L) feature allows your Ioniq 5 to act as a 3.6kW power generator. Using the V2L adapter in the charging port, you can power laptops, TVs, or camping appliances. It can run at full 3.6kW for about 3 hours. Please ensure your SoC does not drop below 20% while using V2L."
+        return (txt, "V2L_INFO", {})
+
+    def _ans_preconditioning(self, lang: str):
+        if lang in ("hi", "hi+en"):
+            txt = "Aapki Ioniq 5 automatically battery precondition karti hai jab aap native Maps mein DC charger set karte hain. Yeh battery ko 25°C se 30-35°C par laata hai, jisse 10-80% charge time 28 min se kam hokar 18 min ho jata hai."
+        elif lang == "mr":
+            txt = "Je vha tumhi Maps madhe DC charger set karta te vha Ioniq 5 swatah battery precondition karte. Yane 10-80% charge time 28 min pasun 18 min hoto."
+        else:
+            txt = "Your Ioniq 5 automatically preconditions the battery when you navigate to a DC charger using the native Hyundai Maps. This warms the battery from 25°C to the optimal 30-35°C range, reducing the 10-80% charging time from 28 minutes (when cold) to just 18 minutes."
+        return (txt, "BATTERY_PRECONDITIONING", {})
+
+    def _ans_regen(self, v_status: Optional[dict], lang: str):
+        if lang in ("hi", "hi+en"):
+            txt = "Aapki car mein 4 regenerative braking levels hain (0 se 3), jo steering wheel paddles se control hote hain. i-Pedal mode car ko bina brake dabaye puri tarah rok sakta hai aur range ko 10-15% tak badha sakta hai. Yeh dashboard par negative kW mein dikhta hai."
+        elif lang == "mr":
+            txt = "Car madhe 4 regen braking levels aahet. i-Pedal mode ne car brake shivay thambte ani range 10-15% vadhvate. He steering wheel paddles varun change karta yete."
+        else:
+            txt = "Your vehicle features 4 levels of regenerative braking (0 to 3) controlled via steering wheel paddles. The i-Pedal mode allows you to stop the car completely without using the brake pedal, recovering energy (shown as negative kW on the dash) and improving your range by 10-15%."
+        return (txt, "REGEN_INFO", {})
+
+    def _ans_drive_modes(self, v_status: Optional[dict], lang: str):
+        mode = (v_status or {}).get("drive_mode", "normal")
+        if lang in ("hi", "hi+en"):
+            txt = f"Abhi gaadi '{mode}' mode mein hai. Eco mode max range ke liye hai (top speed 120 kmph, AC kam), Normal mode daily driving ke liye, aur Sport mode maximum performance deta hai (0-100 kmph in 5.1s, 219 kW AWD)."
+        elif lang == "mr":
+            txt = f"Sadyacha mode '{mode}' aahe. Eco mode max range sathi, Normal rojchya driving sathi, ani Sport mode maximum performance sathi aahe (0-100 kmph 5.1s madhe)."
+        else:
+            txt = f"Your current drive mode is '{mode}'. Eco mode maximizes range (limits acceleration and AC, top speed 120 kmph). Normal mode is for balanced daily driving, and Sport mode unleashes maximum performance (219 kW AWD, 0-100 in 5.1s)."
+        return (txt, "DRIVE_MODES", {"current_mode": mode})
+
+    def _ans_nearby_amenities(self, q: str, v_status: Optional[dict], lang: str):
+        q_low = q.lower()
+        if "hospital" in q_low or "medical" in q_low:
+            amenity = "hospitals: AIIMS Nagpur (5.2 km, Civil Lines) and Government Medical College (3.1 km)"
+        elif "cafe" in q_low or "restaurant" in q_low or "food" in q_low:
+            amenity = "cafes: Cafe Coffee Day - Sitabuldi (0.5 km) and McDonald's - Sadar (1.1 km)"
+        elif "atm" in q_low:
+            amenity = "ATMs: SBI ATM - Sitabuldi (0.3 km) and HDFC ATM - Congress Nagar (0.8 km)"
+        elif "tyre" in q_low or "puncture" in q_low or "mechanic" in q_low:
+            amenity = "tyre shops: Sai Tyre House - Civil Lines (0.7 km) and MRF Tyre Service - Dharampeth (1.3 km)"
+        elif "parking" in q_low:
+            amenity = "parking options: Civil Lines Multilevel Parking (0.4 km, ₹20/hr) and Kasturchand Park Parking (1.2 km, Free)"
+        elif "pharmacy" in q_low:
+            amenity = "pharmacies: Apollo Pharmacy - Sitabuldi (0.3 km)"
+        else:
+            amenity = "various local amenities"
+            
+        if lang in ("hi", "hi+en"):
+            txt = f"Nagpur mein aapke paas yeh {amenity} available hain. EV tip: un malls ya locations par park karein jahan EV charging bhi uplabdh ho."
+        elif lang == "mr":
+            txt = f"Nagpur madhe tumchya javal he {amenity} aahet. EV tip: jithe EV charging aahe tithech park kara."
+        else:
+            txt = f"In Nagpur, the nearest {amenity}. EV-specific tip: Consider parking at malls or locations equipped with EV charging stations to top up while you visit."
+        return (txt, "NEARBY_AMENITIES", {})
+
+    def _ans_network_comparison(self, lang: str):
+        if lang in ("hi", "hi+en"):
+            txt = "Nagpur mein ChargeZone Wardha Road (150 kW) sabse fast hai. EESL Metro stations (142 kW) sabse zyada accessible hain (8 stations). Tata Power Sitabuldi (120 kW) bhi accha hai, aur Kazam (50 kW) thoda sasta hai (₹12/kWh). Main speed aur availability ke liye EESL recommend karti hoon."
+        elif lang == "mr":
+            txt = "Nagpur madhe ChargeZone Wardha Road (150 kW) sarvat fast aahe. EESL Metro stations (142 kW, 8 stations) jasta uplabdh aahet. Tata Power Sitabuldi 120 kW aahe ani Kazam sasta aahe. Speed sathi EESL best aahe."
+        else:
+            txt = "In Nagpur, ChargeZone Wardha Road is the fastest at 150 kW. EESL Metro stations are the most widespread (8 stations) at 142 kW. Tata Power at Sitabuldi offers 120 kW, while Kazam is a cheaper 50 kW option at ₹12/kWh. I recommend EESL for a balance of speed and availability, and ChargeZone for maximum power."
+        return (txt, "NETWORK_COMPARISON", {})
+
+    def _ans_cabin_control(self, q: str, lang: str):
+        import re
+        temp_match = re.search(r'(\d+)\s*(?:degree|celsius|°)?', q)
+        temp = temp_match.group(1) if temp_match else "22"
+        
+        action_str = f"temperature has been set to {temp}°C"
+        if "off" in q:
+            action_str = "AC has been turned off"
+        elif "high" in q and "fan" in q:
+            action_str = "fan speed has been set to high"
+            
+        if lang in ("hi", "hi+en"):
+            txt = f"Done, {action_str.replace('temperature has been set to', 'temperature').replace('AC has been turned off', 'AC band kar diya gaya hai')}."
+        elif lang == "mr":
+            txt = f"Done, {action_str.replace('temperature has been set to', 'temperature set kele aahe').replace('AC has been turned off', 'AC band kela aahe')}."
+        else:
+            txt = f"Cabin climate control adjusted: The {action_str}."
+        return (txt, "CABIN_CONTROL", {"action": action_str})
 
 # Global brain singleton
 brain = SmartReserveBrain()

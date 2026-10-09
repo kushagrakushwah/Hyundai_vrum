@@ -9,6 +9,7 @@ import csv
 import json
 import os
 import random
+import re
 from typing import List, Optional, Dict
 
 # ── Load .env at repo root ────────────────────────────────────────────────────
@@ -474,7 +475,167 @@ class StationsDB:
         pumps.sort(key=lambda x: x[1])
         return [p[0] for p in pumps[:limit]]
 
+    def fuzzy_station_search(
+        self,
+        query: str,
+        city: Optional[str] = None,
+        limit: int = 5
+    ) -> List[dict]:
+        """
+        High-speed fuzzy station name/landmark/operator search.
+        No external libraries needed — pure Python token-based matching.
+        Searches station names, addresses, operators, and district across all loaded stations.
+        Returns ranked list of matching stations with match_score.
+        """
+        if not query or len(query.strip()) < 2:
+            return []
+        
+        q = query.lower().strip()
+        # Remove common stop words
+        stop_words = {'the', 'a', 'an', 'at', 'near', 'nearest', 'book', 'reserve',
+                      'charger', 'station', 'charging', 'ev', 'in', 'find', 'show',
+                      'me', 'i', 'want', 'to', 'please', 'check', 'availability'}
+        q_tokens = [t for t in re.split(r'\W+', q) if t and t not in stop_words and len(t) >= 2]
+        
+        if not q_tokens:
+            return []
+        
+        scored = []
+        all_stations = {**self.stations, **self.live_ocm_stations}
+        
+        # City filter
+        city_norm = (city or '').lower().strip()
+        
+        for sid, s in all_stations.items():
+            name = (s.get('name') or '').lower()
+            address = (s.get('address') or '').lower()
+            operator = (s.get('operator') or '').lower()
+            district = (s.get('district') or '').lower()
+            s_city = (s.get('city') or s.get('state') or '').lower()
+            
+            # City filter: skip if city given and doesn't match at all
+            if city_norm and city_norm not in name and city_norm not in address and city_norm not in s_city and city_norm not in district:
+                # Check via lat/lng proximity if lat available
+                pass  # allow through — let score decide
+            
+            searchable = f'{name} {address} {operator} {district} {s_city}'
+            
+            score = 0
+            for token in q_tokens:
+                if token in name:
+                    score += 10  # strongest signal — name match
+                if token in operator:
+                    score += 6
+                if token in address:
+                    score += 4
+                if token in district:
+                    score += 3
+                # Partial starts-with bonus
+                for word in name.split():
+                    if word.startswith(token) and len(token) >= 3:
+                        score += 5
+                        break
+            
+            if score > 0:
+                result = dict(s)
+                result['station_id'] = sid
+                result['match_score'] = score
+                scored.append((result, score))
+        
+        # Sort by score descending
+        scored.sort(key=lambda x: -x[1])
+        return [s[0] for s in scored[:limit]]
 
+    def get_nearby_amenities(
+        self,
+        amenity_type: str,
+        city: str = 'Nagpur',
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        limit: int = 3
+    ) -> List[dict]:
+        """
+        Get nearest amenities by type: hospital, cafe, restaurant, atm, pharmacy,
+        tyre_shop, parking, mechanic.
+        Returns list of amenity dicts with name, distance_km, address.
+        """
+        # Hard-coded realistic Nagpur POI data (production would use Google Places API)
+        NAGPUR_AMENITIES = {
+            'hospital': [
+                {'name': 'AIIMS Nagpur', 'address': 'Plot No. 2, Mihan, Nagpur', 'distance_km': 5.2, 'phone': '+91-712-2999999'},
+                {'name': 'Government Medical College & Hospital', 'address': 'Hanuman Nagar, Nagpur', 'distance_km': 3.1, 'phone': '+91-712-2748888'},
+                {'name': 'Orange City Hospital', 'address': 'Khamla Road, Nagpur', 'distance_km': 2.4, 'phone': '+91-712-3021234'},
+                {'name': 'Alexis Multispeciality Hospital', 'address': 'Wardha Road, Nagpur', 'distance_km': 7.8, 'phone': '+91-712-6660000'},
+            ],
+            'cafe': [
+                {'name': 'Cafe Coffee Day — Sitabuldi', 'address': 'Sitabuldi Main Road, Nagpur', 'distance_km': 0.5, 'hours': '8am–10pm'},
+                {'name': "McDonald's Sadar", 'address': 'Sadar, Nagpur', 'distance_km': 1.1, 'hours': '10am–11pm'},
+                {'name': 'The Plaza Lounge & Cafe', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.5, 'hours': '9am–11pm'},
+                {'name': 'Cafe Twist', 'address': 'Congress Nagar, Nagpur', 'distance_km': 2.0, 'hours': '10am–10pm'},
+            ],
+            'restaurant': [
+                {'name': "McDonald's Sadar", 'address': 'Sadar, Nagpur', 'distance_km': 1.1},
+                {'name': 'Hotel Rajdhani (Thali)', 'address': 'Sitabuldi, Nagpur', 'distance_km': 0.4},
+                {'name': 'Kwality Restaurant', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.3},
+                {'name': 'Haldirams', 'address': 'Dharampeth, Nagpur', 'distance_km': 2.1},
+            ],
+            'atm': [
+                {'name': 'SBI ATM — Sitabuldi', 'address': 'Sitabuldi, Nagpur', 'distance_km': 0.3, 'bank': 'State Bank of India'},
+                {'name': 'HDFC ATM — Congress Nagar', 'address': 'Congress Nagar, Nagpur', 'distance_km': 0.8, 'bank': 'HDFC Bank'},
+                {'name': 'ICICI ATM — Civil Lines', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.0, 'bank': 'ICICI Bank'},
+            ],
+            'pharmacy': [
+                {'name': 'Apollo Pharmacy — Sitabuldi', 'address': 'Sitabuldi Main Road, Nagpur', 'distance_km': 0.3, 'hours': '24 hours'},
+                {'name': 'Medplus — Congress Nagar', 'address': 'Congress Nagar, Nagpur', 'distance_km': 0.9, 'hours': '8am–10pm'},
+                {'name': 'Noble Plus Pharmacy', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.2, 'hours': '9am–9pm'},
+            ],
+            'tyre_shop': [
+                {'name': 'Sai Tyre House', 'address': 'Civil Lines, Nagpur', 'distance_km': 0.7, 'services': 'Puncture, Balancing, Alignment'},
+                {'name': 'MRF Tyre Service Centre', 'address': 'Dharampeth, Nagpur', 'distance_km': 1.3, 'services': 'All tyre brands'},
+                {'name': 'Bridgestone Tyre Centre', 'address': 'Sadar, Nagpur', 'distance_km': 1.8, 'services': 'EV-rated tyres available'},
+            ],
+            'parking': [
+                {'name': 'Civil Lines Multilevel Parking', 'address': 'Civil Lines, Nagpur', 'distance_km': 0.4, 'rate': '₹20/hr', 'ev_charging': False},
+                {'name': 'Kasturchand Park Parking', 'address': 'Kasturchand Park, Nagpur', 'distance_km': 1.2, 'rate': 'Free', 'ev_charging': True},
+                {'name': 'Empress Mall Parking', 'address': 'Empress City, Nagpur', 'distance_km': 2.5, 'rate': '₹30/hr', 'ev_charging': True},
+            ],
+            'mechanic': [
+                {'name': 'Hyundai Authorised Service Centre', 'address': 'Wardha Road, Nagpur', 'distance_km': 6.2, 'phone': '+91-712-6550000'},
+                {'name': 'EV Repair & Service Nagpur', 'address': 'Sadar, Nagpur', 'distance_km': 1.1, 'speciality': 'EV specialist'},
+            ],
+            'petrol_pump': [
+                {'name': 'IOCL Indian Oil Retail Outlet', 'address': 'Civil Lines / Sitabuldi, Nagpur', 'distance_km': 0.8, 'operator': 'Indian Oil'},
+                {'name': 'BPCL Speed — Sadar', 'address': 'Sadar, Nagpur', 'distance_km': 1.2, 'operator': 'BPCL'},
+                {'name': 'HPCL Nagpur Central', 'address': 'Congress Nagar, Nagpur', 'distance_km': 1.8, 'operator': 'HPCL'},
+                {'name': 'Reliance BP — Wardha Road', 'address': 'Wardha Road, Nagpur', 'distance_km': 4.1, 'operator': 'Reliance BP'},
+            ],
+        }
+        
+        # Normalize type
+        t = amenity_type.lower().strip()
+        type_map = {
+            'hospital': 'hospital', 'medical': 'hospital', 'doctor': 'hospital',
+            'cafe': 'cafe', 'coffee': 'cafe', 'tea': 'cafe',
+            'food': 'restaurant', 'eat': 'restaurant', 'restaurant': 'restaurant', 'lunch': 'restaurant',
+            'atm': 'atm', 'cash': 'atm', 'bank': 'atm',
+            'pharmacy': 'pharmacy', 'medicine': 'pharmacy', 'chemist': 'pharmacy', 'medical store': 'pharmacy',
+            'tyre': 'tyre_shop', 'tire': 'tyre_shop', 'puncture': 'tyre_shop',
+            'parking': 'parking', 'park': 'parking',
+            'mechanic': 'mechanic', 'garage': 'mechanic', 'repair': 'mechanic', 'service': 'mechanic',
+            'petrol': 'petrol_pump', 'fuel': 'petrol_pump', 'diesel': 'petrol_pump', 'gas station': 'petrol_pump',
+        }
+        
+        normalized = type_map.get(t)
+        if not normalized:
+            for key in type_map:
+                if key in t:
+                    normalized = type_map[key]
+                    break
+        
+        if not normalized or normalized not in NAGPUR_AMENITIES:
+            return []
+        
+        return NAGPUR_AMENITIES[normalized][:limit]
 if __name__ == "__main__":
     db = StationsDB()
     print(f"Base stations: {len(db.stations)}")

@@ -41,6 +41,8 @@ class VehicleState:
         self.gps_lng = 79.0882
         self.city = 'Nagpur'
         self.fuel_type = 'electric'
+        self.cabin_temp_celsius = 22.0
+        self.v2l_active = False
 
     def set_location(self, lat: float, lng: float, city: str = 'Nagpur'):
         self.gps_lat = float(lat)
@@ -55,6 +57,60 @@ class VehicleIntelligence:
     def set_location(self, lat: float, lng: float, city: str = 'Nagpur'):
         self.state.set_location(lat, lng, city)
     
+    def set_soc(self, soc: float):
+        self.state.soc = soc
+
+    def get_full_telematics_context(self):
+        tpms_alerts = []
+        for tyre, pressure in self.state.tyre_pressures.items():
+            if pressure < 30:
+                tpms_alerts.append(f"{tyre} is LOW ({pressure} PSI, should be {self.profile.tyre_pressure_nominal_psi} PSI)")
+            elif pressure > 42:
+                tpms_alerts.append(f"{tyre} is HIGH ({pressure} PSI, should be {self.profile.tyre_pressure_nominal_psi} PSI)")
+        
+        return {
+            'vehicle': 'Hyundai Ioniq 5 Long Range AWD',
+            'soc': self.state.soc,
+            'range_km': self.state.range_km,
+            'battery_capacity_kwh': self.profile.battery_capacity_kwh,
+            'battery_temp_celsius': self.state.battery_temp_celsius,
+            'max_dc_kw': self.profile.max_dc_charge_rate_kw,
+            'location': {'city': self.state.city, 'lat': self.state.gps_lat, 'lon': self.state.gps_lng, 'pin': '440001'},
+            'tpms': {
+                'fl': self.state.tyre_pressures['front_left'],
+                'fr': self.state.tyre_pressures['front_right'],
+                'rl': self.state.tyre_pressures['rear_left'],
+                'rr': self.state.tyre_pressures['rear_right']
+            },
+            'tpms_alerts': tpms_alerts,
+            'cabin_temp_celsius': self.state.cabin_temp_celsius,
+            'drive_mode': self.state.drive_mode,
+            'speed_kmh': self.state.speed_kmh,
+            'odometer_km': self.state.odometer_km,
+            'efficiency_km_per_kwh': self.profile.efficiency_km_per_kwh_nominal,
+            'connector_type': self.profile.connector_type,
+            'v2l_output_kw': 3.6 if self.state.v2l_active else 0.0,
+            'health': {'battery': 98.5, 'motor': 99.0, 'brake_pads': 75.0}
+        }
+
+    def can_reach_destination(self, dest_name: str, dest_lat: float, dest_lng: float):
+        # Haversine formula
+        distance_straight = self.get_range_to_destination(dest_lat, dest_lng) / 1.3
+        distance_km = distance_straight * 1.15 # Road factor for destination
+
+        energy_needed = distance_km / self.profile.efficiency_km_per_kwh_nominal
+        soc_needed = (energy_needed / self.profile.battery_capacity_kwh) * 100
+        
+        arrival_soc = self.state.soc - soc_needed
+        can_reach = arrival_soc > 10.0
+        
+        if can_reach:
+            recommendation = f"You can reach {dest_name} and will arrive with approximately {arrival_soc:.1f}% battery."
+        else:
+            recommendation = f"You don't have enough battery to reach {dest_name}. Please charge before heading out."
+            
+        return can_reach, distance_km, arrival_soc, recommendation
+
     def get_vehicle_status(self):
         # Calculate battery percentage and range estimate
         soc = self.state.soc

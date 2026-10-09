@@ -1024,6 +1024,74 @@
             border-radius: 3px;
             transition: width 0.5s ease;
         }
+
+/* ── Live Telematics HUD ── */
+.telematics-hud {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0,170,212,0.08);
+    border: 1px solid rgba(0,170,212,0.2);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.tele-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-main);
+}
+.tele-chip.alert { border-color: #ff4444; color: #ff6666; background: rgba(255,68,68,0.1); animation: pulseRed 2s infinite; }
+.tele-chip.warn { border-color: #FFD100; color: #FFD100; background: rgba(255,209,0,0.08); }
+.tele-chip.ok { border-color: var(--ev-blue); color: var(--ev-blue); }
+@keyframes pulseRed {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(255,68,68,0); }
+}
+
+/* ── Proactive Alert Banner ── */
+.proactive-alert {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    animation: slideInTop 0.4s ease;
+}
+.proactive-alert.danger { background: rgba(255,68,68,0.15); border: 1px solid #ff4444; color: #ff6666; display: flex; }
+.proactive-alert.warning { background: rgba(255,209,0,0.1); border: 1px solid #FFD100; color: #FFD100; display: flex; }
+@keyframes slideInTop {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Amenity Cards ── */
+.amenity-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+.amenity-icon { font-size: 20px; flex-shrink: 0; }
+.amenity-name { font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+.amenity-dist { color: var(--ev-blue); font-weight: 600; }
+.amenity-addr { color: var(--text-muted); font-size: 11px; }
     </style>
 </head>
 <body>
@@ -1306,6 +1374,18 @@
         <div class="voice-transcript" id="voice-transcript" style="display:none;">
             <span class="interim" id="voice-interim"></span>
             <span class="final" id="voice-final"></span>
+        </div>
+
+        <!-- Proactive Battery Alert -->
+        <div id="proactive-alert" class="proactive-alert"></div>
+
+        <!-- Live Telematics HUD -->
+        <div class="telematics-hud" id="tele-hud">
+            <div class="tele-chip" id="tele-soc">🔋 18%</div>
+            <div class="tele-chip" id="tele-range">📡 87 km</div>
+            <div class="tele-chip" id="tele-city">📍 Nagpur</div>
+            <div class="tele-chip" id="tele-mode">⚡ Normal</div>
+            <div class="tele-chip warn" id="tele-tyre">🛞 Tyre Alert</div>
         </div>
 
         <!-- Response area -->
@@ -2600,6 +2680,38 @@
                 }
             }
             
+            // Station landmark extraction before API call
+            const STATION_LANDMARKS = {
+                'congress nagar': 'congress_nagar_eesl',
+                'kasturchand': 'kasturchand_eesl',
+                'sitabuldi': 'sitabuldi_tata',
+                'wardha road': 'wardha_chargezone',
+                'jhansi rani': 'jhansi_rani_eesl',
+                'zero mile': 'zero_mile_eesl',
+                'lad colony': 'lad_colony_eesl',
+            };
+            let detectedLandmark = null;
+            const lowerText = text.toLowerCase();
+            for (const [landmark, hint] of Object.entries(STATION_LANDMARKS)) {
+                if (lowerText.includes(landmark)) {
+                    detectedLandmark = hint;
+                    // Pan map to approximate location
+                    if (typeof map !== 'undefined' && map) {
+                        const landmarkCoords = {
+                            'congress_nagar_eesl': [21.1304, 79.0857],
+                            'kasturchand_eesl': [21.1509, 79.0802],
+                            'sitabuldi_tata': [21.1450, 79.0893],
+                            'wardha_chargezone': [21.0892, 79.1236],
+                            'jhansi_rani_eesl': [21.1367, 79.0944],
+                            'zero_mile_eesl': [21.1500, 79.0833],
+                        };
+                        const coords = landmarkCoords[hint];
+                        if (coords) map.flyTo(coords, 15, { duration: 1.0 });
+                    }
+                    break;
+                }
+            }
+
             try {
                 const res = await fetch(`${API}/api/voice/process`, {
                     method: 'POST',
@@ -2607,7 +2719,7 @@
                     body: JSON.stringify({ 
                         text: text, 
                         user_id: DRIVER_ID,
-                        selected_station_id: selectedStationId,
+                        selected_station_id: detectedLandmark || selectedStationId,
                         city: currentCity,
                         latitude: currentLat,
                         longitude: currentLng
@@ -2648,6 +2760,20 @@
                         showToast(`⛽ Nearest Fuel Outlet: ${data.display_data.pump_name} (${data.display_data.distance_km} km)`, 'warning');
                     } else if (data.display_data && data.display_data.action === 'show_cost_breakdown') {
                         showToast(`💰 ${data.display_data.cpo}: ₹${data.display_data.estimated_cost_rs} to 80% SoC`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'range_check') {
+                        const canReach = data.display_data.can_reach;
+                        if (!canReach && data.display_data.nearest_station_id) {
+                            showToast(`⚡ Recommend charging at ${data.display_data.nearest_station} before departing`, 'warning');
+                        } else if (canReach) {
+                            showToast(`✅ You can reach the destination with ~${Math.round(data.display_data.arrival_soc || 0)}% battery remaining`, 'success');
+                        }
+                    } else if (data.display_data && data.display_data.action === 'cabin_control') {
+                        showToast(`🌡️ ${data.display_data.message || 'Climate adjusted'}`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'show_amenity') {
+                        if (data.display_data.amenities && data.display_data.amenities.length > 0) {
+                            const first = data.display_data.amenities[0];
+                            showToast(`📍 Nearest: ${first.name} — ${first.distance_km} km`, 'info');
+                        }
                     }
                     if (data.display_data && data.display_data.city && data.display_data.city !== currentCity) {
                         const sel = document.getElementById('city-select');
@@ -2664,6 +2790,7 @@
         }
         
         function displayVoiceResponse(data) {
+            updateVehicleStateFromResponse(data.display_data);
             let html = `<div class="assistant-label">🤖 AVA</div>`;
             
             // Main response text
@@ -2727,7 +2854,44 @@
             } else {
                 pendingConfirmation = false;
             }
-            
+
+// ── Amenity Cards ──────────────────────────────────────────────────────────
+if (data.display_data && data.display_data.amenities && data.display_data.amenities.length > 0) {
+    const AMENITY_ICONS = {
+        hospital: '🏥', cafe: '☕', restaurant: '🍽️', atm: '🏧',
+        pharmacy: '💊', tyre_shop: '🛞', parking: '🅿️', mechanic: '🔧', petrol_pump: '⛽'
+    };
+    const icon = AMENITY_ICONS[data.display_data.amenity_type] || '📍';
+    html += `<div style="margin-top:10px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">NEARBY ${(data.display_data.amenity_type || 'PLACES').toUpperCase().replace('_', ' ')}</div>`;
+    data.display_data.amenities.forEach(a => {
+        html += `
+        <div class="amenity-card">
+            <div class="amenity-icon">${icon}</div>
+            <div>
+                <div class="amenity-name">${a.name}</div>
+                <div class="amenity-dist">📍 ${a.distance_km} km away</div>
+                <div class="amenity-addr">${a.address || ''}</div>
+                ${a.phone ? `<div style="font-size:11px;color:var(--text-muted);">${a.phone}</div>` : ''}
+                ${a.rate ? `<div style="font-size:11px;color:#FFD100;">Parking: ${a.rate}${a.ev_charging ? ' ⚡ EV Charging Available' : ''}</div>` : ''}
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+}
+
+// ── Range check result ─────────────────────────────────────────────────────
+if (data.display_data && data.display_data.action === 'range_check') {
+    const rc = data.display_data;
+    const canReach = rc.can_reach;
+    const color = canReach ? 'var(--ev-blue)' : '#ff6666';
+    html += `
+    <div style="margin-top:10px; padding:10px; border-radius:8px; border:1px solid ${color}; background:${canReach ? 'rgba(0,170,212,0.08)' : 'rgba(255,68,68,0.08)'}">
+        <div style="font-weight:700; color:${color}; margin-bottom:4px;">${canReach ? '✅ YES — You can reach it' : '⚠️ LOW — Risky without charging'}</div>
+        <div style="font-size:12px; color:var(--text-muted);">Distance: ${(rc.distance_km || 0).toFixed(0)} km road • Arrival SoC: ~${(rc.arrival_soc || 0).toFixed(0)}%</div>
+        ${rc.recommendation ? `<div style="font-size:12px; color:#FFD100; margin-top:4px;">${rc.recommendation}</div>` : ''}
+    </div>`;
+}
+
             voiceResponse.innerHTML = html;
         }
         
@@ -2933,6 +3097,84 @@
                 }
             } catch(e) {}
         }
+
+        const vehicleState = {
+            soc: 18,
+            range_km: 87,
+            city: 'Nagpur',
+            lat: 21.1458,
+            lng: 79.0882,
+            drive_mode: 'normal',
+            tpms: { fl: 28, fr: 35, rl: 36, rr: 36 },
+            cabin_temp: 22,
+            odometer: 24500,
+            efficiency: 6.6,
+            v2l_active: false,
+        };
+
+        function updateVehicleStateFromResponse(displayData) {
+            if (!displayData) return;
+            if (displayData.soc !== undefined) vehicleState.soc = displayData.soc;
+            if (displayData.range_km !== undefined) vehicleState.range_km = displayData.range_km;
+            if (displayData.city) { vehicleState.city = displayData.city; currentCity = displayData.city.toLowerCase(); }
+            if (displayData.latitude) { vehicleState.lat = displayData.latitude; currentLat = displayData.latitude; }
+            if (displayData.longitude) { vehicleState.lng = displayData.longitude; currentLng = displayData.longitude; }
+            updateTelematicsHUD(vehicleState);
+        }
+
+        // ── Live Telematics HUD Updater ────────────────────────────────────────────
+        function updateTelematicsHUD(vehicleData) {
+            const soc = vehicleData.soc || 18;
+            const range = vehicleData.range_km || 87;
+            const city = vehicleData.location && vehicleData.location.city ? vehicleData.location.city : currentCity;
+            const mode = vehicleData.drive_mode || 'normal';
+            const tpmsAlerts = vehicleData.tpms_alerts || [];
+
+            const socEl = document.getElementById('tele-soc');
+            const rangeEl = document.getElementById('tele-range');
+            const cityEl = document.getElementById('tele-city');
+            const modeEl = document.getElementById('tele-mode');
+            const tyreEl = document.getElementById('tele-tyre');
+
+            if (socEl) {
+                socEl.textContent = `🔋 ${soc}%`;
+                socEl.className = 'tele-chip ' + (soc <= 15 ? 'alert' : soc <= 25 ? 'warn' : 'ok');
+            }
+            if (rangeEl) {
+                rangeEl.textContent = `📡 ${Math.round(range)} km`;
+                rangeEl.className = 'tele-chip ' + (range <= 50 ? 'alert' : range <= 100 ? 'warn' : 'ok');
+            }
+            if (cityEl) cityEl.textContent = `📍 ${city}`;
+            if (modeEl) modeEl.textContent = `⚡ ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+            if (tyreEl) {
+                if (tpmsAlerts.length > 0) {
+                    tyreEl.textContent = `🛞 ⚠ Tyre Alert`;
+                    tyreEl.className = 'tele-chip alert';
+                    tyreEl.title = tpmsAlerts.join(', ');
+                } else {
+                    tyreEl.textContent = `🛞 OK`;
+                    tyreEl.className = 'tele-chip ok';
+                }
+            }
+            
+            // Proactive battery alert
+            const alertEl = document.getElementById('proactive-alert');
+            if (alertEl) {
+                if (soc <= 10) {
+                    alertEl.className = 'proactive-alert danger';
+                    alertEl.innerHTML = `🚨 <strong>CRITICAL BATTERY: ${soc}%</strong> — ${Math.round(range)} km range remaining. Say "Reserve nearest station" to lock a charger NOW.`;
+                } else if (soc <= 20) {
+                    alertEl.className = 'proactive-alert warning';
+                    alertEl.innerHTML = `⚠️ <strong>LOW BATTERY: ${soc}%</strong> — Only ${Math.round(range)} km of range. Recommend charging soon. EESL Kasturchand Park (1.3 km, 142 kW) available.`;
+                } else {
+                    alertEl.className = 'proactive-alert';
+                    alertEl.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize HUD on page load
+        updateTelematicsHUD({ soc: 18, range_km: 87, drive_mode: 'normal', tpms_alerts: ['front_left is LOW (28 PSI)'] });
 
         // Keyboard shortcut: Ctrl + J to toggle voice
         document.addEventListener('keydown', (e) => {
