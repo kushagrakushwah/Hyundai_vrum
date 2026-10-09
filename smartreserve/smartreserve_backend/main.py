@@ -40,7 +40,7 @@ from ocpp_engine import OCPPEngine
 from payment import PaymentEngine
 from websocket_manager import WebSocketManager
 from stations_db import StationsDB
-from voice_assistant import VoiceAssistant
+from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
 from priority_engine import PriorityEngine
 from vehicle_intelligence import VehicleIntelligence
 from speech_service import SpeechService
@@ -122,6 +122,14 @@ class VoiceInputRequest(BaseModel):
     user_id: str = "hyundai_driver_001"
     language: str = "auto"
     selected_station_id: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class LocationUpdateRequest(BaseModel):
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class VoiceConfirmRequest(BaseModel):
     user_id: str = "hyundai_driver_001"
@@ -524,8 +532,22 @@ async def process_voice_input(req: VoiceInputRequest):
     if not voice_assistant:
         raise HTTPException(status_code=503, detail="Voice assistant not available")
     
+    if vehicle_intel:
+        if req.latitude is not None and req.longitude is not None:
+            vehicle_intel.set_location(req.latitude, req.longitude, req.city or "Nagpur")
+        elif req.city:
+            norm_c = req.city.lower().strip()
+            if norm_c in INDIAN_CITIES:
+                c_lat, c_lon = INDIAN_CITIES[norm_c]
+                vehicle_intel.set_location(c_lat, c_lon, req.city.capitalize())
+
     response = voice_assistant.process_input(
-        req.text, req.user_id, selected_station_id=req.selected_station_id
+        req.text,
+        req.user_id,
+        selected_station_id=req.selected_station_id,
+        city=req.city,
+        user_lat=req.latitude,
+        user_lon=req.longitude
     )
     
     # If the assistant wants to reserve, wire it to the actual reserve API
@@ -545,7 +567,8 @@ async def process_voice_input(req: VoiceInputRequest):
                 pin = reserve_result.get('pin')
                 response.display_data['pin'] = pin
                 if pin and str(pin) not in response.text:
-                    response.text += f" Your confirmation PIN is {pin}."
+                    spoken_pin = format_spoken_pin(pin)
+                    response.text += f" Your confirmation PIN is {spoken_pin}."
             except Exception as e:
                 response.display_data['reserve_error'] = str(e)
     
@@ -580,7 +603,10 @@ async def confirm_voice_action(req: VoiceConfirmRequest):
                 )
                 reserve_result = await reserve_station(reserve_req)
                 response.display_data['reservation'] = reserve_result
-                response.text += f" PIN: {reserve_result.get('pin', 'N/A')}"
+                pin = reserve_result.get('pin', 'N/A')
+                response.display_data['pin'] = pin
+                spoken_pin = format_spoken_pin(pin) if pin != 'N/A' else 'N/A'
+                response.text += f" PIN: {spoken_pin}"
             except Exception as e:
                 response.display_data['reserve_error'] = str(e)
     
@@ -640,6 +666,48 @@ async def get_vehicle_diagnostics():
         "service_status": status.get("service_status", {}),
         "diagnostics_text": vehicle_intel.get_diagnostic_summary(),
     }
+
+@app.post("/api/vehicle/location")
+async def update_vehicle_location(req: LocationUpdateRequest):
+    """Update vehicle location dynamically."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    lat = req.latitude
+    lng = req.longitude
+    city = req.city or "Nagpur"
+
+    if lat is None or lng is None:
+        norm_c = city.lower().strip()
+        if norm_c in INDIAN_CITIES:
+            lat, lng = INDIAN_CITIES[norm_c]
+        else:
+            lat, lng = 21.1458, 79.0882  # Default Nagpur
+
+    vehicle_intel.set_location(lat, lng, city.capitalize())
+    return {
+        "status": "ok",
+        "city": city.capitalize(),
+        "gps_lat": vehicle_intel.state.gps_lat,
+        "gps_lng": vehicle_intel.state.gps_lng,
+    }
+
+@app.post("/api/vehicle/state")
+async def update_vehicle_state(req: VehicleStateUpdate):
+    """Allows the frontend/car SDK to push live telemetry into the VehicleState."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    if req.soc is not None:
+        vehicle_intel.state.soc = float(req.soc)
+    if req.range_km is not None:
+        vehicle_intel.state.range_km = float(req.range_km)
+    if req.speed_kmh is not None:
+        vehicle_intel.state.speed_kmh = float(req.speed_kmh)
+    if req.gps_lat is not None:
+        vehicle_intel.state.gps_lat = float(req.gps_lat)
+    if req.gps_lng is not None:
+        vehicle_intel.state.gps_lng = float(req.gps_lng)
+    return {"status": "ok", "state": vehicle_intel.get_vehicle_status()}
 
 @app.get("/api/speech/config")
 async def get_speech_config():

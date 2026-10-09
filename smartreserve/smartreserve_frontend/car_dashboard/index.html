@@ -931,6 +931,19 @@
             <div class="title">SmartReserve <span style="color:var(--hyundai-blue); font-weight: 300;">EV</span></div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
+            <div class="city-selector-wrap" style="display:flex; align-items:center; background:rgba(0,170,212,0.12); border:1px solid rgba(0,170,212,0.35); border-radius:20px; padding:4px 10px; gap:6px;">
+                <span style="font-size:14px;">📍</span>
+                <select id="city-select" onchange="changeCity(this.value)" style="background:transparent; border:none; color:white; font-family:var(--font-head); font-size:15px; font-weight:600; cursor:pointer; outline:none;">
+                    <option value="nagpur" selected style="background:#050A18; color:white;">Nagpur (Home)</option>
+                    <option value="hyderabad" style="background:#050A18; color:white;">Hyderabad</option>
+                    <option value="pune" style="background:#050A18; color:white;">Pune</option>
+                    <option value="mumbai" style="background:#050A18; color:white;">Mumbai</option>
+                    <option value="bengaluru" style="background:#050A18; color:white;">Bengaluru</option>
+                    <option value="delhi" style="background:#050A18; color:white;">Delhi / NCR</option>
+                    <option value="bhopal" style="background:#050A18; color:white;">Bhopal</option>
+                    <option value="indore" style="background:#050A18; color:white;">Indore</option>
+                </select>
+            </div>
             <button id="btn-hands-free" class="telematics-pill" onclick="toggleHandsFree()" style="border-color:#22c55e; background:rgba(34,197,94,0.18); color:#22c55e; font-weight:700;" title="Hands-Free Continuous Voice: speak commands or 'Hey AVA' without clicking">
                 <span id="hf-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; margin-right:4px;"></span>
                 <span id="hf-label">🎙️ Hands-Free: ON</span>
@@ -1344,11 +1357,25 @@
             { id: 'TG0004', name: 'Secunderabad Metro Charger', address: 'Secunderabad Station', district: 'Hyderabad', operator: 'Statiq', power_kw: 22, status: 'CHARGING', is_live_ocm: false, connector_type: 'AC Type 2', lat: 17.4337, lng: 78.5016 },
         ];
 
-        // Init Map with OpenStreetMap (100% Free, No API Key Required)
+        const CITY_COORDS = {
+            'nagpur': [21.1458, 79.0882],
+            'hyderabad': [17.3850, 78.4867],
+            'pune': [18.5204, 73.8567],
+            'mumbai': [19.0760, 72.8777],
+            'bengaluru': [12.9716, 77.5946],
+            'delhi': [28.6139, 77.2090],
+            'bhopal': [23.2599, 77.4126],
+            'indore': [22.7196, 75.8577]
+        };
+        let currentCity = 'nagpur';
+        let currentLat = 21.1458;
+        let currentLng = 79.0882;
+
+        // Init Map with OpenStreetMap (Default: Nagpur, India)
         function initMap() {
             try {
                 if (typeof L !== 'undefined') {
-                    map = L.map('map', { zoomControl: false }).setView([17.3850, 78.4867], 11);
+                    map = L.map('map', { zoomControl: false }).setView([21.1458, 79.0882], 12);
                     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors',
                         maxZoom: 19
@@ -1357,6 +1384,62 @@
                 }
             } catch (e) {
                 console.warn('Map init error:', e);
+            }
+        }
+
+        async function changeCity(city) {
+            currentCity = city.toLowerCase();
+            const coords = CITY_COORDS[currentCity] || [21.1458, 79.0882];
+            currentLat = coords[0];
+            currentLng = coords[1];
+            if (map) {
+                map.flyTo(coords, 12, { duration: 1.2 });
+            }
+            try {
+                await fetch(`${API}/api/vehicle/location`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ city: currentCity, latitude: currentLat, longitude: currentLng })
+                });
+            } catch(e) {}
+            showToast(`📍 Location set to ${city.toUpperCase()}`, 'info');
+            applyFilters();
+        }
+
+        function detectUserLocation() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    currentLat = lat;
+                    currentLng = lng;
+                    let closestCity = 'nagpur';
+                    let minDist = 999999;
+                    for (const [cName, cCoord] of Object.entries(CITY_COORDS)) {
+                        const d = Math.hypot(lat - cCoord[0], lng - cCoord[1]);
+                        if (d < minDist) {
+                            minDist = d;
+                            closestCity = cName;
+                        }
+                    }
+                    if (minDist < 1.0) {
+                        currentCity = closestCity;
+                        const select = document.getElementById('city-select');
+                        if (select) select.value = currentCity;
+                    }
+                    if (map) map.setView([lat, lng], 13);
+                    try {
+                        await fetch(`${API}/api/vehicle/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ city: currentCity, latitude: lat, longitude: lng })
+                        });
+                    } catch(e) {}
+                    showToast(`📍 Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
+                    applyFilters();
+                }, (err) => {
+                    console.log('GPS skipped:', err.message);
+                }, { timeout: 8000, maximumAge: 60000 });
             }
         }
 
@@ -1501,6 +1584,13 @@
             if (currentSearch) {
                 filtered = filtered.filter(s => matchQuery(s, currentSearch));
             }
+
+            // Sort by proximity to current city/location (Nagpur by default)
+            filtered = [...filtered].sort((a, b) => {
+                const distA = Math.hypot((a.lat || 0) - currentLat, (a.lng || 0) - currentLng);
+                const distB = Math.hypot((b.lat || 0) - currentLat, (b.lng || 0) - currentLng);
+                return distA - distB;
+            });
 
             renderStationList(filtered);
             renderMarkers(filtered);
@@ -2068,6 +2158,7 @@
         // Startup
         function startApp() {
             try { initMap(); } catch(e) { console.warn('initMap err:', e); }
+            try { detectUserLocation(); } catch(e) { console.warn('detectLocation err:', e); }
             try { fetchStations(); } catch(e) { console.warn('fetchStations err:', e); }
             try { initWebSocket(); } catch(e) { console.warn('initWS err:', e); }
             try { fetchStats(); } catch(e) { console.warn('fetchStats err:', e); }
@@ -2337,7 +2428,10 @@
                     body: JSON.stringify({ 
                         text: text, 
                         user_id: DRIVER_ID,
-                        selected_station_id: selectedStationId
+                        selected_station_id: selectedStationId,
+                        city: currentCity,
+                        latitude: currentLat,
+                        longitude: currentLng
                     })
                 });
                 
@@ -2359,6 +2453,17 @@
                         }
                         fetchStations();
                         showToast(`⚡ Slot Locked: ${data.display_data.station_name || sid}! PIN: ${data.display_data.pin || 'Created'}`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'show_pin') {
+                        if (data.display_data.pin) {
+                            showReservationPIN(data.display_data.pin, data.display_data.expires_at || (Date.now() / 1000 + 1800));
+                        }
+                        if (data.display_data.station_id) selectStation(data.display_data.station_id);
+                        showToast(`🔑 Active PIN: ${data.display_data.pin}`, 'info');
+                    }
+                    if (data.display_data && data.display_data.city && data.display_data.city !== currentCity) {
+                        const sel = document.getElementById('city-select');
+                        if (sel) sel.value = data.display_data.city.toLowerCase();
+                        changeCity(data.display_data.city.toLowerCase());
                     }
                 } else {
                     voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>Sorry, I couldn't process that. Try: "nearest charging station" or "vehicle status"</div>`;
@@ -2489,7 +2594,12 @@
                         try { recognition.abort(); } catch(e) {}
                     }
 
-                    const utterance = new SpeechSynthesisUtterance(text);
+                    // Clean text for TTS: convert 4 to 6 digit numbers (PINs) into comma-separated individual digits
+                    // This strictly prevents Web Speech API (en-IN) from pronouncing PINs like 871422 as "eight lakh"
+                    let speechText = text;
+                    speechText = speechText.replace(/\b(\d{4,6})\b/g, (m) => m.split('').join(', '));
+
+                    const utterance = new SpeechSynthesisUtterance(speechText);
                     utterance.lang = 'en-IN';
                     utterance.rate = 1.0;
                     utterance.pitch = 1.0;

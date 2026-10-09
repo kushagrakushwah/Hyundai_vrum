@@ -37,14 +37,23 @@ class VehicleState:
         self.last_service_km = 15000.0
         self.last_service_date = datetime.now() - timedelta(days=200)
         self.trailing_wh_per_km = 151.5  # ~6.6 km/kWh
-        self.gps_lat = 17.385
-        self.gps_lng = 78.487
+        self.gps_lat = 21.1458  # Default: Nagpur, Maharashtra (User Location)
+        self.gps_lng = 79.0882
+        self.city = 'Nagpur'
         self.fuel_type = 'electric'
+
+    def set_location(self, lat: float, lng: float, city: str = 'Nagpur'):
+        self.gps_lat = float(lat)
+        self.gps_lng = float(lng)
+        self.city = city
 
 class VehicleIntelligence:
     def __init__(self):
         self.profile = VehicleProfile()
         self.state = VehicleState()
+
+    def set_location(self, lat: float, lng: float, city: str = 'Nagpur'):
+        self.state.set_location(lat, lng, city)
     
     def get_vehicle_status(self):
         # Calculate battery percentage and range estimate

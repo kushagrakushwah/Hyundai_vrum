@@ -65,12 +65,44 @@ def estimate_charge_time(start_soc: float, target_soc: float, effective_kw: floa
     time_hours = energy_needed / effective_kw
     return time_hours * 60.0
 
+CITY_COORDINATES: Dict[str, tuple] = {
+    "nagpur": (21.1458, 79.0882),
+    "hyderabad": (17.3850, 78.4867),
+    "pune": (18.5204, 73.8567),
+    "mumbai": (19.0760, 72.8777),
+    "bengaluru": (12.9716, 77.5946),
+    "bangalore": (12.9716, 77.5946),
+    "delhi": (28.6139, 77.2090),
+    "new delhi": (28.6139, 77.2090),
+    "bhopal": (23.2599, 77.4126),
+    "indore": (22.7196, 75.8577),
+    "chennai": (13.0827, 80.2707),
+    "kolkata": (22.5726, 88.3639),
+    "jaipur": (26.9124, 75.7873),
+    "ahmedabad": (23.0225, 72.5714),
+    "lucknow": (26.8467, 80.9462),
+    "chandigarh": (30.7333, 76.7794),
+    "surat": (21.1702, 72.8311),
+    "visakhapatnam": (17.6868, 83.2185),
+    "vizag": (17.6868, 83.2185),
+    "wardha": (20.7453, 78.6022),
+    "amravati": (20.9374, 77.7796),
+}
+
 class PriorityEngine:
     def __init__(self, stations_db, vehicle):
         self.stations_db = stations_db
         self.vehicle = vehicle
 
-    def recommend(self, target_soc: float = 80.0, top_k: int = 3, urgency: str = 'normal') -> List[ChargingRecommendation]:
+    def recommend(
+        self,
+        target_soc: float = 80.0,
+        top_k: int = 3,
+        urgency: str = 'normal',
+        user_lat: Optional[float] = None,
+        user_lon: Optional[float] = None,
+        city: Optional[str] = None
+    ) -> List[ChargingRecommendation]:
         # Extract vehicle attributes seamlessly
         if hasattr(self.vehicle, 'state'):
             current_soc = float(self.vehicle.state.soc)
@@ -81,20 +113,48 @@ class PriorityEngine:
         else:
             current_soc = float(getattr(self.vehicle, 'current_soc', 18.0))
             battery_capacity = float(getattr(self.vehicle, 'battery_capacity_kwh', 72.6))
-            loc = getattr(self.vehicle, 'current_location', {'lat': 17.385, 'lon': 78.487})
-            vehicle_lat = float(loc.get('lat', 17.385))
-            vehicle_lon = float(loc.get('lon', loc.get('lng', 78.487)))
+            loc = getattr(self.vehicle, 'current_location', {'lat': 21.1458, 'lon': 79.0882})
+            vehicle_lat = float(loc.get('lat', 21.1458))
+            vehicle_lon = float(loc.get('lon', loc.get('lng', 79.0882)))
             vehicle_connector = getattr(self.vehicle, 'connector_type', 'CCS2')
+
+        # City or GPS overrides
+        norm_city = city.lower().strip() if city else None
+        if norm_city and norm_city in CITY_COORDINATES:
+            vehicle_lat, vehicle_lon = CITY_COORDINATES[norm_city]
+            if hasattr(self.vehicle, 'state'):
+                self.vehicle.state.gps_lat = vehicle_lat
+                self.vehicle.state.gps_lng = vehicle_lon
+
+        if user_lat is not None and user_lon is not None:
+            vehicle_lat = float(user_lat)
+            vehicle_lon = float(user_lon)
+            if hasattr(self.vehicle, 'state'):
+                self.vehicle.state.gps_lat = vehicle_lat
+                self.vehicle.state.gps_lng = vehicle_lon
 
         consumption_per_km = 0.1515  # ~6.6 km/kWh for Ioniq 5
         
-        # Get stations from DB
-        if hasattr(self.stations_db, 'get_stations'):
-            all_stations = self.stations_db.get_stations(limit=1000)
+        # Get stations from DB (use full station registry so all Indian cities including Nagpur are available)
+        if hasattr(self.stations_db, 'stations') and self.stations_db.stations:
+            all_stations = list(self.stations_db.stations.values())
+        elif hasattr(self.stations_db, 'get_stations'):
+            all_stations = self.stations_db.get_stations(limit=50000)
         elif hasattr(self.stations_db, 'get_all_stations'):
             all_stations = self.stations_db.get_all_stations()
         else:
-            all_stations = list(getattr(self.stations_db, 'stations', {}).values())
+            all_stations = []
+
+        # If city requested, prioritize stations strictly located in that city
+        if norm_city:
+            city_matches = [
+                s for s in all_stations
+                if norm_city in str(s.get('city', '')).lower()
+                or norm_city in str(s.get('district', '')).lower()
+                or norm_city in str(s.get('address', '')).lower()
+            ]
+            if city_matches:
+                all_stations = city_matches + [s for s in all_stations if s not in city_matches]
             
         recommendations = []
         for station in all_stations:
@@ -103,12 +163,13 @@ class PriorityEngine:
             if st_status not in ['AVAILABLE', 'Operational', 'Verified Operational']:
                 continue
             
-            st_lat = float(station.get('lat') or station.get('latitude') or 17.385)
-            st_lon = float(station.get('lng') or station.get('lon') or station.get('longitude') or 78.487)
+            st_lat = float(station.get('lat') or station.get('latitude') or vehicle_lat)
+            st_lon = float(station.get('lng') or station.get('lon') or station.get('longitude') or vehicle_lon)
             
             # Distance
             dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
-            if dist > 85.0:  # Skip stations beyond safe single-leg drive
+            max_dist = 40.0 if norm_city else 85.0
+            if dist > max_dist:  # Skip stations beyond target locality/drive limit
                 continue
             
             # Energy to reach station

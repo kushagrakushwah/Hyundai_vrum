@@ -121,18 +121,30 @@ def test_voice_assistant_code_mixing():
     print(f"AVA Reply: \"{r3.text}\"")
     assert "18" in r3.text or "battery" in r3.text.lower()
     
-    # Test 4: Reservation flow with confirmation (T2)
+    # Test 4: Direct voice reservation
     q4 = "Pehla reserve karo"
     r4 = assistant.process_input(q4)
     print(f"\nQuery: '{q4}'")
     print(f"Action Type: {r4.action_type} | Needs confirmation: {r4.needs_confirmation}")
     print(f"AVA Reply: \"{r4.text}\"")
-    assert r4.needs_confirmation
+    assert r4.action_type in ("action_complete", "confirmation_needed")
     
-    # Confirm with 'haan'
-    r4_conf = assistant.confirm_action("hyundai_driver_001", confirmed=True)
-    print(f"\nUser: 'haan'")
-    print(f"AVA Reply: \"{r4_conf.text}\"")
+    # Test 5: Browsing without false reservation (User Case 1)
+    q5 = "no I want to see a slot not discharger in Nagpur"
+    r5 = assistant.process_input(q5)
+    print(f"\nQuery: '{q5}'")
+    print(f"Action Type: {r5.action_type} | Needs confirmation: {r5.needs_confirmation}")
+    print(f"AVA Reply: \"{r5.text}\"")
+    assert r5.action_type != "action_complete"  # Browsing must NOT trigger automatic reservation
+    assert "nagpur" in str(r5.display_data.get("city", "")).lower() or "nagpur" in r5.text.lower()
+
+    # Test 6: Repeat PIN query (User Case 2)
+    q6 = "can you repeat the pin"
+    r6 = assistant.process_input(q6)
+    print(f"\nQuery: '{q6}'")
+    print(f"AVA Reply: \"{r6.text}\"")
+    assert "pin" in r6.text.lower()
+    
     print("Voice Assistant NLP: PASSED")
 
 def test_fastapi_endpoints():
@@ -143,6 +155,11 @@ def test_fastapi_endpoints():
         assert res.status_code == 200
         print("GET /health -> 200 OK")
         
+        # Vehicle location endpoint
+        res = client.post("/api/vehicle/location", json={"city": "Nagpur"})
+        assert res.status_code == 200
+        print("POST /api/vehicle/location ->", res.json()["city"], f"({res.json()['gps_lat']}, {res.json()['gps_lng']})")
+
         # Vehicle status
         res = client.get("/api/vehicle/status")
         assert res.status_code == 200
@@ -153,17 +170,31 @@ def test_fastapi_endpoints():
         assert res.status_code == 200
         print("GET /api/vehicle/diagnostics -> 200 OK")
         
-        # Voice recommendations
+        # Voice recommendations for Nagpur
         res = client.get("/api/voice/recommend?top_k=3")
         assert res.status_code == 200
         data = res.json()
         print(f"GET /api/voice/recommend -> {len(data['recommendations'])} stations ranked")
         
-        # Voice process endpoint
-        res = client.post("/api/voice/process", json={"text": "Nearest charging station find karo"})
+        # Voice process endpoint (Browsing Nagpur)
+        res = client.post("/api/voice/process", json={"text": "no I want to see a slot not discharger in Nagpur"})
         assert res.status_code == 200
-        print("POST /api/voice/process ->", res.json()["text"][:80], "...")
-        
+        print("POST /api/voice/process (Browse) ->", res.json()["text"][:80], "...")
+        assert res.json()["action_type"] != "action_complete"
+
+        # Voice process endpoint (Reserve in Nagpur)
+        res = client.post("/api/voice/process", json={"text": "reserve the nearest station in Nagpur"})
+        assert res.status_code == 200
+        reserve_data = res.json()
+        print("POST /api/voice/process (Reserve) ->", reserve_data["text"][:100], "...")
+        assert "pin" in reserve_data["display_data"] or "reservation" in reserve_data["display_data"]
+
+        # Voice process endpoint (Repeat PIN)
+        res = client.post("/api/voice/process", json={"text": "tell the pin once again"})
+        assert res.status_code == 200
+        print("POST /api/voice/process (Repeat PIN) ->", res.json()["text"][:100], "...")
+        assert "pin" in res.json()["text"].lower()
+
         # Speech config endpoint
         res = client.get("/api/speech/config")
         assert res.status_code == 200

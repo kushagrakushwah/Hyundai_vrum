@@ -8,11 +8,73 @@ Intent routing:
 """
 
 import logging
+import os
+import time
+import sqlite3
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 import re
 
 logger = logging.getLogger(__name__)
+
+INDIAN_CITIES = {
+    "nagpur": (21.1458, 79.0882),
+    "hyderabad": (17.3850, 78.4867),
+    "pune": (18.5204, 73.8567),
+    "mumbai": (19.0760, 72.8777),
+    "bengaluru": (12.9716, 77.5946),
+    "bangalore": (12.9716, 77.5946),
+    "delhi": (28.6139, 77.2090),
+    "new delhi": (28.6139, 77.2090),
+    "bhopal": (23.2599, 77.4126),
+    "indore": (22.7196, 75.8577),
+    "chennai": (13.0827, 80.2707),
+    "kolkata": (22.5726, 88.3639),
+    "jaipur": (26.9124, 75.7873),
+    "ahmedabad": (23.0225, 72.5714),
+    "lucknow": (26.8467, 80.9462),
+    "chandigarh": (30.7333, 76.7794),
+    "surat": (21.1702, 72.8311),
+    "visakhapatnam": (17.6868, 83.2185),
+    "vizag": (17.6868, 83.2185),
+    "wardha": (20.7453, 78.6022),
+    "amravati": (20.9374, 77.7796),
+}
+
+def format_spoken_pin(pin: Any) -> str:
+    """Format PIN digit-by-digit with both pauses and words so TTS engines never read it as lakhs/hundreds."""
+    pin_str = str(pin).strip()
+    words = {
+        '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+        '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine'
+    }
+    digits = [c for c in pin_str if c.isdigit()]
+    if not digits:
+        return pin_str
+    comma_digits = ", ".join(digits)
+    word_digits = ", ".join(words.get(d, d) for d in digits)
+    return f"{comma_digits} ({word_digits})"
+
+def get_active_reservations_sync(user_id: Optional[str] = None) -> List[dict]:
+    """Read active reservations synchronously from SQLite."""
+    db_path = os.path.join(os.path.dirname(__file__), 'smartreserve.db')
+    if not os.path.exists(db_path):
+        return []
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        now = time.time()
+        if user_id:
+            cur.execute("SELECT * FROM reservations WHERE expires_at > ? AND user_id = ? ORDER BY created_at DESC", (now, user_id))
+        else:
+            cur.execute("SELECT * FROM reservations WHERE expires_at > ? ORDER BY created_at DESC", (now,))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        logger.warning(f"Error querying active reservations: {e}")
+        return []
 
 
 @dataclass
@@ -75,6 +137,8 @@ class VoiceAssistant:
                 cleaned_text = cleaned_text[len(ww):].strip(",. ")
                 break
 
+        entities: Dict[str, Any] = {}
+
         # 1. Cancellation check
         cancel_kws = ["cancel", "band karo", "stop", "hatao", "nahi chahiye", "ruk jao", "cancel reservation"]
         if any(kw in cleaned_text for kw in cancel_kws):
@@ -85,26 +149,66 @@ class VoiceAssistant:
                 language_mix=self._detect_language(text)
             )
 
-        # 2. Reservation check (prioritize direct booking actions)
-        reserve_kws = [
-            "reserve", "book", "lock", "slot", "rok do", "karna hai",
-            "reserve the nearest", "book the nearest", "lock nearest",
-            "reserve nearest", "book nearest", "lock the closest",
-            "sabse paas wala reserve", "paas wala reserve", "slot book",
-            "slot reserve", "reserve station", "book station", "lock slot",
-            "reserve kardo", "book kardo", "lock kardo", "reserve first",
-            "pehla reserve", "doosra reserve", "teesra reserve"
+        # 2. PIN repeat / query check
+        repeat_pin_kws = [
+            "repeat the pin", "repeat pin", "repeat my pin", "tell the pin",
+            "tell me the pin", "tell the pin once again", "tell pin once again",
+            "tell the pin again", "say the pin again", "say pin again", "pin again", "repeat otp",
+            "what is my pin", "what's my pin", "what is the pin", "what's the pin",
+            "get pin", "my pin", "show pin", "reservation pin", "kiosk pin",
+            "pin code", "pin kya hai", "pin batao", "pin bolo", "dobara pin",
+            "pin repeat karo", "pin repeat", "pin sanga", "punha pin sanga",
+            "pin once again", "can you repeat the pin", "can you tell the pin"
         ]
-        is_reserve = any(kw in cleaned_text for kw in reserve_kws)
+        if any(kw in cleaned_text for kw in repeat_pin_kws):
+            return IntentResult(
+                intent="REPEAT_PIN",
+                confidence=0.98,
+                entities=entities,
+                raw_text=text,
+                language_mix=self._detect_language(text),
+            )
 
-        entities: Dict[str, Any] = {}
+        # 3. Extract city if mentioned in text
+        for city_name, coords in INDIAN_CITIES.items():
+            if re.search(r'\b' + re.escape(city_name) + r'\b', cleaned_text):
+                entities["city"] = city_name
+                entities["user_lat"], entities["user_lon"] = coords
+                try:
+                    from vehicle_intelligence import vehicle
+                    if vehicle and hasattr(vehicle, 'set_location'):
+                        vehicle.set_location(coords[0], coords[1], city_name.capitalize())
+                except Exception:
+                    pass
+                break
+
+        # 4. Browsing vs Reservation check
+        browse_kws = [
+            "see", "show", "view", "find", "search", "check", "look",
+            "dikhao", "dekho", "dekhna", "batao", "list", "kaunse", "kaha", "kahan", "kuthe", "where"
+        ]
+        is_browse = any(kw in cleaned_text for kw in browse_kws)
+
+        direct_reserve_kws = [
+            "reserve the nearest", "book the nearest", "lock nearest", "reserve nearest", "book nearest",
+            "lock the closest", "lock the nearest", "sabse paas wala reserve", "paas wala reserve",
+            "slot book", "slot reserve", "reserve station", "book station", "lock slot",
+            "book a slot", "reserve a slot", "lock a slot", "book slot", "reserve slot",
+            "reserve kardo", "book kardo", "lock kardo", "slot book kardo", "slot reserve kardo", "slot lock kardo",
+            "reserve first", "book first", "lock first", "pehla reserve", "doosra reserve", "teesra reserve",
+            "reserve this", "book this", "lock this", "reserve karo", "book karo", "lock karo",
+            "reserve in", "book in", "lock in"
+        ]
+        has_direct_reserve = any(kw in cleaned_text for kw in direct_reserve_kws)
+        has_single_reserve = any(kw in cleaned_text for kw in ["reserve", "book", "lock", "rok do"]) and not is_browse
+
+        is_reserve = (has_direct_reserve or has_single_reserve) and not is_browse
 
         # Check if user refers to currently selected station
         if any(w in cleaned_text for w in ["this", "selected", "current", "yeh", "ye", "ye wala", "yeh wala", "it"]):
             entities["use_selected"] = True
             entities["selected_station_id"] = selected_station_id
         elif selected_station_id and is_reserve and not any(w in cleaned_text for w in ["nearest", "paas", "closest", "first", "pehla", "second", "doosra", "third", "teesra"]):
-            # If user selected a station on screen and simply says "reserve" / "book slot"
             entities["use_selected"] = True
             entities["selected_station_id"] = selected_station_id
 
@@ -140,12 +244,13 @@ class VoiceAssistant:
             stop_words = [
                 "reserve", "book", "lock", "slot", "the", "a", "an", "this", "that", "these",
                 "it", "station", "charger", "kardo", "karo", "please", "at", "wala", "mein",
-                "for", "to", "my", "me", "yeh", "ye", "current", "selected", "one", "kar", "do"
+                "for", "to", "my", "me", "yeh", "ye", "current", "selected", "one", "kar", "do",
+                "in", "at", "near"
             ]
             for kw in stop_words:
                 q_text = re.sub(r'\b' + re.escape(kw) + r'\b', '', q_text)
             q_text = re.sub(r'\s+', ' ', q_text).strip()
-            if len(q_text) >= 3 and q_text not in ["nearest", "closest", "first", "second", "third", "pehla", "doosra", "teesra", "paas", "sabse paas"]:
+            if len(q_text) >= 3 and q_text not in ["nearest", "closest", "first", "second", "third", "pehla", "doosra", "teesra", "paas", "sabse paas", "nagpur", "hyderabad", "pune", "mumbai"]:
                 entities["target_query"] = q_text
 
             return IntentResult(
@@ -159,9 +264,9 @@ class VoiceAssistant:
         # General intent dictionary for discovery, vehicle status, AC, etc.
         intents = {
             "FIND_CPO": [
-                "nearest", "charging station", "charger", "find station",
-                "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
-                "stations nearby", "ev station", "stations",
+                "nearest", "charging station", "charger", "find station", "see", "show", "view",
+                "slot", "slots", "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
+                "stations nearby", "ev station", "stations", "dikhao", "dekho", "dekhna",
             ],
             "VEHICLE_STATUS": [
                 "status", "kitni battery", "kiti battery", "range", "fuel left",
@@ -199,7 +304,13 @@ class VoiceAssistant:
 
     # ── Main entry point ──────────────────────────────────────────────────────
     def process_input(
-        self, text: str, user_id: str = "hyundai_driver_001", selected_station_id: Optional[str] = None
+        self,
+        text: str,
+        user_id: str = "hyundai_driver_001",
+        selected_station_id: Optional[str] = None,
+        city: Optional[str] = None,
+        user_lat: Optional[float] = None,
+        user_lon: Optional[float] = None
     ) -> VoiceAssistantResponse:
         # Check pending confirmation first using whole-word tokens to avoid false matches (e.g. 'sure' in 'pressure')
         if user_id in self._pending_confirmations:
@@ -213,7 +324,19 @@ class VoiceAssistant:
 
         intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
 
-        if intent_res.intent == "FIND_CPO":
+        # Merge city / coordinates if passed explicitly and not extracted from text
+        if city and not intent_res.entities.get("city"):
+            c_norm = city.lower().strip()
+            intent_res.entities["city"] = c_norm
+            if c_norm in INDIAN_CITIES:
+                intent_res.entities["user_lat"], intent_res.entities["user_lon"] = INDIAN_CITIES[c_norm]
+        if user_lat is not None and user_lon is not None and not intent_res.entities.get("user_lat"):
+            intent_res.entities["user_lat"] = float(user_lat)
+            intent_res.entities["user_lon"] = float(user_lon)
+
+        if intent_res.intent == "REPEAT_PIN":
+            return self._handle_repeat_pin(intent_res, user_id)
+        elif intent_res.intent == "FIND_CPO":
             return self._handle_find_cpo(intent_res, user_id)
         elif intent_res.intent == "VEHICLE_STATUS":
             return self._handle_vehicle_status(intent_res)
@@ -229,6 +352,72 @@ class VoiceAssistant:
             return self._handle_greeting(intent_res)
         else:
             return self._handle_unknown_with_llm(intent_res)
+
+    # ── REPEAT_PIN handler ────────────────────────────────────────────────────
+    def _handle_repeat_pin(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
+        active = get_active_reservations_sync(user_id)
+        if not active:
+            active = get_active_reservations_sync()
+
+        if not active:
+            if intent_res.language_mix in ("hi", "hi+en"):
+                msg = "Aapki koi active reservation nahi mili. Kripya pehle charging station reserve karein."
+            elif intent_res.language_mix == "mr":
+                msg = "Tumchi kontihi active reservation nahi. Kripya aadhi charging slot reserve kara."
+            else:
+                msg = "You do not have an active reservation right now. Would you like me to find and reserve a charger for you?"
+            return VoiceAssistantResponse(text=msg, action_type="info", language=intent_res.language_mix)
+
+        resv = active[0]
+        pin = str(resv.get("pin", ""))
+        station_id = resv.get("station_id", "")
+        expires_at = float(resv.get("expires_at", 0))
+        now = time.time()
+        mins_left = max(1, int((expires_at - now) / 60))
+
+        st_name = "your reserved charger"
+        try:
+            from priority_engine import get_engine
+            engine = get_engine()
+            if engine and hasattr(engine, 'stations_db'):
+                st_obj = engine.stations_db.get_station(station_id)
+                if st_obj:
+                    st_name = st_obj.get("name", st_name)
+        except Exception:
+            pass
+
+        spoken_pin = format_spoken_pin(pin)
+
+        if intent_res.language_mix in ("hi", "hi+en"):
+            spoken = (
+                f"Aapka active reservation PIN hai: {spoken_pin}. "
+                f"Station: {st_name}. Yeh slot agle {mins_left} minute tak valid hai."
+            )
+        elif intent_res.language_mix == "mr":
+            spoken = (
+                f"Tumcha active reservation PIN aahe: {spoken_pin}. "
+                f"Station: {st_name}. Ha slot pudhil {mins_left} minte valid aahe."
+            )
+        else:
+            spoken = (
+                f"Your active reservation PIN is {spoken_pin}. "
+                f"Reserved at {st_name}. It remains valid for another {mins_left} minutes."
+            )
+
+        return VoiceAssistantResponse(
+            text=spoken,
+            display_data={
+                "action": "show_pin",
+                "pin": pin,
+                "station_id": station_id,
+                "station_name": st_name,
+                "expires_at": expires_at,
+                "minutes_remaining": mins_left,
+            },
+            action_type="info",
+            language=intent_res.language_mix,
+            tool_calls=["database.get_active_reservations"],
+        )
 
     # ── Confirmation flow ─────────────────────────────────────────────────────
     def confirm_action(self, user_id: str, confirmed: bool) -> VoiceAssistantResponse:
@@ -257,13 +446,17 @@ class VoiceAssistant:
 
     # ── FIND_CPO handler ──────────────────────────────────────────────────────
     def _handle_find_cpo(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
+        city = intent_res.entities.get("city")
+        user_lat = intent_res.entities.get("user_lat")
+        user_lon = intent_res.entities.get("user_lon")
+
         # 1. Try priority engine (real data)
         stations: List[dict] = []
         try:
             from priority_engine import get_engine
             engine = get_engine()
             if engine:
-                recs_list = engine.recommend(top_k=3)
+                recs_list = engine.recommend(top_k=3, city=city, user_lat=user_lat, user_lon=user_lon)
                 stations = [vars(r) if hasattr(r, "__dict__") else r for r in recs_list]
         except Exception as e:
             logger.warning(f"[AVA] Priority engine error: {e}")
@@ -280,7 +473,7 @@ class VoiceAssistant:
             )
 
         # 3. Build spoken response from real data
-        recs_data = {"recommendations": stations, "stations": stations, "source": "priority_engine"}
+        recs_data = {"recommendations": stations, "stations": stations, "source": "priority_engine", "city": city}
         s1 = stations[0]
         s1_name = s1.get("station_name") or s1.get("name") or "the nearest station"
         s1_dist = s1.get("distance_km", 0)
@@ -314,25 +507,26 @@ class VoiceAssistant:
         except Exception as e:
             logger.debug(f"[AVA] Gemini enrichment skipped: {e}")
 
+        loc_str = f" in {city.capitalize()}" if city else " nearby"
         if gemini_text:
             spoken = gemini_text
         elif intent_res.language_mix in ("hi", "hi+en"):
             spoken = (
-                f"Aapke paas {len(stations)} charging stations hain. "
+                f"Aapke paas {loc_str.strip()} {len(stations)} charging stations hain. "
                 f"Pehla: {s1_name}, {s1_dist:.1f} km door, {s1_kw:.0f} kW charger, "
                 f"~{s1_time:.0f} min mein 80% tak charge. "
                 f"Best option yahi hai — kya isko reserve karu?"
             )
         elif intent_res.language_mix == "mr":
             spoken = (
-                f"Tumchya javal {len(stations)} stations aahet. "
+                f"Tumchya javal {loc_str.strip()} {len(stations)} stations aahet. "
                 f"Pehla {s1_name} aahe, {s1_dist:.1f} km antaravar, "
                 f"{s1_kw:.0f} kW charger. ~{s1_time:.0f} min madhe 80% charge hoil. "
                 f"Slot reserve karu ka?"
             )
         else:
             spoken = (
-                f"Found {len(stations)} charging stations nearby. "
+                f"Found {len(stations)} charging stations{loc_str}. "
                 f"Top pick: {s1_name}, {s1_dist:.1f} km away, {s1_kw:.0f} kW "
                 f"(~{s1_time:.0f} min to 80%). Shall I reserve Station 1 for you?"
             )
@@ -343,6 +537,7 @@ class VoiceAssistant:
             "station_id": s1.get("station_id") or s1.get("id", ""),
             "station_name": s1_name,
             "rank": 1,
+            "city": city,
         }
 
         return VoiceAssistantResponse(
@@ -469,6 +664,9 @@ class VoiceAssistant:
 
     # ── RESERVE handler ───────────────────────────────────────────────────────
     def _handle_reserve(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
+        city = intent_res.entities.get("city")
+        user_lat = intent_res.entities.get("user_lat")
+        user_lon = intent_res.entities.get("user_lon")
         rank = intent_res.entities.get("rank", 1)
         target_operator = intent_res.entities.get("operator")
         target_station_id = intent_res.entities.get("station_id")
@@ -485,7 +683,7 @@ class VoiceAssistant:
             from priority_engine import get_engine
             engine = get_engine()
             if engine:
-                recs = engine.recommend(top_k=15)
+                recs = engine.recommend(top_k=15, city=city, user_lat=user_lat, user_lon=user_lon)
                 
                 # 1. Match by selected station on screen if requested
                 if use_selected and selected_station_id:
@@ -588,12 +786,13 @@ class VoiceAssistant:
         self._pending_confirmations.pop(user_id, None)
 
         # Build immediate voice reservation response
+        loc_str = f" in {city.capitalize()}" if city else ""
         if intent_res.language_mix in ("hi", "hi+en"):
-            text = f"Nearest station {st_name} ({st_dist:.1f} km door, {st_kw:.0f} kW) ke liye 30-minute slot lock kar diya hai."
+            text = f"Station {st_name}{loc_str} ({st_dist:.1f} km door, {st_kw:.0f} kW) ke liye 30-minute slot lock kar diya hai."
         elif intent_res.language_mix == "mr":
-            text = f"Javalcya {st_name} ({st_dist:.1f} km, {st_kw:.0f} kW) sathi 30 min exclusive slot book kela aahe."
+            text = f"Station {st_name}{loc_str} ({st_dist:.1f} km, {st_kw:.0f} kW) sathi 30 min exclusive slot book kela aahe."
         else:
-            text = f"Locked exclusive 30-minute slot at {st_name} ({st_dist:.1f} km away, {st_kw:.0f} kW)."
+            text = f"Locked exclusive 30-minute slot at {st_name}{loc_str} ({st_dist:.1f} km away, {st_kw:.0f} kW)."
 
         return VoiceAssistantResponse(
             text=text,
@@ -604,6 +803,7 @@ class VoiceAssistant:
                 "rank": rank,
                 "distance_km": st_dist,
                 "power_kw": st_kw,
+                "city": city,
             },
             action_type="action_complete",
             language=intent_res.language_mix,
