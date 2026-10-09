@@ -1,16 +1,34 @@
 """
-Stations Database — loads real Telangana EV station data & live Open Charge Map API
-Combines:
-1. 934 BEE national registry nodes (Telangana)
-2. Live real-time Open Charge Map (OCM) telemetry via API Key: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+Stations Database — loads real EV station data from multiple sources:
+1. BEE nodes_master.csv (934 Telangana network nodes from EVCS Demand Forecasting)
+2. Dataful dataset: state-district-city-wise EV charging stations across India
+   (1382 Telangana rows, 375 in Hyderabad — real CPO/location/connector/power data)
+3. Live Open Charge Map (OCM) API — real-time availability overlay
 """
 import csv
 import json
 import os
 import random
+import re
 from typing import List, Optional, Dict
 
+# ── Load .env at repo root ────────────────────────────────────────────────────
+try:
+    from dotenv import load_dotenv
+    _env = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+    load_dotenv(dotenv_path=_env)
+except ImportError:
+    pass
+
 from ocm_client import OpenChargeMapClient
+
+# Dataful dataset path (repo root → data_ev_charging_stations_india/)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATAFUL_CSV = os.path.join(
+    _REPO_ROOT,
+    "data_ev_charging_stations_india",
+    "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv",
+)
 
 # Telangana districts with approximate coordinates
 TELANGANA_DISTRICTS = [
@@ -61,6 +79,26 @@ LOCATION_TYPES = [
     "Dealership", "Government Office",
 ]
 
+INDIAN_CITIES = {
+    "nagpur": (21.1458, 79.0882),
+    "vnit": (21.1255, 79.0524),
+    "vnit nagpur": (21.1255, 79.0524),
+    "hyderabad": (17.3850, 78.4867),
+    "pune": (18.5204, 73.8567),
+    "mumbai": (19.0760, 72.8777),
+    "bhopal": (23.2599, 77.4126),
+    "indore": (22.7196, 75.8577),
+    "delhi": (28.6139, 77.2090),
+    "bengaluru": (12.9716, 77.5946),
+    "bangalore": (12.9716, 77.5946),
+    "chennai": (13.0827, 80.2707),
+    "kolkata": (22.5726, 88.3639),
+    "ahmedabad": (23.0225, 72.5714),
+    "jaipur": (26.9124, 75.7873),
+    "lucknow": (26.8467, 80.9462),
+    "chandigarh": (30.7333, 76.7794),
+}
+
 
 class StationsDB:
     def __init__(self):
@@ -70,7 +108,7 @@ class StationsDB:
         self._load_or_generate()
 
     def _load_or_generate(self):
-        """Try loading from real processed BEE CSV, then demo_data, else generate."""
+        """Load from real BEE CSV + real Dataful dataset. Synthetic only as last resort."""
         base_dir = os.path.dirname(__file__)
         candidate_paths = [
             os.path.join(base_dir, "..", "..", "EVCS_Demand_Forecasting", "processed", "nodes_master.csv"),
@@ -86,10 +124,118 @@ class StationsDB:
                 break
 
         if not loaded:
+            print("  [DB] BEE CSV not found — using synthetic fallback (limited)")
             self._generate_synthetic()
-        
-        # Always inject verified Pan-India fast hubs (Bhopal, Nagpur, Mumbai, Delhi, etc.)
+
+        # ── Load real Dataful dataset (Hyderabad / Telangana real CPO data) ──
+        before = len(self.stations)
+        self._load_from_dataful()
+        added = len(self.stations) - before
+        if added > 0:
+            print(f"  [DB] +{added} real Dataful stations loaded (India CPO registry)")
+
+        # Always inject verified Pan-India fast hubs
         self._add_pan_india_metro_hubs()
+
+    def _load_from_dataful(self):
+        """
+        Load real EV charging station data from the Dataful / BEE national registry CSV.
+        Columns: data_as_of, charge_point_operators, govt_private, state, district_as_per_source,
+                 district_as_per_lgd, district_lgd_code, city_village, location_name,
+                 latitude, longitude, chargers_type, charger_rating, connector_rating, total_connectors
+        We prioritise Telangana rows but load all India for routing across states.
+        """
+        csv_candidates = [
+            DATAFUL_CSV,
+            os.path.join(os.path.dirname(__file__), "..", "..", "data_ev_charging_stations_india", "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv"),
+            os.path.join(os.path.dirname(__file__), "data_ev_charging_stations_india", "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv"),
+            "/app/data_ev_charging_stations_india/state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv",
+        ]
+        active_csv = next((p for p in csv_candidates if os.path.exists(p)), None)
+        if not active_csv:
+            print(f"  [DB] Dataful CSV not found at candidate paths")
+            return
+
+        # Map Dataful connector type strings → normalized internal connector type
+        _CONNECTOR_MAP = {
+            "CCS-II": "CCS2",
+            "CCS": "CCS2",
+            "Combo (CCS-II+CHAdeMO)": "CCS2+CHAdeMO",
+            "Combo (CCS-II + CHAdeMo + Type II)": "CCS2+CHAdeMO",
+            "CHAdeMO": "CHAdeMO",
+            "Type-II AC": "AC Type 2",
+            "Type II": "AC Type 2",
+            "Bharat AC-001": "Bharat AC",
+            "Bharat AC": "Bharat AC",
+            "Bharat DC-001": "Bharat DC",
+            "LEV AC Charge point": "LEV AC",
+            "LEV DC Charge Point (IS-17017-2-7)": "LEV DC",
+            "LEV DC Charge Point (IS-17017-2-6)": "LEV DC",
+            "LEV DC": "LEV DC",
+        }
+
+        try:
+            with open(active_csv, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for idx, row in enumerate(reader):
+                    try:
+                        lat = float(row.get("latitude") or 0)
+                        lng = float(row.get("longitude") or 0)
+                        if lat == 0 or lng == 0:
+                            continue  # skip rows with missing coordinates
+
+                        power = float(row.get("charger_rating") or row.get("connector_rating") or 7.4)
+                        total_conn = int(float(row.get("total_connectors") or 1))
+                        cpo = (row.get("charge_point_operators") or "Unknown CPO").strip()
+                        state = (row.get("state") or "").strip()
+                        district = (row.get("district_as_per_lgd") or row.get("district_as_per_source") or "").strip()
+                        city = (row.get("city_village") or district).strip().title()
+                        loc_name = (row.get("location_name") or "").strip()
+                        raw_connector = (row.get("chargers_type") or "").strip()
+                        connector = _CONNECTOR_MAP.get(raw_connector, raw_connector or "CCS2")
+
+                        # Build a deterministic station_id from CPO + lat/lng
+                        sid = f"DF_{state[:2].upper()}_{abs(hash(f'{lat:.4f}{lng:.4f}{cpo}')) % 999999:06d}"
+
+                        # Skip if already loaded (BEE CSV might overlap)
+                        if sid in self.stations:
+                            continue
+
+                        # Build human-readable name
+                        name_parts = [cpo]
+                        if loc_name and len(loc_name) < 120:
+                            # Truncate very long location strings
+                            name_parts.append(loc_name[:60].rstrip(",. "))
+                        elif city:
+                            name_parts.append(city)
+                        st_name = " — ".join(name_parts)
+
+                        self.stations[sid] = {
+                            "station_id": sid,
+                            "name": st_name,
+                            "city": city,
+                            "district": district,
+                            "state": state,
+                            "address": loc_name or f"{city}, {district}, {state}",
+                            "lat": round(lat, 6),
+                            "lng": round(lng, 6),
+                            "power_kw": round(power, 1),
+                            "connector_type": connector,
+                            "total_ports": total_conn,
+                            "operator": cpo,
+                            "govt_private": (row.get("govt_private") or "").strip(),
+                            "location_type": "Public EV Charger",
+                            "monthly_units_kwh": round(power * total_conn * 12, 1),  # rough estimate
+                            "peak_load_kw": round(power * total_conn * 0.75, 1),
+                            "is_live_ocm": False,
+                            "source": "dataful",
+                        }
+                    except (ValueError, TypeError):
+                        continue  # skip malformed rows
+
+        except Exception as e:
+            print(f"  [DB] Error loading Dataful CSV: {e}")
+
 
     def _load_from_csv(self, path: str):
         with open(path, newline="", encoding="utf-8") as f:
@@ -186,6 +332,7 @@ class StationsDB:
             {"station_id": "IN_NGP_001", "name": "Tata Power Superfast Hub — Sitabuldi", "district": "Nagpur", "address": "Sitabuldi Metro Interchange, Nagpur, Maharashtra", "lat": 21.1458, "lng": 79.0882, "power_kw": 120.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "Metro Station", "monthly_units_kwh": 6200.0, "peak_load_kw": 90.0, "is_live_ocm": False},
             {"station_id": "IN_NGP_002", "name": "ChargeZone Express Hub — Wardha Road Airport", "district": "Nagpur", "address": "Hotel Pride, Wardha Road, Sonegaon, Nagpur, Maharashtra", "lat": 21.0890, "lng": 79.0620, "power_kw": 150.0, "connector_type": "CCS2", "total_ports": 4, "operator": "ChargeZone", "location_type": "Airport Highway", "monthly_units_kwh": 6900.0, "peak_load_kw": 110.0, "is_live_ocm": False},
             {"station_id": "IN_NGP_003", "name": "Statiq Fast Hub — Dharampeth", "district": "Nagpur", "address": "West High Court Road, Dharampeth, Nagpur, Maharashtra", "lat": 21.1420, "lng": 79.0650, "power_kw": 60.0, "connector_type": "CCS2", "total_ports": 2, "operator": "Statiq", "location_type": "Commercial Hub", "monthly_units_kwh": 3800.0, "peak_load_kw": 48.0, "is_live_ocm": False},
+            {"station_id": "IN_NGP_004", "name": "Tata Power Fast Hub — VNIT Campus Bajaj Nagar", "district": "Nagpur", "address": "South Ambazari Road, Near VNIT Gate, Bajaj Nagar, Nagpur, Maharashtra", "lat": 21.1255, "lng": 79.0524, "power_kw": 60.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "University Campus", "monthly_units_kwh": 4500.0, "peak_load_kw": 55.0, "is_live_ocm": False},
             
             # Indore
             {"station_id": "IN_IND_001", "name": "Tata Power Supercharge — Vijay Nagar", "district": "Indore", "address": "Malhar Mega Mall, Vijay Nagar, Indore, MP", "lat": 22.7533, "lng": 75.8937, "power_kw": 120.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "Shopping Mall", "monthly_units_kwh": 6500.0, "peak_load_kw": 95.0, "is_live_ocm": False},
@@ -219,7 +366,10 @@ class StationsDB:
 
     def get_stations(
         self,
+        city: Optional[str] = None,
         district: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
         source: str = "all",
         limit: int = 1000,
     ) -> List[dict]:
@@ -228,23 +378,66 @@ class StationsDB:
         - 'bee': only base network stations
         - 'live': only live Open Charge Map stations
         - 'all': live OCM stations prioritized, followed by base network
+        Supports city / GPS proximity sorting across the full 29,260 station database.
         """
+        # Resolve target coordinates if city or lat/lng given
+        target_lat = latitude
+        target_lng = longitude
+        c_norm = (city or "").lower().strip()
+        if (target_lat is None or target_lng is None) and c_norm in INDIAN_CITIES:
+            target_lat, target_lng = INDIAN_CITIES[c_norm]
+
         if source == "live":
             if not self.live_ocm_stations:
-                self.get_live_ocm_stations(max_results=limit)
+                self.get_live_ocm_stations(latitude=target_lat, longitude=target_lng, max_results=limit)
             results = list(self.live_ocm_stations.values())
         elif source == "bee":
             results = list(self.stations.values())
         else:
-            # Combined: include live OCM stations + base stations
             live = list(self.live_ocm_stations.values())
             if not live:
-                # Trigger quick live fetch
-                live = self.get_live_ocm_stations(max_results=25)
+                live = self.get_live_ocm_stations(latitude=target_lat, longitude=target_lng, max_results=25)
             results = live + list(self.stations.values())
 
-        if district:
-            results = [s for s in results if district.lower() in s.get("district", "").lower() or district.lower() in s.get("address", "").lower()]
+        # If a city or coordinates are specified, prioritize and sort by distance
+        if target_lat is not None and target_lng is not None:
+            import math
+            def dist_fn(s):
+                s_lat = s.get("lat") or 0.0
+                s_lng = s.get("lng") or 0.0
+                d = math.hypot((s_lat - target_lat) * 111.0, (s_lng - target_lng) * 103.0)
+                # Boost if city/district matches explicitly
+                match_boost = 0.0
+                if c_norm:
+                    s_city = (s.get("city") or "").lower()
+                    s_distr = (s.get("district") or "").lower()
+                    s_addr = (s.get("address") or "").lower()
+                    if c_norm in s_city or c_norm in s_distr or c_norm in s_addr:
+                        match_boost = -50.0  # Bring matching city to very front
+                return d + match_boost
+
+            # Filter candidates within 120km or matching city
+            if c_norm:
+                near_or_match = [
+                    s for s in results 
+                    if c_norm in (s.get("city") or "").lower() 
+                    or c_norm in (s.get("district") or "").lower()
+                    or c_norm in (s.get("address") or "").lower()
+                    or math.hypot(((s.get("lat") or 0.0) - target_lat) * 111.0, ((s.get("lng") or 0.0) - target_lng) * 103.0) < 60.0
+                ]
+                if near_or_match:
+                    results = sorted(near_or_match, key=dist_fn)
+                else:
+                    results = sorted(results, key=dist_fn)
+            else:
+                results = sorted(results, key=dist_fn)
+
+        elif district:
+            results = [
+                s for s in results 
+                if district.lower() in (s.get("district") or "").lower() 
+                or district.lower() in (s.get("address") or "").lower()
+            ]
 
         return results[:limit]
 
@@ -252,12 +445,200 @@ class StationsDB:
         if station_id.startswith("OCM-"):
             if station_id in self.live_ocm_stations:
                 return self.live_ocm_stations[station_id]
-            # Try fetching if not currently cached
             self.get_live_ocm_stations(max_results=50)
             return self.live_ocm_stations.get(station_id)
         return self.stations.get(station_id)
 
+    def get_petrol_pumps(self, city: Optional[str] = None, latitude: Optional[float] = None, longitude: Optional[float] = None, limit: int = 5) -> List[dict]:
+        """Find nearest fuel / petrol pump retail outlets (IOCL, BPCL, HPCL, Reliance BP) sorted by proximity."""
+        target_lat = latitude
+        target_lng = longitude
+        c_norm = (city or "nagpur").lower().strip()
+        if (target_lat is None or target_lng is None) and c_norm in INDIAN_CITIES:
+            target_lat, target_lng = INDIAN_CITIES[c_norm]
+        if target_lat is None or target_lng is None:
+            target_lat, target_lng = (21.1458, 79.0882)
 
+        import math
+        pumps = []
+        fuel_kws = ["iocl", "bpcl", "hpcl", "reliance bp", "petrol", "fuel", "diesel", "retail outlet", "pump"]
+        for s in self.stations.values():
+            s_op = (s.get("operator") or "").lower()
+            s_nm = (s.get("name") or "").lower()
+            s_lt = (s.get("location_type") or "").lower()
+            s_addr = (s.get("address") or "").lower()
+            if any(k in s_op or k in s_nm or k in s_lt or k in s_addr for k in fuel_kws):
+                s_lat = s.get("lat") or 0.0
+                s_lng = s.get("lng") or 0.0
+                d = math.hypot((s_lat - target_lat) * 111.0, (s_lng - target_lng) * 103.0)
+                p_copy = dict(s)
+                p_copy["distance_km"] = round(d, 2)
+                pumps.append((p_copy, d))
+
+        pumps.sort(key=lambda x: x[1])
+        return [p[0] for p in pumps[:limit]]
+
+    def fuzzy_station_search(
+        self,
+        query: str,
+        city: Optional[str] = None,
+        limit: int = 5
+    ) -> List[dict]:
+        """
+        High-speed fuzzy station name/landmark/operator search.
+        No external libraries needed — pure Python token-based matching.
+        Searches station names, addresses, operators, and district across all loaded stations.
+        Returns ranked list of matching stations with match_score.
+        """
+        if not query or len(query.strip()) < 2:
+            return []
+        
+        q = query.lower().strip()
+        # Remove common stop words
+        stop_words = {'the', 'a', 'an', 'at', 'near', 'nearest', 'book', 'reserve',
+                      'charger', 'station', 'charging', 'ev', 'in', 'find', 'show',
+                      'me', 'i', 'want', 'to', 'please', 'check', 'availability'}
+        q_tokens = [t for t in re.split(r'\W+', q) if t and t not in stop_words and len(t) >= 2]
+        
+        if not q_tokens:
+            return []
+        
+        scored = []
+        all_stations = {**self.stations, **self.live_ocm_stations}
+        
+        # City filter
+        city_norm = (city or '').lower().strip()
+        
+        for sid, s in all_stations.items():
+            name = (s.get('name') or '').lower()
+            address = (s.get('address') or '').lower()
+            operator = (s.get('operator') or '').lower()
+            district = (s.get('district') or '').lower()
+            s_city = (s.get('city') or s.get('state') or '').lower()
+            
+            # City filter: skip if city given and doesn't match at all
+            if city_norm and city_norm not in name and city_norm not in address and city_norm not in s_city and city_norm not in district:
+                # Check via lat/lng proximity if lat available
+                pass  # allow through — let score decide
+            
+            searchable = f'{name} {address} {operator} {district} {s_city}'
+            
+            score = 0
+            for token in q_tokens:
+                if token in name:
+                    score += 10  # strongest signal — name match
+                if token in operator:
+                    score += 6
+                if token in address:
+                    score += 4
+                if token in district:
+                    score += 3
+                # Partial starts-with bonus
+                for word in name.split():
+                    if word.startswith(token) and len(token) >= 3:
+                        score += 5
+                        break
+            
+            if score > 0:
+                result = dict(s)
+                result['station_id'] = sid
+                result['match_score'] = score
+                scored.append((result, score))
+        
+        # Sort by score descending
+        scored.sort(key=lambda x: -x[1])
+        return [s[0] for s in scored[:limit]]
+
+    def get_nearby_amenities(
+        self,
+        amenity_type: str,
+        city: str = 'Nagpur',
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        limit: int = 3
+    ) -> List[dict]:
+        """
+        Get nearest amenities by type: hospital, cafe, restaurant, atm, pharmacy,
+        tyre_shop, parking, mechanic.
+        Returns list of amenity dicts with name, distance_km, address.
+        """
+        # Hard-coded realistic Nagpur POI data (production would use Google Places API)
+        NAGPUR_AMENITIES = {
+            'hospital': [
+                {'name': 'AIIMS Nagpur', 'address': 'Plot No. 2, Mihan, Nagpur', 'distance_km': 5.2, 'phone': '+91-712-2999999'},
+                {'name': 'Government Medical College & Hospital', 'address': 'Hanuman Nagar, Nagpur', 'distance_km': 3.1, 'phone': '+91-712-2748888'},
+                {'name': 'Orange City Hospital', 'address': 'Khamla Road, Nagpur', 'distance_km': 2.4, 'phone': '+91-712-3021234'},
+                {'name': 'Alexis Multispeciality Hospital', 'address': 'Wardha Road, Nagpur', 'distance_km': 7.8, 'phone': '+91-712-6660000'},
+            ],
+            'cafe': [
+                {'name': 'Cafe Coffee Day — Sitabuldi', 'address': 'Sitabuldi Main Road, Nagpur', 'distance_km': 0.5, 'hours': '8am–10pm'},
+                {'name': "McDonald's Sadar", 'address': 'Sadar, Nagpur', 'distance_km': 1.1, 'hours': '10am–11pm'},
+                {'name': 'The Plaza Lounge & Cafe', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.5, 'hours': '9am–11pm'},
+                {'name': 'Cafe Twist', 'address': 'Congress Nagar, Nagpur', 'distance_km': 2.0, 'hours': '10am–10pm'},
+            ],
+            'restaurant': [
+                {'name': "McDonald's Sadar", 'address': 'Sadar, Nagpur', 'distance_km': 1.1},
+                {'name': 'Hotel Rajdhani (Thali)', 'address': 'Sitabuldi, Nagpur', 'distance_km': 0.4},
+                {'name': 'Kwality Restaurant', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.3},
+                {'name': 'Haldirams', 'address': 'Dharampeth, Nagpur', 'distance_km': 2.1},
+            ],
+            'atm': [
+                {'name': 'SBI ATM — Sitabuldi', 'address': 'Sitabuldi, Nagpur', 'distance_km': 0.3, 'bank': 'State Bank of India'},
+                {'name': 'HDFC ATM — Congress Nagar', 'address': 'Congress Nagar, Nagpur', 'distance_km': 0.8, 'bank': 'HDFC Bank'},
+                {'name': 'ICICI ATM — Civil Lines', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.0, 'bank': 'ICICI Bank'},
+            ],
+            'pharmacy': [
+                {'name': 'Apollo Pharmacy — Sitabuldi', 'address': 'Sitabuldi Main Road, Nagpur', 'distance_km': 0.3, 'hours': '24 hours'},
+                {'name': 'Medplus — Congress Nagar', 'address': 'Congress Nagar, Nagpur', 'distance_km': 0.9, 'hours': '8am–10pm'},
+                {'name': 'Noble Plus Pharmacy', 'address': 'Civil Lines, Nagpur', 'distance_km': 1.2, 'hours': '9am–9pm'},
+            ],
+            'tyre_shop': [
+                {'name': 'Sai Tyre House', 'address': 'Civil Lines, Nagpur', 'distance_km': 0.7, 'services': 'Puncture, Balancing, Alignment'},
+                {'name': 'MRF Tyre Service Centre', 'address': 'Dharampeth, Nagpur', 'distance_km': 1.3, 'services': 'All tyre brands'},
+                {'name': 'Bridgestone Tyre Centre', 'address': 'Sadar, Nagpur', 'distance_km': 1.8, 'services': 'EV-rated tyres available'},
+            ],
+            'parking': [
+                {'name': 'Civil Lines Multilevel Parking', 'address': 'Civil Lines, Nagpur', 'distance_km': 0.4, 'rate': '₹20/hr', 'ev_charging': False},
+                {'name': 'Kasturchand Park Parking', 'address': 'Kasturchand Park, Nagpur', 'distance_km': 1.2, 'rate': 'Free', 'ev_charging': True},
+                {'name': 'Empress Mall Parking', 'address': 'Empress City, Nagpur', 'distance_km': 2.5, 'rate': '₹30/hr', 'ev_charging': True},
+            ],
+            'mechanic': [
+                {'name': 'Hyundai Authorised Service Centre', 'address': 'Wardha Road, Nagpur', 'distance_km': 6.2, 'phone': '+91-712-6550000'},
+                {'name': 'EV Repair & Service Nagpur', 'address': 'Sadar, Nagpur', 'distance_km': 1.1, 'speciality': 'EV specialist'},
+            ],
+            'petrol_pump': [
+                {'name': 'IOCL Indian Oil Retail Outlet', 'address': 'Civil Lines / Sitabuldi, Nagpur', 'distance_km': 0.8, 'operator': 'Indian Oil'},
+                {'name': 'BPCL Speed — Sadar', 'address': 'Sadar, Nagpur', 'distance_km': 1.2, 'operator': 'BPCL'},
+                {'name': 'HPCL Nagpur Central', 'address': 'Congress Nagar, Nagpur', 'distance_km': 1.8, 'operator': 'HPCL'},
+                {'name': 'Reliance BP — Wardha Road', 'address': 'Wardha Road, Nagpur', 'distance_km': 4.1, 'operator': 'Reliance BP'},
+            ],
+        }
+        
+        # Normalize type
+        t = amenity_type.lower().strip()
+        type_map = {
+            'hospital': 'hospital', 'medical': 'hospital', 'doctor': 'hospital',
+            'cafe': 'cafe', 'coffee': 'cafe', 'tea': 'cafe',
+            'food': 'restaurant', 'eat': 'restaurant', 'restaurant': 'restaurant', 'lunch': 'restaurant',
+            'atm': 'atm', 'cash': 'atm', 'bank': 'atm',
+            'pharmacy': 'pharmacy', 'medicine': 'pharmacy', 'chemist': 'pharmacy', 'medical store': 'pharmacy',
+            'tyre': 'tyre_shop', 'tire': 'tyre_shop', 'puncture': 'tyre_shop',
+            'parking': 'parking', 'park': 'parking',
+            'mechanic': 'mechanic', 'garage': 'mechanic', 'repair': 'mechanic', 'service': 'mechanic',
+            'petrol': 'petrol_pump', 'fuel': 'petrol_pump', 'diesel': 'petrol_pump', 'gas station': 'petrol_pump',
+        }
+        
+        normalized = type_map.get(t)
+        if not normalized:
+            for key in type_map:
+                if key in t:
+                    normalized = type_map[key]
+                    break
+        
+        if not normalized or normalized not in NAGPUR_AMENITIES:
+            return []
+        
+        return NAGPUR_AMENITIES[normalized][:limit]
 if __name__ == "__main__":
     db = StationsDB()
     print(f"Base stations: {len(db.stations)}")

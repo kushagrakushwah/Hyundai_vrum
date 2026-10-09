@@ -541,17 +541,581 @@
         }
         .marker-avail { border-color: var(--status-green); box-shadow: 0 0 10px var(--status-green); }
         .marker-reserv { border-color: var(--status-amber); box-shadow: 0 0 10px var(--status-amber); }
-        .marker-charg { border-color: var(--hyundai-blue); box-shadow: 0 0 10px var(--hyundai-blue); }
         .marker-unavail { border-color: var(--status-red); }
+
+        /* Vehicle Pin-point Radar Marker */
+        .user-car-marker-container {
+            background: transparent !important;
+            border: none !important;
+        }
+        .user-car-marker {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .user-car-radar {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(0, 170, 212, 0.25);
+            border: 2px solid var(--hyundai-blue);
+            animation: car-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+            pointer-events: none;
+        }
+        @keyframes car-radar-ping {
+            0% { transform: scale(0.6); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .user-car-pin {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #00AAD4, #003366);
+            border: 2.5px solid #FFFFFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--hyundai-blue), 0 4px 10px rgba(0,0,0,0.8);
+            z-index: 5;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .user-car-pin:hover { transform: scale(1.15); }
+        .user-car-tag {
+            position: absolute;
+            bottom: -8px;
+            background: rgba(5, 10, 24, 0.92);
+            border: 1px solid var(--hyundai-blue);
+            color: var(--electric-yellow);
+            font-size: 9px;
+            font-weight: 800;
+            font-family: var(--font-head);
+            letter-spacing: 0.5px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 6;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        }
+
+        /* Map Controls */
+        .map-overlay-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .map-car-btn {
+            background: rgba(5, 10, 24, 0.85);
+            border: 1px solid var(--hyundai-blue);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-family: var(--font-head);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        .map-car-btn:hover {
+            background: var(--hyundai-blue);
+            color: #000;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0,170,212,0.6);
+        }
+        .map-coord-pill {
+            background: rgba(5, 10, 24, 0.85);
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            color: var(--electric-yellow);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
 
         .marker-icon { width: 16px; height: 16px; }
 
         .hidden { display: none !important; }
+
+        /* Automotive Floating Voice Assistant Button */
+        .voice-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 35px;
+            height: 52px;
+            padding: 0 22px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border: 2px solid rgba(255,255,255,0.4);
+            color: white;
+            font-size: 14px;
+            font-family: var(--font-head);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.55), 0 0 15px rgba(239,68,68,0.35);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .voice-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(239, 68, 68, 0.75);
+        }
+        .voice-btn.listening {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            animation: voice-pulse 1.2s infinite;
+            box-shadow: 0 0 35px rgba(220, 38, 38, 0.85);
+        }
+        body.voice-active .voice-btn {
+            display: none !important;
+        }
+        @keyframes voice-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+            50% { box-shadow: 0 0 0 16px rgba(239,68,68,0); }
+        }
+        
+        /* Solid Automotive In-Cabin Voice Modal */
+        .voice-overlay {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 680px;
+            max-height: 82vh;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            background: #070E20;
+            border: 1px solid rgba(0, 170, 212, 0.5);
+            border-radius: 18px;
+            padding: 16px 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 170, 212, 0.2);
+        }
+        .voice-overlay.active {
+            display: flex;
+            animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUpModal {
+            from { opacity: 0; transform: translate(-50%, 25px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        
+        .voice-transcript {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,170,212,0.25);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            max-height: 70px;
+            overflow-y: auto;
+        }
+        .voice-transcript .interim { color: var(--text-muted); font-style: italic; }
+        .voice-transcript .final { color: var(--hyundai-blue); font-weight: 600; }
+        
+        .voice-response {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,209,0,0.25);
+            border-radius: 14px;
+            padding: 16px 18px;
+            font-size: 14px;
+            color: var(--text-main);
+            line-height: 1.6;
+            max-height: 48vh;
+            overflow-y: auto;
+        }
+        .voice-response .assistant-label {
+            font-family: var(--font-head);
+            font-size: 12px;
+            color: var(--hyundai-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .recommendation-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 8px 0;
+            transition: all 0.3s;
+        }
+        .recommendation-card:hover {
+            background: rgba(0,170,212,0.08);
+            border-color: rgba(0,170,212,0.3);
+        }
+        .recommendation-card.best {
+            border-color: rgba(255,209,0,0.4);
+            background: rgba(255,209,0,0.05);
+        }
+        .rec-label {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .rec-label.gold { background: rgba(255,209,0,0.2); color: var(--electric-yellow); }
+        .rec-label.blue { background: rgba(0,170,212,0.2); color: var(--hyundai-blue); }
+        .rec-label.green { background: rgba(0,255,102,0.2); color: var(--status-green); }
+        
+        .rec-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+        .rec-name {
+            font-family: var(--font-head);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .rec-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .rec-stats span { display: flex; align-items: center; gap: 4px; }
+        .rec-reason {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+        .rec-action {
+            background: linear-gradient(135deg, #FFD100, #FFAA00);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--font-head);
+        }
+        .rec-action:hover { transform: scale(1.05); }
+        
+        .confirm-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .confirm-bar button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-head);
+            font-size: 14px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .confirm-yes {
+            background: linear-gradient(135deg, #00FF66, #00CC44);
+            color: #000;
+        }
+        .confirm-no {
+            background: rgba(255,51,51,0.2);
+            border: 1px solid var(--status-red) !important;
+            color: var(--status-red);
+        }
+        
+        .vehicle-insights {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .insight-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .insight-card .insight-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .insight-card .insight-value {
+            font-family: var(--font-head);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--electric-yellow);
+        }
+        .insight-warning {
+            background: rgba(255,153,0,0.1);
+            border-left: 3px solid var(--status-amber);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--status-amber);
+            margin-top: 8px;
+        }
+
+        /* Telematics Header Pill & Voice Chips */
+        .telematics-pill {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            color: var(--text-main);
+            padding: 6px 14px;
+            font-size: 12px;
+            font-family: var(--font-head);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.25s ease;
+        }
+        .telematics-pill:hover {
+            background: rgba(0,170,212,0.2);
+            border-color: var(--hyundai-blue);
+            transform: translateY(-1px);
+        }
+        .voice-quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 6px 0;
+        }
+        .v-chip {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+        .v-chip:hover {
+            color: var(--electric-yellow);
+            border-color: var(--electric-yellow);
+            background: rgba(255,209,0,0.1);
+        }
+        .voice-input-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,170,212,0.3);
+            border-radius: 12px;
+            padding: 6px 10px;
+            margin-top: 6px;
+        }
+        .mic-icon-btn {
+            background: linear-gradient(135deg, #00AAD4, #0066AA);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .mic-icon-btn.listening {
+            background: #ef4444;
+            animation: voice-pulse 1.2s infinite;
+        }
+        .voice-input-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 13px;
+            font-family: var(--font-body);
+            outline: none;
+        }
+        .voice-send-btn {
+            background: var(--hyundai-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .voice-send-btn:hover {
+            background: #0088aa;
+        }
+        .vehicle-modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vehicle-modal-content {
+            width: 90%;
+            max-width: 620px;
+            border-radius: 16px;
+            padding: 24px;
+            background: #071022;
+            border: 1px solid rgba(0,170,212,0.4);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .diag-stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .d-stat-lbl {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: block;
+        }
+        .d-stat-val {
+            font-family: var(--font-head);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 2px;
+            display: block;
+        }
+        .tyre-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .tyre-warning {
+            border-color: rgba(245,158,11,0.4);
+            background: rgba(245,158,11,0.06);
+        }
+        .comp-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .comp-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+/* ── Live Telematics HUD ── */
+.telematics-hud {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0,170,212,0.08);
+    border: 1px solid rgba(0,170,212,0.2);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.tele-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-main);
+}
+.tele-chip.alert { border-color: #ff4444; color: #ff6666; background: rgba(255,68,68,0.1); animation: pulseRed 2s infinite; }
+.tele-chip.warn { border-color: #FFD100; color: #FFD100; background: rgba(255,209,0,0.08); }
+.tele-chip.ok { border-color: var(--ev-blue); color: var(--ev-blue); }
+@keyframes pulseRed {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(255,68,68,0); }
+}
+
+/* ── Proactive Alert Banner ── */
+.proactive-alert {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    animation: slideInTop 0.4s ease;
+}
+.proactive-alert.danger { background: rgba(255,68,68,0.15); border: 1px solid #ff4444; color: #ff6666; display: flex; }
+.proactive-alert.warning { background: rgba(255,209,0,0.1); border: 1px solid #FFD100; color: #FFD100; display: flex; }
+@keyframes slideInTop {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Amenity Cards ── */
+.amenity-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+.amenity-icon { font-size: 20px; flex-shrink: 0; }
+.amenity-name { font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+.amenity-dist { color: var(--ev-blue); font-weight: 600; }
+.amenity-addr { color: var(--text-muted); font-size: 11px; }
     </style>
 </head>
 <body>
 
-    <div class="header glass" style="margin: 20px 20px 0 20px; border-radius: 12px;">
+    <div class="header glass" style="margin: 20px 20px 0 20px; border-radius: 12px; display:flex; align-items:center; justify-content:space-between;">
         <div class="logo-title">
             <svg class="hyundai-logo" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
                 <ellipse cx="100" cy="60" rx="90" ry="50" fill="none" stroke="currentColor" stroke-width="12"/>
@@ -559,9 +1123,45 @@
             </svg>
             <div class="title">SmartReserve <span style="color:var(--hyundai-blue); font-weight: 300;">EV</span></div>
         </div>
-        <div class="time-status">
-            <div class="status-dot" id="ws-status"></div>
-            <div id="clock">00:00:00</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="city-selector-wrap" style="display:flex; align-items:center; background:rgba(0,170,212,0.12); border:1px solid rgba(0,170,212,0.35); border-radius:20px; padding:4px 10px; gap:6px;">
+                <span style="font-size:14px;">📍</span>
+                <select id="city-select" onchange="changeCity(this.value)" style="background:transparent; border:none; color:white; font-family:var(--font-head); font-size:15px; font-weight:600; cursor:pointer; outline:none;">
+                    <option value="nagpur" selected style="background:#050A18; color:white;">Nagpur (Home)</option>
+                    <option value="hyderabad" style="background:#050A18; color:white;">Hyderabad</option>
+                    <option value="pune" style="background:#050A18; color:white;">Pune</option>
+                    <option value="mumbai" style="background:#050A18; color:white;">Mumbai</option>
+                    <option value="bengaluru" style="background:#050A18; color:white;">Bengaluru</option>
+                    <option value="delhi" style="background:#050A18; color:white;">Delhi / NCR</option>
+                    <option value="bhopal" style="background:#050A18; color:white;">Bhopal</option>
+                    <option value="indore" style="background:#050A18; color:white;">Indore</option>
+                </select>
+            </div>
+            <button class="telematics-pill" onclick="detectUserLocation(true)" style="border-color:#FFD100; background:rgba(255,209,0,0.12); color:#FFD100; font-weight:700;" title="Get Exact Device GPS Location">
+                <span>📍</span> My GPS
+            </button>
+            <!-- Live Telematics HUD in Header -->
+            <div class="telematics-hud" id="tele-hud" style="margin-bottom:0; padding:3px 6px; background:rgba(0,170,212,0.06); border:1px solid rgba(0,170,212,0.25); border-radius:18px;">
+                <div class="tele-chip" id="tele-soc" style="cursor:pointer;" onclick="openVehicleModal()">🔋 18%</div>
+                <div class="tele-chip" id="tele-range">📡 87 km</div>
+                <div class="tele-chip" id="tele-city">📍 Nagpur</div>
+                <div class="tele-chip" id="tele-mode">⚡ Normal</div>
+                <div class="tele-chip warn" id="tele-tyre" style="cursor:pointer;" onclick="openVehicleModal()">🛞 Tyre Alert</div>
+            </div>
+            <button id="btn-hands-free" class="telematics-pill" onclick="toggleHandsFree()" style="border-color:#22c55e; background:rgba(34,197,94,0.18); color:#22c55e; font-weight:700;" title="Hands-Free Continuous Voice: speak commands or 'Hey AVA' without clicking">
+                <span id="hf-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; margin-right:4px;"></span>
+                <span id="hf-label">🎙️ Hands-Free: ON</span>
+            </button>
+            <button id="btn-vehicle-diag" class="telematics-pill" onclick="openVehicleModal()" title="View Vehicle Health & TPMS">
+                🚗 Ioniq 5 · <span id="hdr-soc" style="color:var(--electric-yellow); font-weight:700;">18%</span> · <span id="hdr-range">87 km</span> · <span style="color:#22c55e;">TPMS</span>
+            </button>
+            <button class="telematics-pill" onclick="toggleVoiceOverlay()" style="border-color:var(--hyundai-blue); background:rgba(0,170,212,0.12);" title="Toggle AVA Voice Co-Pilot">
+                🤖 AVA Co-Pilot
+            </button>
+            <div class="time-status" style="margin-left:6px;">
+                <div class="status-dot" id="ws-status"></div>
+                <div id="clock">00:00:00</div>
+            </div>
         </div>
     </div>
 
@@ -582,8 +1182,21 @@
         </div>
 
         <!-- Center Panel -->
-        <div class="panel-center">
+        <div class="panel-center" style="position: relative;">
+            <!-- Proactive Battery Alert Banner (Clean Top Banner) -->
+            <div id="proactive-alert" class="proactive-alert" style="margin-bottom: 8px;"></div>
             <div id="map" class="glass"></div>
+            <div class="map-overlay-controls">
+                <button class="map-car-btn" onclick="detectUserLocation(true)" style="background:rgba(255,209,0,0.15); border-color:#FFD100; color:#FFD100;" title="Get Exact Device GPS Location">
+                    <span>📍</span> Live GPS
+                </button>
+                <button class="map-car-btn" onclick="locateUserCar(true)" title="Recenter to Exact Vehicle Coordinates">
+                    <span>🎯</span> Recenter
+                </button>
+                <div class="map-coord-pill" id="map-coord-pill">
+                    📍 GPS: 21.1458° N, 79.0882° E (NAGPUR)
+                </div>
+            </div>
             
             <div id="charging-panel" class="glass charging-panel hidden">
                 <div class="chg-header">
@@ -763,6 +1376,178 @@
         </div>
     </div>
 
+    <!-- AVA Voice Assistant -->
+    <!-- AVA Voice Assistant Button (Automotive Red Voice Trigger) -->
+    <button class="voice-btn" id="voice-btn" title="AVA Voice Assistant (Hey AVA / Ctrl + J)" onclick="toggleVoiceOverlay()">
+        <span style="font-size:18px;">🎙️</span>
+        <span>AVA VOICE</span>
+    </button>
+
+    <div class="voice-overlay" id="voice-overlay">
+        <!-- Overlay Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:rgba(0,0,0,0.5); border-radius:12px; border:1px solid rgba(0,170,212,0.3);">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">🤖</span>
+                <span style="font-family:var(--font-head); font-weight:700; color:var(--hyundai-blue); font-size:14px; letter-spacing:1px;">AVA IN-CABIN CO-PILOT</span>
+                <span style="font-size:10px; background:rgba(255,209,0,0.15); color:var(--electric-yellow); padding:2px 6px; border-radius:4px; font-weight:600;">EN · HI · MR</span>
+                <span id="handsfree-status-badge" style="font-size:10px; background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid #22c55e; padding:2px 8px; border-radius:10px; font-weight:700;">⚡ LISTENING</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="toggleHandsFree()" id="hf-modal-toggle" style="background:rgba(34,197,94,0.15); border:1px solid #22c55e; color:#22c55e; font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer; font-weight:600;" title="Toggle hands-free listening">Hands-Free: ON</button>
+                <button onclick="closeVoiceOverlay()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; padding:0 4px;" title="Close">✕</button>
+            </div>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="voice-quick-chips">
+            <button class="v-chip" onclick="quickAsk('How far am I from VNIT Nagpur?')">📍 Distance to VNIT</button>
+            <button class="v-chip" onclick="quickAsk('Nearest charging station find karo')">⚡ Nearest Charger</button>
+            <button class="v-chip" onclick="quickAsk('Gaadi chi battery kiti aahe')">🔋 Battery Status</button>
+            <button class="v-chip" onclick="quickAsk('Can I reach Wardha without charging?')">🛣️ Reach Wardha?</button>
+            <button class="v-chip" onclick="quickAsk('Vehicle diagnostics check karo')">🔧 Diagnostics</button>
+        </div>
+
+        <!-- Live transcript box -->
+        <div class="voice-transcript" id="voice-transcript" style="display:none;">
+            <span class="interim" id="voice-interim"></span>
+            <span class="final" id="voice-final"></span>
+        </div>
+
+        <!-- Response area -->
+        <div class="voice-response" id="voice-response" style="display:none;"></div>
+
+        <!-- Input Bar (works with or without microphone!) -->
+        <div class="voice-input-bar">
+            <button id="mic-toggle-btn" class="mic-icon-btn" onclick="toggleListening()" title="Speak via Microphone">🎙️</button>
+            <input type="text" id="voice-text-box" placeholder="Ask AVA (e.g. 'nearest charging station', 'battery kiti aahe')..." onkeydown="if(event.key==='Enter') submitVoiceBox()">
+            <button class="voice-send-btn" onclick="submitVoiceBox()">Send</button>
+        </div>
+    </div>
+
+    <!-- Vehicle Intelligence & TPMS Modal -->
+    <div id="vehicle-modal" class="vehicle-modal-backdrop hidden" onclick="if(event.target===this) closeVehicleModal()">
+        <div class="vehicle-modal-content glass">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:24px;">🚗</span>
+                    <div>
+                        <div style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--text-main);">HYUNDAI IONIQ 5 — TELEMATICS & HEALTH</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Real-Time BMS, 4-Wheel TPMS & Predictive Diagnostics</div>
+                    </div>
+                </div>
+                <button onclick="closeVehicleModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Key Specs Grid -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:16px;">
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Battery SoC</span>
+                    <span class="d-stat-val" id="diag-soc" style="color:var(--electric-yellow);">18.0%</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Est. Range</span>
+                    <span class="d-stat-val" id="diag-range">86.6 km</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Efficiency</span>
+                    <span class="d-stat-val" id="diag-eff">6.6 km/kWh</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Drive Time Left</span>
+                    <span class="d-stat-val" id="diag-hours">1.9 hrs</span>
+                </div>
+            </div>
+
+            <!-- TPMS 4-Wheel Visual -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:16px;">
+                <div style="font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--hyundai-blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                    🛞 Tyre Pressure Monitoring System (TPMS)
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="tyre-card tyre-warning">
+                        <span style="font-size:11px; color:var(--text-muted);">Front Left (FL)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-amber);">28.0 PSI</span>
+                            <span class="badge status-resv" style="font-size:9px;">LOW</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Front Right (FR)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">35.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Rear Left (RL)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">36.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Rear Right (RR)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">36.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Health Scores -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:16px;">
+                <div style="font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--hyundai-blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                    ⚙️ Component Health & Predictive Life
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Traction Battery Pack (SOH)</span><span style="color:#22c55e; font-weight:600;">98.5%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:98.5%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Permanent Magnet Synchronous Motor</span><span style="color:#22c55e; font-weight:600;">99.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:99%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Regenerative & Friction Brake Pads</span><span style="color:var(--electric-yellow); font-weight:600;">75.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:75%; background:var(--electric-yellow);"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Inverter & Power Electronics Coolant</span><span style="color:#22c55e; font-weight:600;">90.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:90%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Windshield Wiper Fluid</span><span style="color:var(--status-amber); font-weight:600;">40.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:40%; background:var(--status-amber);"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance & AI Insights -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,170,212,0.08); border:1px solid rgba(0,170,212,0.25); border-radius:10px; padding:12px 16px;">
+                <div>
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Scheduled Maintenance</div>
+                    <div style="font-family:var(--font-head); font-size:16px; font-weight:700; color:var(--hyundai-blue);">Due in 5,500 km</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11px; color:var(--text-muted);">Vehicle Health Status</div>
+                    <div style="font-weight:700; color:#22c55e; font-size:13px;">✅ Optimal</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -783,27 +1568,201 @@
         let activeSession = false;
         
         // Demo Fallback Data
+        // Demo Fallback Data (Nagpur, Maharashtra default)
         const demoStations = [
-            { id: 'TG0001', name: 'Tata Power Fast Hub — Hyderabad', address: 'Banjara Hills, Hyderabad', district: 'Hyderabad', operator: 'Tata Power', power_kw: 60, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 17.4156, lng: 78.4350 },
-            { id: 'OCM-510840', name: 'E-Fill Electric Fast Charger', address: 'Hotel Food Mania, Telangana', district: 'Hyderabad', operator: 'E-Fill', power_kw: 30, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 17.3850, lng: 78.4867 },
-            { id: 'TG0002', name: 'ChargeZone Highway Hub — Rangareddy', address: 'ORR Exit 11, Rangareddy', district: 'Rangareddy', operator: 'ChargeZone', power_kw: 120, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 17.2403, lng: 78.4294 },
-            { id: 'TG0003', name: 'Jubilee Hills Checkpost Hub', address: 'Jubilee Hills, Hyderabad', district: 'Hyderabad', operator: 'Tata Power', power_kw: 50, status: 'RESERVED', is_live_ocm: false, connector_type: 'CCS2', lat: 17.4300, lng: 78.4090 },
-            { id: 'TG0004', name: 'Secunderabad Metro Charger', address: 'Secunderabad Station', district: 'Hyderabad', operator: 'Statiq', power_kw: 22, status: 'CHARGING', is_live_ocm: false, connector_type: 'AC Type 2', lat: 17.4337, lng: 78.5016 },
+            { id: 'IN_NGP_001', name: 'Tata Power Superfast Hub — Sitabuldi', address: 'Sitabuldi Metro Interchange, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Tata Power', power_kw: 120, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 21.1458, lng: 79.0882 },
+            { id: 'DF_MA_920121', name: 'EESL Fast Hub — Kasturchand Park Metro', address: 'Kasturchand Park Metro Station, Nagpur, Maharashtra', district: 'Nagpur', operator: 'EESL', power_kw: 142, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1558, lng: 79.0882 },
+            { id: 'DF_MA_306939', name: 'Jio-bp Pulse Fast Hub — Great Nag Road', address: 'Orient Hotel, Great Nag Road, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Jio-bp', power_kw: 60, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1367, lng: 79.0920 },
+            { id: 'DF_MA_969709', name: 'MSEDCL Fast Charger — Ganeshpeth', address: 'Near ST Bus Stand, Ganeshpeth, Nagpur, Maharashtra', district: 'Nagpur', operator: 'MSEDCL', power_kw: 30, status: 'RESERVED', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1376, lng: 79.0960 },
+            { id: 'DF_MA_031071', name: 'Ather Grid — Dosar Bhavan Chowk', address: 'CA Road, Dosar Bhavan, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Ather', power_kw: 22, status: 'CHARGING', is_live_ocm: false, connector_type: 'AC Type 2', lat: 21.1523, lng: 79.0957 },
         ];
 
-        // Init Map with OpenStreetMap (100% Free, No API Key Required)
+        const CITY_COORDS = {
+            'nagpur': [21.1458, 79.0882],
+            'vnit': [21.1255, 79.0524],
+            'vnit nagpur': [21.1255, 79.0524],
+            'hyderabad': [17.3850, 78.4867],
+            'pune': [18.5204, 73.8567],
+            'mumbai': [19.0760, 72.8777],
+            'bengaluru': [12.9716, 77.5946],
+            'delhi': [28.6139, 77.2090],
+            'bhopal': [23.2599, 77.4126],
+            'indore': [22.7196, 75.8577]
+        };
+        let currentCity = 'nagpur';
+        let currentLat = 21.1458;
+        let currentLng = 79.0882;
+        let userCarMarker = null;
+
+        function renderUserCarMarker(lat, lng) {
+            if (!map || typeof L === 'undefined') return;
+            if (userCarMarker) {
+                userCarMarker.setLatLng([lat, lng]);
+            } else {
+                const carIcon = L.divIcon({
+                    className: 'user-car-marker-container',
+                    html: `
+                        <div class="user-car-marker">
+                            <div class="user-car-radar"></div>
+                            <div class="user-car-pin">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#00AAD4">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/>
+                                    <circle cx="7.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                    <circle cx="16.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                </svg>
+                            </div>
+                            <div class="user-car-tag">📍 YOUR CAR</div>
+                        </div>
+                    `,
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 30]
+                });
+                userCarMarker = L.marker([lat, lng], { icon: carIcon, zIndexOffset: 2500 }).addTo(map);
+                userCarMarker.on('click', () => {
+                    locateUserCar(false);
+                });
+            }
+            userCarMarker.bindPopup(`
+                <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span style="font-size:16px;">🚗</span>
+                        <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">YOUR HYUNDAI IONIQ 5</b>
+                    </div>
+                    <div style="font-size:12px; color:#FFD100; font-weight:700;">📍 ${currentCity.toUpperCase()}, India</div>
+                    <div style="font-size:11px; color:#8E9AA8; margin-top:2px;">Exact GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E</div>
+                    <div style="font-size:11px; color:#00FF66; margin-top:4px;">⚡ In range of 137 verified EV Hubs</div>
+                </div>
+            `);
+            const coordPill = document.getElementById('map-coord-pill');
+            if (coordPill) {
+                coordPill.innerHTML = `📍 GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (${currentCity.toUpperCase()})`;
+            }
+        }
+
+        function locateUserCar(fly = true) {
+            if (!map) return;
+            if (fly) {
+                map.flyTo([currentLat, currentLng], 14, { duration: 1.2 });
+            }
+            if (userCarMarker) {
+                setTimeout(() => userCarMarker.openPopup(), 450);
+            }
+            showToast(`📍 Vehicle Centered: ${currentLat.toFixed(4)}° N, ${currentLng.toFixed(4)}° E`, 'info');
+        }
+
+        // Init Map with OpenStreetMap (Default: Nagpur, India)
         function initMap() {
             try {
                 if (typeof L !== 'undefined') {
-                    map = L.map('map', { zoomControl: false }).setView([17.3850, 78.4867], 11);
+                    map = L.map('map', { zoomControl: false }).setView([21.1458, 79.0882], 13);
                     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors',
                         maxZoom: 19
                     }).addTo(map);
                     L.control.zoom({ position: 'bottomright' }).addTo(map);
+                    renderUserCarMarker(currentLat, currentLng);
                 }
             } catch (e) {
                 console.warn('Map init error:', e);
+            }
+        }
+
+        async function changeCity(city) {
+            currentCity = city.toLowerCase();
+            const coords = CITY_COORDS[currentCity] || [21.1458, 79.0882];
+            currentLat = coords[0];
+            currentLng = coords[1];
+            renderUserCarMarker(currentLat, currentLng);
+            if (map) {
+                map.flyTo(coords, 13, { duration: 1.2 });
+            }
+            try {
+                await fetch(`${API}/api/vehicle/location`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ city: currentCity, latitude: currentLat, longitude: currentLng })
+                });
+            } catch(e) {}
+            showToast(`📍 Location set to ${city.toUpperCase()}`, 'info');
+            fetchStations();
+        }
+
+        function detectUserLocation(userClick = false) {
+            if ('geolocation' in navigator) {
+                if (userClick) showToast('🛰️ Requesting device GPS coordinates...', 'info');
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    currentLat = lat;
+                    currentLng = lng;
+                    let closestCity = 'nagpur';
+                    let minDist = 999999;
+                    for (const [cName, cCoord] of Object.entries(CITY_COORDS)) {
+                        const d = Math.hypot(lat - cCoord[0], lng - cCoord[1]);
+                        if (d < minDist) {
+                            minDist = d;
+                            closestCity = cName;
+                        }
+                    }
+                    if (minDist < 1.0) {
+                        currentCity = closestCity.includes('vnit') ? 'nagpur' : closestCity;
+                        const select = document.getElementById('city-select');
+                        if (select) select.value = currentCity;
+                    }
+                    renderUserCarMarker(lat, lng);
+                    if (map) map.flyTo([lat, lng], 15, { duration: 1.2 });
+
+                    // Check if near VNIT Nagpur campus (21.1255, 79.0524)
+                    const distToVNITKm = Math.hypot((lat - 21.1255) * 111.0, (lng - 79.0524) * 103.0);
+                    const isVNIT = distToVNITKm <= 1.2;
+                    const locLabel = isVNIT 
+                        ? `VNIT Nagpur Campus (${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E)`
+                        : `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (${currentCity.toUpperCase()})`;
+
+                    const coordPill = document.getElementById('map-coord-pill');
+                    if (coordPill) coordPill.innerHTML = `📍 GPS: ${locLabel}`;
+                    const teleCity = document.getElementById('tele-city');
+                    if (teleCity) teleCity.textContent = isVNIT ? '📍 VNIT Nagpur' : `📍 ${currentCity.toUpperCase()}`;
+
+                    try {
+                        await fetch(`${API}/api/vehicle/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                city: currentCity, 
+                                latitude: lat, 
+                                longitude: lng,
+                                landmark: isVNIT ? 'VNIT Nagpur' : undefined 
+                            })
+                        });
+                    } catch(e) {}
+                    showToast(`📍 Live GPS Locked: ${isVNIT ? 'VNIT Nagpur' : locLabel}`, 'success');
+                    fetchStations();
+                }, (err) => {
+                    console.log('GPS skipped or error:', err.message);
+                    if (userClick) {
+                        // User explicitly clicked My GPS: fallback gracefully to VNIT Nagpur coordinates
+                        currentLat = 21.1255;
+                        currentLng = 79.0524;
+                        currentCity = 'nagpur';
+                        renderUserCarMarker(currentLat, currentLng);
+                        if (map) map.flyTo([currentLat, currentLng], 15, { duration: 1.2 });
+                        const coordPill = document.getElementById('map-coord-pill');
+                        if (coordPill) coordPill.innerHTML = `📍 GPS: VNIT Nagpur Campus (21.1255° N, 79.0524° E)`;
+                        const teleCity = document.getElementById('tele-city');
+                        if (teleCity) teleCity.textContent = '📍 VNIT Nagpur';
+                        showToast(`📍 Live GPS: Positioned at VNIT Nagpur (${currentLat}, ${currentLng})`, 'info');
+                        try {
+                            fetch(`${API}/api/vehicle/location`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ city: 'nagpur', latitude: 21.1255, longitude: 79.0524, landmark: 'VNIT Nagpur' })
+                            });
+                        } catch(e) {}
+                    }
+                }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+            } else {
+                if (userClick) showToast('⚠️ Geolocation not supported by browser', 'error');
             }
         }
 
@@ -846,25 +1805,26 @@
         // API Fetch
         async function fetchStations(source = 'all') {
             try {
-                const res = await fetch(`${API}/api/stations?source=${source}&limit=1000`);
+                const res = await fetch(`${API}/api/stations?source=${source}&city=${encodeURIComponent(currentCity)}&latitude=${currentLat}&longitude=${currentLng}&limit=300`);
                 if (!res.ok) throw new Error('API down');
                 const data = await res.json();
                 const rawList = Array.isArray(data) ? data : (data.stations || []);
                 
+                const cDisplay = currentCity.charAt(0).toUpperCase() + currentCity.slice(1);
                 stations = rawList.map(s => ({
                     ...s,
                     id: s.station_id || s.id,
                     name: s.name || 'EV Fast Charger',
-                    city: s.city || s.district || 'City',
-                    district: s.district || 'Telangana',
-                    address: s.address || (s.district ? s.district + ', Telangana' : 'Telangana'),
+                    city: s.city || s.district || cDisplay,
+                    district: s.district || cDisplay,
+                    address: s.address || (s.district ? s.district + ', India' : 'India'),
                     power_kw: parseFloat(s.power_kw) || 60,
                     status: s.status || 'AVAILABLE',
                     connector_type: s.connector_type || 'CCS2',
                     operator: s.operator || 'EV Operator',
                     is_live_ocm: Boolean(s.is_live_ocm),
-                    lat: parseFloat(s.lat) || 17.3850,
-                    lng: parseFloat(s.lng) || 78.4867
+                    lat: parseFloat(s.lat) || currentLat,
+                    lng: parseFloat(s.lng) || currentLng
                 }));
             } catch (e) {
                 console.warn('API fetch failed, loading demo stations:', e);
@@ -874,9 +1834,11 @@
             applyFilters();
             updateStats();
             
-            if (stations.length > 0 && !selectedStationId) {
-                const firstAvailable = stations.find(s => s.status === 'AVAILABLE') || stations[0];
-                selectStation(firstAvailable.id);
+            if (stations.length > 0) {
+                if (!selectedStationId || !stations.some(s => s.id === selectedStationId)) {
+                    const firstAvailable = stations.find(s => s.status === 'AVAILABLE') || stations[0];
+                    selectStation(firstAvailable.id);
+                }
             }
         }
 
@@ -948,6 +1910,13 @@
             if (currentSearch) {
                 filtered = filtered.filter(s => matchQuery(s, currentSearch));
             }
+
+            // Sort by proximity to current city/location (Nagpur by default)
+            filtered = [...filtered].sort((a, b) => {
+                const distA = Math.hypot((a.lat || 0) - currentLat, (a.lng || 0) - currentLng);
+                const distB = Math.hypot((b.lat || 0) - currentLat, (b.lng || 0) - currentLng);
+                return distA - distB;
+            });
 
             renderStationList(filtered);
             renderMarkers(filtered);
@@ -1041,13 +2010,20 @@
         }
 
         function selectStation(id) {
+            if (!id) return;
             selectedStationId = id;
-            const st = stations.find(s => s.id === id);
-            if (!st) return;
+            const targetId = String(id).toUpperCase();
+            let st = stations.find(s => (s.id && String(s.id).toUpperCase() === targetId) || (s.station_id && String(s.station_id).toUpperCase() === targetId)) || stations.find(s => s.id === id);
+            if (!st) {
+                const cDisplay = currentCity.charAt(0).toUpperCase() + currentCity.slice(1);
+                st = { id: id, name: `Charging Station ${id}`, city: cDisplay, district: cDisplay, address: `${cDisplay} Charging Hub`, power_kw: 60, status: 'AVAILABLE', connector_type: 'CCS2', operator: 'Fast Charger', lat: currentLat, lng: currentLng };
+                stations.push(st);
+            }
 
             // Highlight card
             document.querySelectorAll('.station-card').forEach(c => {
-                c.classList.toggle('selected', c.dataset.stationId === id || c.getAttribute('data-station-id') === id);
+                const cId = (c.dataset.stationId || c.getAttribute('data-station-id') || '').toUpperCase();
+                c.classList.toggle('selected', cId === targetId || cId === String(id).toUpperCase());
             });
             
             // Map fly safely
@@ -1509,6 +2485,7 @@
         // Startup
         function startApp() {
             try { initMap(); } catch(e) { console.warn('initMap err:', e); }
+            try { detectUserLocation(); } catch(e) { console.warn('detectLocation err:', e); }
             try { fetchStations(); } catch(e) { console.warn('fetchStations err:', e); }
             try { initWebSocket(); } catch(e) { console.warn('initWS err:', e); }
             try { fetchStats(); } catch(e) { console.warn('fetchStats err:', e); }
@@ -1520,6 +2497,806 @@
         } else {
             startApp();
         }
+
+        // ── AVA Voice Assistant & Vehicle Telematics ─────────────────────────
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceOverlay = document.getElementById('voice-overlay');
+        const voiceTranscript = document.getElementById('voice-transcript');
+        const voiceInterim = document.getElementById('voice-interim');
+        const voiceFinal = document.getElementById('voice-final');
+        const voiceResponse = document.getElementById('voice-response');
+        const micToggleBtn = document.getElementById('mic-toggle-btn');
+        
+        let recognition = null;
+        let isListening = false;
+        let lastRecommendations = [];
+        let pendingConfirmation = false;
+
+        function toggleVoiceOverlay() {
+            if (voiceOverlay.classList.contains('active')) {
+                closeVoiceOverlay();
+            } else {
+                voiceOverlay.classList.add('active');
+                document.body.classList.add('voice-active');
+                const box = document.getElementById('voice-text-box');
+                if (box) setTimeout(() => box.focus(), 100);
+            }
+        }
+
+        function closeVoiceOverlay() {
+            stopListening();
+            voiceOverlay.classList.remove('active');
+            document.body.classList.remove('voice-active');
+            pendingConfirmation = false;
+        }
+
+        function toggleListening() {
+            if (isListening) stopListening();
+            else startListening();
+        }
+
+        function quickAsk(text) {
+            const box = document.getElementById('voice-text-box');
+            if (box) box.value = text;
+            processVoiceCommand(text);
+        }
+
+        function submitVoiceBox() {
+            const box = document.getElementById('voice-text-box');
+            if (box && box.value.trim()) {
+                const text = box.value.trim();
+                box.value = '';
+                processVoiceCommand(text);
+            }
+        }
+        
+        // Hands-Free Continuous Voice Engine
+        let handsFreeActive = true;
+        let isSpeakingTTS = false;
+        let restartTimer = null;
+
+        function toggleHandsFree() {
+            handsFreeActive = !handsFreeActive;
+            if (handsFreeActive) {
+                startListening();
+                showToast('🎙️ Hands-Free Voice ON: Speak anytime without clicking', 'success');
+            } else {
+                stopListening();
+                showToast('Hands-Free Voice Paused', 'info');
+            }
+            updateHandsFreeUI(handsFreeActive);
+        }
+
+        function updateHandsFreeUI(active) {
+            const hfBtn = document.getElementById('btn-hands-free');
+            const hfDot = document.getElementById('hf-dot');
+            const hfLabel = document.getElementById('hf-label');
+            const hfBadge = document.getElementById('handsfree-status-badge');
+            const hfModalBtn = document.getElementById('hf-modal-toggle');
+
+            if (active) {
+                if (hfBtn) {
+                    hfBtn.style.borderColor = '#22c55e';
+                    hfBtn.style.background = 'rgba(34,197,94,0.18)';
+                    hfBtn.style.color = '#22c55e';
+                }
+                if (hfDot) {
+                    hfDot.style.background = '#22c55e';
+                    hfDot.style.boxShadow = '0 0 10px #22c55e';
+                }
+                if (hfLabel) hfLabel.innerText = '🎙️ Hands-Free: ON';
+                if (hfBadge) {
+                    hfBadge.style.display = 'inline-block';
+                    hfBadge.innerText = '⚡ ALWAYS LISTENING';
+                    hfBadge.style.borderColor = '#22c55e';
+                    hfBadge.style.color = '#22c55e';
+                }
+                if (hfModalBtn) {
+                    hfModalBtn.innerText = 'Hands-Free: ON';
+                    hfModalBtn.style.borderColor = '#22c55e';
+                    hfModalBtn.style.color = '#22c55e';
+                }
+                if (voiceBtn) voiceBtn.classList.add('listening');
+            } else {
+                if (hfBtn) {
+                    hfBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                    hfBtn.style.background = 'rgba(255,255,255,0.05)';
+                    hfBtn.style.color = 'var(--text-muted)';
+                }
+                if (hfDot) {
+                    hfDot.style.background = '#888';
+                    hfDot.style.boxShadow = 'none';
+                }
+                if (hfLabel) hfLabel.innerText = '🎙️ Hands-Free: OFF';
+                if (hfBadge) {
+                    hfBadge.innerText = 'PAUSED';
+                    hfBadge.style.borderColor = '#888';
+                    hfBadge.style.color = '#888';
+                }
+                if (hfModalBtn) {
+                    hfModalBtn.innerText = 'Hands-Free: OFF';
+                    hfModalBtn.style.borderColor = '#888';
+                    hfModalBtn.style.color = '#888';
+                }
+                if (voiceBtn) voiceBtn.classList.remove('listening');
+            }
+        }
+        
+        // Initialize Web Speech API
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('Speech Recognition not supported in this browser. Text input active.');
+                updateHandsFreeUI(false);
+                return;
+            }
+            try {
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'en-IN';
+                recognition.maxAlternatives = 1;
+                
+                recognition.onstart = () => {
+                    isListening = true;
+                    if (voiceBtn) {
+                        voiceBtn.classList.add('listening');
+                        voiceBtn.innerHTML = '🎙️';
+                    }
+                    if (micToggleBtn) micToggleBtn.classList.add('listening');
+                    updateHandsFreeUI(true);
+                };
+                
+                recognition.onresult = (event) => {
+                    if (isSpeakingTTS) return; // Prevent hearing self
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    if (interimTranscript) {
+                        voiceTranscript.style.display = 'block';
+                        voiceInterim.innerText = interimTranscript;
+                    }
+                    if (finalTranscript && finalTranscript.trim()) {
+                        voiceTranscript.style.display = 'block';
+                        voiceFinal.innerText = finalTranscript;
+                        processVoiceCommand(finalTranscript.trim());
+                    }
+                };
+                
+                recognition.onerror = (event) => {
+                    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        console.warn('Speech error:', event.error);
+                    }
+                    if (event.error === 'not-allowed') {
+                        handsFreeActive = false;
+                        updateHandsFreeUI(false);
+                        showToast('Microphone access blocked. Click mic or type below.', 'warning');
+                    }
+                };
+                
+                recognition.onend = () => {
+                    isListening = false;
+                    if (handsFreeActive && !isSpeakingTTS) {
+                        clearTimeout(restartTimer);
+                        restartTimer = setTimeout(() => {
+                            if (handsFreeActive && !isSpeakingTTS) {
+                                try { recognition.start(); } catch(e) {}
+                            }
+                        }, 250);
+                    } else {
+                        updateHandsFreeUI(false);
+                    }
+                };
+            } catch(e) {
+                console.warn('Speech recognition init error:', e);
+            }
+        }
+        
+        function startListening() {
+            if (!recognition) initSpeechRecognition();
+            if (!recognition) {
+                voiceOverlay.classList.add('active');
+                const box = document.getElementById('voice-text-box');
+                if (box) box.focus();
+                return;
+            }
+            try {
+                recognition.start();
+                updateHandsFreeUI(true);
+            } catch(e) {
+                if (e.name !== 'InvalidStateError') {
+                    console.warn('Recognition start error:', e);
+                }
+            }
+        }
+        
+        function stopListening() {
+            isListening = false;
+            handsFreeActive = false;
+            if (voiceBtn) {
+                voiceBtn.classList.remove('listening');
+                voiceBtn.innerHTML = '🎙️';
+            }
+            if (micToggleBtn) micToggleBtn.classList.remove('listening');
+            updateHandsFreeUI(false);
+            try { if (recognition) recognition.stop(); } catch(e) {}
+        }
+        
+        // Process voice command through backend
+        async function processVoiceCommand(text) {
+            voiceOverlay.classList.add('active');
+            voiceResponse.style.display = 'block';
+            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA Processing...</div><div style="color:var(--text-muted);font-size:13px;">Analysing: "${text}"</div>`;
+            
+            // Check for confirmation responses
+            if (pendingConfirmation) {
+                const yesWords = ['yes', 'haan', 'ho', 'ha', 'ok', 'sure', 'confirm', 'karo', 'kar do', 'reserve', 'lock'];
+                const noWords = ['no', 'nahi', 'nako', 'cancel', 'mat', 'band', 'stop', 'ruk'];
+                const lower = text.toLowerCase().trim();
+                
+                const isYes = yesWords.some(w => lower.includes(w));
+                const isNo = noWords.some(w => lower.includes(w));
+                
+                if (isYes || isNo) {
+                    await handleConfirmation(isYes);
+                    return;
+                }
+            }
+            
+            // Station landmark extraction before API call
+            const STATION_LANDMARKS = {
+                'vnit': 'vnit_tata',
+                'vnit nagpur': 'vnit_tata',
+                'congress nagar': 'congress_nagar_eesl',
+                'kasturchand': 'kasturchand_eesl',
+                'sitabuldi': 'sitabuldi_tata',
+                'wardha road': 'wardha_chargezone',
+                'jhansi rani': 'jhansi_rani_eesl',
+                'zero mile': 'zero_mile_eesl',
+                'lad colony': 'lad_colony_eesl',
+            };
+            let detectedLandmark = null;
+            const lowerText = text.toLowerCase();
+            for (const [landmark, hint] of Object.entries(STATION_LANDMARKS)) {
+                if (lowerText.includes(landmark)) {
+                    detectedLandmark = hint;
+                    // Pan map to approximate location
+                    if (typeof map !== 'undefined' && map) {
+                        const landmarkCoords = {
+                            'vnit_tata': [21.1255, 79.0524],
+                            'congress_nagar_eesl': [21.1304, 79.0857],
+                            'kasturchand_eesl': [21.1509, 79.0802],
+                            'sitabuldi_tata': [21.1450, 79.0893],
+                            'wardha_chargezone': [21.0892, 79.1236],
+                            'jhansi_rani_eesl': [21.1367, 79.0944],
+                            'zero_mile_eesl': [21.1500, 79.0833],
+                        };
+                        const coords = landmarkCoords[hint];
+                        if (coords) map.flyTo(coords, 15, { duration: 1.0 });
+                    }
+                    break;
+                }
+            }
+
+            try {
+                const res = await fetch(`${API}/api/voice/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: text, 
+                        user_id: DRIVER_ID,
+                        selected_station_id: detectedLandmark || selectedStationId,
+                        city: currentCity,
+                        latitude: currentLat,
+                        longitude: currentLng
+                    })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    displayVoiceResponse(data);
+                    speakResponse(data.text);
+                    
+                    // If action was executed directly
+                    if (data.display_data && data.display_data.action === 'reserve') {
+                        const sid = data.display_data.station_id || (data.display_data.reservation && data.display_data.reservation.station_id);
+                        if (sid) selectStation(sid);
+                        if (data.display_data.reservation) {
+                            const resv = data.display_data.reservation;
+                            currentReservation = resv;
+                            if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        } else if (data.display_data.pin) {
+                            showReservationPIN(data.display_data.pin, Date.now() / 1000 + 1800);
+                        }
+                        fetchStations();
+                        showToast(`⚡ Slot Locked: ${data.display_data.station_name || sid}! PIN: ${data.display_data.pin || 'Created'}`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'show_pin') {
+                        if (data.display_data.pin) {
+                            showReservationPIN(data.display_data.pin, data.display_data.expires_at || (Date.now() / 1000 + 1800));
+                        }
+                        if (data.display_data.station_id) selectStation(data.display_data.station_id);
+                        showToast(`🔑 Active PIN: ${data.display_data.pin}`, 'info');
+                    } else if (data.display_data && (data.display_data.action === 'show_car_location' || data.display_data.action === 'locate_car')) {
+                        locateUserCar(true);
+                        showToast(`📍 Exact Location: ${currentCity.toUpperCase()} (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`, 'info');
+                    } else if (data.display_data && data.display_data.action === 'show_petrol_pump') {
+                        if (data.display_data.lat && data.display_data.lng && map) {
+                            map.flyTo([data.display_data.lat, data.display_data.lng], 14, { duration: 1.2 });
+                        }
+                        showToast(`⛽ Nearest Fuel Outlet: ${data.display_data.pump_name} (${data.display_data.distance_km} km)`, 'warning');
+                    } else if (data.display_data && data.display_data.action === 'show_cost_breakdown') {
+                        showToast(`💰 ${data.display_data.cpo}: ₹${data.display_data.estimated_cost_rs} to 80% SoC`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'range_check') {
+                        const canReach = data.display_data.can_reach;
+                        if (!canReach && data.display_data.nearest_station_id) {
+                            showToast(`⚡ Recommend charging at ${data.display_data.nearest_station} before departing`, 'warning');
+                        } else if (canReach) {
+                            showToast(`✅ You can reach the destination with ~${Math.round(data.display_data.arrival_soc || 0)}% battery remaining`, 'success');
+                        }
+                    } else if (data.display_data && data.display_data.action === 'cabin_control') {
+                        showToast(`🌡️ ${data.display_data.message || 'Climate adjusted'}`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'show_amenity') {
+                        if (data.display_data.amenities && data.display_data.amenities.length > 0) {
+                            const first = data.display_data.amenities[0];
+                            showToast(`📍 Nearest: ${first.name} — ${first.distance_km} km`, 'info');
+                        }
+                    } else if (data.display_data && data.display_data.action === 'update_car_location') {
+                        const lat = data.display_data.latitude || 21.1255;
+                        const lng = data.display_data.longitude || 79.0524;
+                        currentLat = lat;
+                        currentLng = lng;
+                        currentCity = (data.display_data.city || 'nagpur').toLowerCase();
+                        renderUserCarMarker(lat, lng);
+                        if (map) map.flyTo([lat, lng], 15, { duration: 1.2 });
+                        const coordPill = document.getElementById('map-coord-pill');
+                        if (coordPill) coordPill.innerHTML = `📍 GPS: ${data.display_data.landmark || 'VNIT Nagpur'} (${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E)`;
+                        const teleCity = document.getElementById('tele-city');
+                        if (teleCity) teleCity.textContent = `📍 ${data.display_data.landmark || 'VNIT Nagpur'}`;
+                        showToast(`📍 Car location updated to ${data.display_data.landmark || 'VNIT Nagpur'}`, 'success');
+                    } else if (data.display_data && data.display_data.action === 'show_landmark_route') {
+                        if (data.display_data.lat && data.display_data.lng && map) {
+                            map.flyTo([data.display_data.lat, data.display_data.lng], 15, { duration: 1.2 });
+                        }
+                        showToast(`📍 ${data.display_data.landmark}: ${data.display_data.distance_km} km away (~${data.display_data.drive_time_min} min drive)`, 'info');
+                    }
+                    if (data.display_data && data.display_data.city && data.display_data.city !== currentCity) {
+                        const sel = document.getElementById('city-select');
+                        if (sel) sel.value = data.display_data.city.toLowerCase();
+                        changeCity(data.display_data.city.toLowerCase());
+                    }
+                } else {
+                    voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>Sorry, I couldn't process that. Try: "nearest charging station" or "vehicle status"</div>`;
+                }
+            } catch (e) {
+                console.warn('Voice API error:', e);
+                handleOfflineCommand(text);
+            }
+        }
+        
+        function displayVoiceResponse(data) {
+            updateVehicleStateFromResponse(data.display_data);
+            let html = `<div class="assistant-label">🤖 AVA</div>`;
+            
+            // Main response text
+            html += `<div style="margin-bottom:10px; font-size:14px; line-height:1.5;">${data.text}</div>`;
+            
+            // Recommendation cards
+            if (data.display_data && data.display_data.recommendations && data.display_data.recommendations.length > 0) {
+                const recs = data.display_data.recommendations;
+                lastRecommendations = recs;
+                recs.forEach((rec, idx) => {
+                    const labelClass = idx === 0 ? 'gold' : (idx === 1 ? 'blue' : 'green');
+                    const cardClass = idx === 0 ? 'best' : '';
+                    const stId = rec.station_id || rec.id || '';
+                    html += `
+                        <div class="recommendation-card ${cardClass}">
+                            <span class="rec-label ${labelClass}">${rec.label || ('⭐ Pick ' + (idx+1))}</span>
+                            <div class="rec-row" style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div class="rec-name" style="font-weight:700; color:var(--text-main); font-size:14px;">${rec.station_name || rec.name || 'Station'}</div>
+                                    <div class="rec-stats" style="display:flex; gap:10px; font-size:12px; color:var(--text-muted); margin-top:4px;">
+                                        <span>📍 ${(rec.distance_km || 0).toFixed(1)} km</span>
+                                        <span>⚡ ${rec.rated_power_kw || rec.effective_power_kw || 60} kW</span>
+                                        <span>⏱ ~${Math.round(rec.estimated_total_time_min || rec.estimated_charge_time_min || 30)} min</span>
+                                        <span>💰 ₹${(rec.estimated_cost_rs || 0).toFixed(0)}</span>
+                                    </div>
+                                </div>
+                                <button class="rec-action" onclick="voiceReserveStation('${stId}', ${idx})">🔒 Reserve</button>
+                            </div>
+                            ${rec.reasoning ? `<div class="rec-reason" style="font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic;">${rec.reasoning}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Vehicle status insights
+            if (data.display_data && data.display_data.vehicle_status) {
+                const vs = data.display_data.vehicle_status;
+                html += `<div class="vehicle-insights">`;
+                if (vs.soc !== undefined) html += `<div class="insight-card"><div class="insight-label">Battery</div><div class="insight-value">${vs.soc}%</div></div>`;
+                if (vs.range_km !== undefined) html += `<div class="insight-card"><div class="insight-label">Range</div><div class="insight-value">${vs.range_km} km</div></div>`;
+                if (vs.efficiency !== undefined) html += `<div class="insight-card"><div class="insight-label">Efficiency</div><div class="insight-value">${vs.efficiency} km/kWh</div></div>`;
+                if (vs.hours_remaining !== undefined) html += `<div class="insight-card"><div class="insight-label">Drive Time Left</div><div class="insight-value">${vs.hours_remaining}h</div></div>`;
+                html += `</div>`;
+                
+                if (vs.insights && vs.insights.length > 0) {
+                    vs.insights.forEach(insight => {
+                        html += `<div class="insight-warning">⚠️ ${insight}</div>`;
+                    });
+                }
+            }
+            
+            // Confirmation UI
+            if (data.needs_confirmation) {
+                pendingConfirmation = true;
+                html += `
+                    <div class="confirm-bar">
+                        <button class="confirm-yes" onclick="handleConfirmation(true)">✅ Haan / Yes (Lock Slot)</button>
+                        <button class="confirm-no" onclick="handleConfirmation(false)">❌ Nahi / No</button>
+                    </div>
+                `;
+            } else {
+                pendingConfirmation = false;
+            }
+
+// ── Amenity Cards ──────────────────────────────────────────────────────────
+if (data.display_data && data.display_data.amenities && data.display_data.amenities.length > 0) {
+    const AMENITY_ICONS = {
+        hospital: '🏥', cafe: '☕', restaurant: '🍽️', atm: '🏧',
+        pharmacy: '💊', tyre_shop: '🛞', parking: '🅿️', mechanic: '🔧', petrol_pump: '⛽'
+    };
+    const icon = AMENITY_ICONS[data.display_data.amenity_type] || '📍';
+    html += `<div style="margin-top:10px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">NEARBY ${(data.display_data.amenity_type || 'PLACES').toUpperCase().replace('_', ' ')}</div>`;
+    data.display_data.amenities.forEach(a => {
+        html += `
+        <div class="amenity-card">
+            <div class="amenity-icon">${icon}</div>
+            <div>
+                <div class="amenity-name">${a.name}</div>
+                <div class="amenity-dist">📍 ${a.distance_km} km away</div>
+                <div class="amenity-addr">${a.address || ''}</div>
+                ${a.phone ? `<div style="font-size:11px;color:var(--text-muted);">${a.phone}</div>` : ''}
+                ${a.rate ? `<div style="font-size:11px;color:#FFD100;">Parking: ${a.rate}${a.ev_charging ? ' ⚡ EV Charging Available' : ''}</div>` : ''}
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+}
+
+// ── Range check result ─────────────────────────────────────────────────────
+if (data.display_data && data.display_data.action === 'range_check') {
+    const rc = data.display_data;
+    const canReach = rc.can_reach;
+    const color = canReach ? 'var(--ev-blue)' : '#ff6666';
+    html += `
+    <div style="margin-top:10px; padding:10px; border-radius:8px; border:1px solid ${color}; background:${canReach ? 'rgba(0,170,212,0.08)' : 'rgba(255,68,68,0.08)'}">
+        <div style="font-weight:700; color:${color}; margin-bottom:4px;">${canReach ? '✅ YES — You can reach it' : '⚠️ LOW — Risky without charging'}</div>
+        <div style="font-size:12px; color:var(--text-muted);">Distance: ${(rc.distance_km || 0).toFixed(0)} km road • Arrival SoC: ~${(rc.arrival_soc || 0).toFixed(0)}%</div>
+        ${rc.recommendation ? `<div style="font-size:12px; color:#FFD100; margin-top:4px;">${rc.recommendation}</div>` : ''}
+    </div>`;
+}
+
+            voiceResponse.innerHTML = html;
+        }
+        
+        async function handleConfirmation(confirmed) {
+            pendingConfirmation = false;
+            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);">${confirmed ? 'Confirming reservation...' : 'Cancelled.'}</div>`;
+            
+            try {
+                const res = await fetch(`${API}/api/voice/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: DRIVER_ID, confirmed: confirmed })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    displayVoiceResponse(data);
+                    speakResponse(data.text);
+                    
+                    if (confirmed && data.display_data && data.display_data.reservation) {
+                        const resv = data.display_data.reservation;
+                        const sid = data.display_data.station_id || (resv.station && resv.station.station_id);
+                        if (sid) selectStation(sid);
+                        currentReservation = resv;
+                        if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        fetchStations();
+                        showToast(`Slot reserved! PIN: ${resv.pin}`, 'success');
+                    }
+                }
+            } catch (e) {
+                voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>${confirmed ? 'Reservation confirmed!' : 'Action cancelled.'}</div>`;
+            }
+        }
+        
+        function voiceReserveStation(stationId, idx) {
+            if (stationId) {
+                selectStation(stationId);
+                reserveStation(stationId);
+                showToast(`Slot lock requested for ${stationId}`, 'info');
+                speakResponse("Locking your 30 minute charging slot now.");
+            } else {
+                processVoiceCommand(`reserve station ${idx + 1}`);
+            }
+        }
+        
+        // Text-to-Speech with Hands-Free Audio Loop Prevention
+        function speakResponse(text) {
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    isSpeakingTTS = true;
+                    // Pause recognition so AVA never hears herself speak
+                    if (recognition && isListening) {
+                        try { recognition.abort(); } catch(e) {}
+                    }
+
+                    // Clean text for TTS: convert 4 to 6 digit numbers (PINs) into comma-separated individual digits
+                    // This strictly prevents Web Speech API (en-IN) from pronouncing PINs like 871422 as "eight lakh"
+                    let speechText = text;
+                    speechText = speechText.replace(/\b(\d{4,6})\b/g, (m) => m.split('').join(', '));
+
+                    const utterance = new SpeechSynthesisUtterance(speechText);
+                    utterance.lang = 'en-IN';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    
+                    const voices = window.speechSynthesis.getVoices();
+                    const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+                    if (indianVoice) utterance.voice = indianVoice;
+
+                    utterance.onend = () => {
+                        isSpeakingTTS = false;
+                        if (handsFreeActive) {
+                            clearTimeout(restartTimer);
+                            restartTimer = setTimeout(startListening, 300);
+                        }
+                    };
+                    utterance.onerror = () => {
+                        isSpeakingTTS = false;
+                        if (handsFreeActive) {
+                            clearTimeout(restartTimer);
+                            restartTimer = setTimeout(startListening, 300);
+                        }
+                    };
+                    
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {
+                    isSpeakingTTS = false;
+                }
+            }
+        }
+        
+        // Offline fallback for basic commands
+        function handleOfflineCommand(text) {
+            const lower = text.toLowerCase();
+            let response = { text: '', display_data: {}, action_type: 'info', needs_confirmation: false };
+            
+            if (lower.includes('book') || lower.includes('reserve') || lower.includes('lock')) {
+                const target = stations.find(s => s.status === 'AVAILABLE') || stations[0];
+                if (target) {
+                    selectStation(target.id);
+                    reserveStation(target.id);
+                    response.text = `Locked exclusive 30-minute slot at ${target.name}. Your PIN will appear on screen.`;
+                    response.display_data = { action: 'reserve', station_id: target.id, station_name: target.name };
+                    response.action_type = 'action_complete';
+                } else {
+                    response.text = 'Could not find an available charger right now. Please select one on screen.';
+                }
+            } else if (lower.includes('pin') || lower.includes('otp')) {
+                const activeRes = currentReservation || {};
+                const pin = activeRes.pin || '482910';
+                const spoken = pin.split('').join(', ');
+                response.text = `Your active reservation PIN is ${spoken}. Valid for 30 minutes.`;
+                response.display_data = { action: 'show_pin', pin: pin };
+            } else if (lower.includes('petrol') || lower.includes('fuel') || lower.includes('gas station') || lower.includes('diesel')) {
+                response.text = 'The nearest petrol pump is IOCL Indian Oil Retail Outlet at Civil Lines / Sitabuldi, Nagpur, approximately 0.8 km away. Note that your Hyundai Ioniq 5 is fully electric, but this station provides tyre air inflation, nitrogen, and basic amenities.';
+                response.display_data = { action: 'show_petrol_pump', pump_name: 'IOCL Civil Lines / Sitabuldi', distance_km: 0.8, lat: 21.1526, lng: 79.0882 };
+                locateUserCar(true);
+            } else if (lower.includes('cost') || lower.includes('tariff') || lower.includes('rate') || lower.includes('price') || lower.includes('kharcha')) {
+                response.text = 'Tata Power EZ Charge superfast DC charging tariff is ₹22.50 per kWh. To charge your Hyundai Ioniq 5 from 18% to 80% (approx 45.0 kWh), the estimated cost is ₹1,012. Ultra-fast 120 kW charging takes around 20 minutes.';
+                response.display_data = { action: 'show_cost_breakdown', cpo: 'Tata Power', estimated_cost_rs: 1012, estimated_time_mins: 20 };
+            } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest charger') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
+                const target = stations[0] || {};
+                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick is ${target.name || 'Sitabuldi Fast Hub'} (${target.power_kw || 120} kW, 0.2 km away). Shall I reserve it for you?`;
+                const filterBtn = document.querySelector('[data-filter="available"]');
+                if (filterBtn) filterBtn.click();
+            } else if (lower.includes('city') || lower.includes('where am i') || lower.includes('location') || lower.includes('gps')) {
+                response.text = `Your vehicle is currently centered in ${currentCity.toUpperCase()}, Maharashtra (GPS coordinates: ${currentLat.toFixed(4)}° N, ${currentLng.toFixed(4)}° E, near Sitabuldi Interchange). There are 137 verified EV charging hubs within range.`;
+                response.display_data = { action: 'show_car_location' };
+                locateUserCar(true);
+            } else if (lower.includes('project') || lower.includes('smartreserve') || lower.includes('work') || lower.includes('overview')) {
+                response.text = 'Hyundai SmartReserve is an AI-powered in-cabin EV charging co-pilot for Hyundai Ideathon 2026. It features multi-criteria priority ranking across 29,260+ stations, OCPP 1.6J hardware locking, and secure kiosk PIN verification.';
+            } else if (lower.includes('ocpp')) {
+                response.text = 'OCPP 1.6J is the Open Charge Point Protocol standard used by SmartReserve to send ReserveNow, UnlockConnector, and RemoteStartTransaction commands to charging kiosks.';
+            } else if (lower.includes('tyre') || lower.includes('tire') || lower.includes('tpms') || lower.includes('pressure')) {
+                response.text = 'Tyre Pressure Alert: Front-left tyre is low at 28 PSI. Recommended is 36 PSI. Other three tyres are normal at 35 to 36 PSI.';
+            } else if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
+                response.text = 'Vehicle is at 18% state of charge with approximately 87 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
+                response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6, hours_remaining: 1.9 } };
+            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
+                response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve in-cabin assistant. Battery status, charging stations, ya slot reservations ke baare mein poochiye.';
+            } else {
+                response.text = 'I can help with: "Nearest charging station", "Nearest petrol pump", "Charging cost", "Which city am I in", or "Reserve a charging slot".';
+            }
+            
+            displayVoiceResponse(response);
+            speakResponse(response.text);
+        }
+
+        // ── Vehicle Telematics Modal ──────────────────────────────────────────
+        async function openVehicleModal() {
+            const modal = document.getElementById('vehicle-modal');
+            if (modal) modal.classList.remove('hidden');
+            try {
+                const res = await fetch(`${API}/api/vehicle/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const st = data.status || {};
+                    if (st.soc !== undefined) {
+                        const dSoc = document.getElementById('diag-soc');
+                        const hSoc = document.getElementById('hdr-soc');
+                        if (dSoc) dSoc.innerText = `${st.soc}%`;
+                        if (hSoc) hSoc.innerText = `${st.soc}%`;
+                    }
+                    if (st.range_km !== undefined) {
+                        const dR = document.getElementById('diag-range');
+                        const hR = document.getElementById('hdr-range');
+                        if (dR) dR.innerText = `${st.range_km} km`;
+                        if (hR) hR.innerText = `${st.range_km} km`;
+                    }
+                    if (st.efficiency !== undefined) {
+                        const dEff = document.getElementById('diag-eff');
+                        if (dEff) dEff.innerText = `${st.efficiency} km/kWh`;
+                    }
+                    if (st.hours_remaining !== undefined) {
+                        const dH = document.getElementById('diag-hours');
+                        if (dH) dH.innerText = `${st.hours_remaining} hrs`;
+                    }
+                }
+            } catch(e) {
+                console.warn('Vehicle status fetch error:', e);
+            }
+        }
+
+        function closeVehicleModal() {
+            const modal = document.getElementById('vehicle-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function fetchVehicleHeaderStatus() {
+            try {
+                const res = await fetch(`${API}/api/vehicle/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const st = data.status || {};
+                    if (st.soc !== undefined) {
+                        const hSoc = document.getElementById('hdr-soc');
+                        if (hSoc) hSoc.innerText = `${st.soc}%`;
+                    }
+                    if (st.range_km !== undefined) {
+                        const hR = document.getElementById('hdr-range');
+                        if (hR) hR.innerText = `${st.range_km} km`;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        const vehicleState = {
+            soc: 18,
+            range_km: 87,
+            city: 'Nagpur',
+            lat: 21.1458,
+            lng: 79.0882,
+            drive_mode: 'normal',
+            tpms: { fl: 28, fr: 35, rl: 36, rr: 36 },
+            cabin_temp: 22,
+            odometer: 24500,
+            efficiency: 6.6,
+            v2l_active: false,
+        };
+
+        function updateVehicleStateFromResponse(displayData) {
+            if (!displayData) return;
+            if (displayData.soc !== undefined) vehicleState.soc = displayData.soc;
+            if (displayData.range_km !== undefined) vehicleState.range_km = displayData.range_km;
+            if (displayData.city) { vehicleState.city = displayData.city; currentCity = displayData.city.toLowerCase(); }
+            if (displayData.latitude) { vehicleState.lat = displayData.latitude; currentLat = displayData.latitude; }
+            if (displayData.longitude) { vehicleState.lng = displayData.longitude; currentLng = displayData.longitude; }
+            updateTelematicsHUD(vehicleState);
+        }
+
+        // ── Live Telematics HUD Updater ────────────────────────────────────────────
+        function updateTelematicsHUD(vehicleData) {
+            const soc = vehicleData.soc || 18;
+            const range = vehicleData.range_km || 87;
+            const city = vehicleData.location && vehicleData.location.city ? vehicleData.location.city : currentCity;
+            const mode = vehicleData.drive_mode || 'normal';
+            const tpmsAlerts = vehicleData.tpms_alerts || [];
+
+            const socEl = document.getElementById('tele-soc');
+            const rangeEl = document.getElementById('tele-range');
+            const cityEl = document.getElementById('tele-city');
+            const modeEl = document.getElementById('tele-mode');
+            const tyreEl = document.getElementById('tele-tyre');
+
+            if (socEl) {
+                socEl.textContent = `🔋 ${soc}%`;
+                socEl.className = 'tele-chip ' + (soc <= 15 ? 'alert' : soc <= 25 ? 'warn' : 'ok');
+            }
+            if (rangeEl) {
+                rangeEl.textContent = `📡 ${Math.round(range)} km`;
+                rangeEl.className = 'tele-chip ' + (range <= 50 ? 'alert' : range <= 100 ? 'warn' : 'ok');
+            }
+            if (cityEl) cityEl.textContent = `📍 ${city}`;
+            if (modeEl) modeEl.textContent = `⚡ ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+            if (tyreEl) {
+                if (tpmsAlerts.length > 0) {
+                    tyreEl.textContent = `🛞 ⚠ Tyre Alert`;
+                    tyreEl.className = 'tele-chip alert';
+                    tyreEl.title = tpmsAlerts.join(', ');
+                } else {
+                    tyreEl.textContent = `🛞 OK`;
+                    tyreEl.className = 'tele-chip ok';
+                }
+            }
+            
+            // Proactive battery alert
+            const alertEl = document.getElementById('proactive-alert');
+            if (alertEl) {
+                if (soc <= 10) {
+                    alertEl.className = 'proactive-alert danger';
+                    alertEl.innerHTML = `🚨 <strong>CRITICAL BATTERY: ${soc}%</strong> — ${Math.round(range)} km range remaining. Say "Reserve nearest station" to lock a charger NOW.`;
+                } else if (soc <= 20) {
+                    alertEl.className = 'proactive-alert warning';
+                    alertEl.innerHTML = `⚠️ <strong>LOW BATTERY: ${soc}%</strong> — Only ${Math.round(range)} km of range. Recommend charging soon. EESL Kasturchand Park (1.3 km, 142 kW) available.`;
+                } else {
+                    alertEl.className = 'proactive-alert';
+                    alertEl.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize HUD on page load
+        updateTelematicsHUD({ soc: 18, range_km: 87, drive_mode: 'normal', tpms_alerts: ['front_left is LOW (28 PSI)'] });
+
+        // Keyboard shortcut: Ctrl + J to toggle voice
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyJ' && e.ctrlKey) {
+                e.preventDefault();
+                toggleVoiceOverlay();
+            }
+        });
+        
+        // Load voices
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+        
+        // Initialize speech recognition & header status on load
+        initSpeechRecognition();
+        fetchVehicleHeaderStatus();
+
+        // Auto-start hands-free voice engine
+        setTimeout(() => {
+            if (handsFreeActive && !isListening) {
+                try { startListening(); } catch(e) {}
+            }
+        }, 600);
+
+        // First click/touch anywhere starts mic listening if browser autoplay policy blocked initial start
+        document.addEventListener('click', function initAudioGesture() {
+            if (handsFreeActive && !isListening) {
+                try { startListening(); } catch(e) {}
+            }
+        }, { once: true });
 
     </script>
 </body>

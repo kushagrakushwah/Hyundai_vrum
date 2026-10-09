@@ -1,15 +1,33 @@
 """
 Hyundai SmartReserve — FastAPI Backend v2.0
 Production-grade: SQLite persistence + OCPP 1.6J + Razorpay escrow + Live OCM API
+AVA Voice Assistant + Gemini LLM + Sarvam STT/TTS + Real Dataful EV station data
 """
 import asyncio
 import json
+import math
 import os
 import random
 import string
+import sys
 import time
 from datetime import datetime
 from typing import Optional
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+# ── Load .env first (repo root) — must be before any module that reads env vars ──
+try:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+except ImportError:
+    pass
+
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -23,6 +41,11 @@ from ocpp_engine import OCPPEngine
 from payment import PaymentEngine
 from websocket_manager import WebSocketManager
 from stations_db import StationsDB
+from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
+from priority_engine import PriorityEngine
+from vehicle_intelligence import VehicleIntelligence
+from speech_service import SpeechService
+from llm_service import ask_gemini, is_available as llm_available
 
 # ── App Setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -50,7 +73,30 @@ db = StationsDB()
 ocpp_engine = OCPPEngine()
 payment_engine = PaymentEngine()
 
-OCM_API_KEY = "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
+# ── Voice Assistant Instances ─────────────────────────────────────────────────
+try:
+    vehicle_intel = VehicleIntelligence()
+    priority_eng = PriorityEngine(db, vehicle_intel)
+    voice_assistant = VoiceAssistant()
+    speech_svc = SpeechService()
+    import priority_engine as pe_mod
+    import vehicle_intelligence as vi_mod
+    pe_mod.engine = priority_eng
+    pe_mod.priority_engine = priority_eng
+    vi_mod.vehicle = vehicle_intel
+    _llm_ok = llm_available()
+    _sarvam_ok = bool(speech_svc.config.sarvam_api_key)
+    print(f"  [VOICE] AVA Voice Assistant initialized")
+    print(f"  [LLM]  Gemini Cloud Reasoning : {'Active' if _llm_ok else 'Disabled (no key)'}")
+    print(f"  [STT]  Sarvam STT/TTS          : {'Active' if _sarvam_ok else 'Disabled (no key)'}")
+except Exception as e:
+    vehicle_intel = None
+    priority_eng = None
+    voice_assistant = None
+    speech_svc = None
+    print(f"  [VOICE] Voice assistant init error (non-fatal): {e}")
+
+OCM_API_KEY = os.getenv("OCM_API_KEY") or "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────────
@@ -70,6 +116,39 @@ class PaymentVerifyRequest(BaseModel):
     order_id: str
     payment_id: str
     signature: str
+
+
+class VoiceInputRequest(BaseModel):
+    text: str
+    user_id: str = "hyundai_driver_001"
+    language: str = "auto"
+    selected_station_id: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class LocationUpdateRequest(BaseModel):
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class VoiceConfirmRequest(BaseModel):
+    user_id: str = "hyundai_driver_001"
+    confirmed: bool = True
+
+class TTSRequest(BaseModel):
+    text: str
+    language: str = "hi-IN"  # en-IN | hi-IN | mr-IN
+
+class VehicleStateUpdate(BaseModel):
+    """Allows the frontend/car SDK to push live telemetry into the VehicleState."""
+    soc: Optional[float] = None
+    range_km: Optional[float] = None
+    speed_kmh: Optional[float] = None
+    gps_lat: Optional[float] = None
+    gps_lng: Optional[float] = None
+    battery_temp_celsius: Optional[float] = None
+    odometer_km: Optional[float] = None
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
@@ -152,14 +231,34 @@ async def get_stats():
 # ── Station Routes ─────────────────────────────────────────────────────────────
 @app.get("/api/stations")
 async def get_stations(
+    city: Optional[str] = None,
     district: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
-    limit: int = 1000,
+    limit: int = 500,
 ):
-    """Return stations with live status and AI congestion predictions."""
-    stations = db.get_stations(district=district, source=source, limit=limit)
+    """Return stations with live status, GPS proximity, and AI congestion predictions."""
+    target_city = city
+    target_lat = latitude
+    target_lon = longitude
+
+    # Fallback to vehicle's current location if not specified
+    if not target_city and target_lat is None:
+        target_city = vehicle_intel.state.city
+        target_lat = vehicle_intel.state.latitude
+        target_lon = vehicle_intel.state.longitude
+
+    stations = db.get_stations(
+        city=target_city,
+        district=district,
+        latitude=target_lat,
+        longitude=target_lon,
+        source=source,
+        limit=limit,
+    )
     active_res = await database.get_all_active_reservations()
     active_ses = await database.get_all_sessions()
 
@@ -186,10 +285,14 @@ async def get_stations(
             continue
         if min_power_kw and s.get("power_kw", 0) < min_power_kw:
             continue
+        dist_km = None
+        if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
+            dist_km = round(math.hypot((s["lat"] - target_lat) * 111.0, (s["lng"] - target_lon) * 103.0), 1)
 
         result.append({
             **s,
             "status": status,
+            "distance_km": dist_km,
             "congestion": congestion,
             "is_reserved": sid in reserved_ids,
             "is_charging": sid in session_ids,
@@ -447,6 +550,204 @@ async def verify_payment(req: PaymentVerifyRequest):
     return {"verified": valid}
 
 
+# ── Voice Assistant Routes ─────────────────────────────────────────────────────
+@app.post("/api/voice/process")
+async def process_voice_input(req: VoiceInputRequest):
+    """Process voice/text input through the AVA assistant."""
+    if not voice_assistant:
+        raise HTTPException(status_code=503, detail="Voice assistant not available")
+    
+    if vehicle_intel:
+        if req.latitude is not None and req.longitude is not None:
+            vehicle_intel.set_location(req.latitude, req.longitude, req.city or "Nagpur")
+        elif req.city:
+            norm_c = req.city.lower().strip()
+            if norm_c in INDIAN_CITIES:
+                c_lat, c_lon = INDIAN_CITIES[norm_c]
+                vehicle_intel.set_location(c_lat, c_lon, req.city.capitalize())
+
+    response = voice_assistant.process_input(
+        req.text,
+        req.user_id,
+        selected_station_id=req.selected_station_id,
+        city=req.city,
+        user_lat=req.latitude,
+        user_lon=req.longitude
+    )
+    
+    # If the assistant wants to reserve, wire it to the actual reserve API
+    if response.action_type == 'action_complete' and response.display_data.get('action') == 'reserve':
+        station_id = response.display_data.get('station_id')
+        if station_id:
+            try:
+                reserve_req = ReserveRequest(
+                    station_id=station_id,
+                    user_id=req.user_id,
+                    user_name="Hyundai Driver",
+                    duration_minutes=30,
+                    vehicle_soc=vehicle_intel.state.soc if vehicle_intel else 18.0
+                )
+                reserve_result = await reserve_station(reserve_req)
+                response.display_data['reservation'] = reserve_result
+                pin = reserve_result.get('pin')
+                response.display_data['pin'] = pin
+                if pin and str(pin) not in response.text:
+                    spoken_pin = format_spoken_pin(pin)
+                    response.text += f" Your confirmation PIN is {spoken_pin}."
+            except Exception as e:
+                response.display_data['reserve_error'] = str(e)
+    
+    return {
+        "text": response.text,
+        "display_data": response.display_data,
+        "action_type": response.action_type,
+        "tool_calls": response.tool_calls,
+        "language": response.language,
+        "needs_confirmation": response.needs_confirmation,
+    }
+
+@app.post("/api/voice/confirm")
+async def confirm_voice_action(req: VoiceConfirmRequest):
+    """Confirm or deny a pending T2 action (reservation, etc.)."""
+    if not voice_assistant:
+        raise HTTPException(status_code=503, detail="Voice assistant not available")
+    
+    response = voice_assistant.confirm_action(req.user_id, req.confirmed)
+    
+    # Execute the confirmed reservation
+    if req.confirmed and response.display_data.get('action') == 'reserve':
+        station_id = response.display_data.get('station_id')
+        if station_id:
+            try:
+                reserve_req = ReserveRequest(
+                    station_id=station_id,
+                    user_id=req.user_id,
+                    user_name="Hyundai Driver",
+                    duration_minutes=30,
+                    vehicle_soc=vehicle_intel.state.soc if vehicle_intel else 18.0
+                )
+                reserve_result = await reserve_station(reserve_req)
+                response.display_data['reservation'] = reserve_result
+                pin = reserve_result.get('pin', 'N/A')
+                response.display_data['pin'] = pin
+                spoken_pin = format_spoken_pin(pin) if pin != 'N/A' else 'N/A'
+                response.text += f" PIN: {spoken_pin}"
+            except Exception as e:
+                response.display_data['reserve_error'] = str(e)
+    
+    return {
+        "text": response.text,
+        "display_data": response.display_data,
+        "action_type": response.action_type,
+        "needs_confirmation": response.needs_confirmation,
+    }
+
+@app.get("/api/voice/recommend")
+async def get_voice_recommendations(
+    target_soc: float = 80.0,
+    top_k: int = 3,
+    urgency: str = "normal",
+):
+    """Get AI-ranked charging station priority list with spoken summary."""
+    if not priority_eng:
+        raise HTTPException(status_code=503, detail="Priority engine not available")
+    
+    recommendations = priority_eng.recommend(target_soc=target_soc, top_k=top_k, urgency=urgency)
+    spoken = priority_eng.get_spoken_recommendation()
+    
+    return {
+        "recommendations": [vars(r) if hasattr(r, '__dict__') else r for r in recommendations],
+        "spoken_summary": spoken,
+        "vehicle_soc": vehicle_intel.state.soc if vehicle_intel else 18.0,
+        "vehicle_range_km": vehicle_intel.state.range_km if vehicle_intel else 59.0,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/vehicle/status")
+async def get_vehicle_status():
+    """Get comprehensive vehicle status — the AVA vehicle intelligence."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    status = vehicle_intel.get_vehicle_status()
+    diagnostics = vehicle_intel.get_diagnostic_summary()
+    
+    return {
+        "status": status,
+        "diagnostics_summary": diagnostics,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/vehicle/diagnostics")
+async def get_vehicle_diagnostics():
+    """Get vehicle component health and service status."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    status = vehicle_intel.get_vehicle_status()
+    return {
+        "component_health": status.get("component_health", {}),
+        "insights": status.get("insights", []),
+        "service_status": status.get("service_status", {}),
+        "diagnostics_text": vehicle_intel.get_diagnostic_summary(),
+    }
+
+@app.post("/api/vehicle/location")
+async def update_vehicle_location(req: LocationUpdateRequest):
+    """Update vehicle location dynamically."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    
+    lat = req.latitude
+    lng = req.longitude
+    city = req.city or "Nagpur"
+
+    if lat is None or lng is None:
+        norm_c = city.lower().strip()
+        if norm_c in INDIAN_CITIES:
+            lat, lng = INDIAN_CITIES[norm_c]
+        else:
+            lat, lng = 21.1458, 79.0882  # Default Nagpur
+
+    vehicle_intel.set_location(lat, lng, city.capitalize())
+    return {
+        "status": "ok",
+        "city": city.capitalize(),
+        "gps_lat": vehicle_intel.state.gps_lat,
+        "gps_lng": vehicle_intel.state.gps_lng,
+    }
+
+@app.post("/api/vehicle/state")
+async def update_vehicle_state(req: VehicleStateUpdate):
+    """Allows the frontend/car SDK to push live telemetry into the VehicleState."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence not available")
+    if req.soc is not None:
+        vehicle_intel.state.soc = float(req.soc)
+    if req.range_km is not None:
+        vehicle_intel.state.range_km = float(req.range_km)
+    if req.speed_kmh is not None:
+        vehicle_intel.state.speed_kmh = float(req.speed_kmh)
+    if req.gps_lat is not None:
+        vehicle_intel.state.gps_lat = float(req.gps_lat)
+    if req.gps_lng is not None:
+        vehicle_intel.state.gps_lng = float(req.gps_lng)
+    return {"status": "ok", "state": vehicle_intel.get_vehicle_status()}
+
+@app.get("/api/speech/config")
+async def get_speech_config():
+    """Get speech service configuration for frontend."""
+    if speech_svc:
+        return speech_svc.get_frontend_config()
+    return {
+        "stt_available": True,
+        "stt_languages": ["en-IN", "hi-IN", "mr-IN"],
+        "wake_words": ["hey hyundai", "ok hyundai"],
+        "sarvam_available": False,
+        "tts_available": True,
+    }
+
+
 # ── WebSocket Endpoints ────────────────────────────────────────────────────────
 @app.websocket("/ws/car/{user_id}")
 async def car_websocket(websocket: WebSocket, user_id: str):
@@ -626,8 +927,10 @@ async def startup():
     print(f"   📍 Stations loaded    : {len(db.stations)} BEE base nodes")
     print(f"   🗄️  Database           : SQLite (persistent)")
     print(f"   ⚡ OCPP Engine         : 1.6J Mock (ReserveNow, Unlock, StartTx)")
+    print(f"   🎙️  Voice Assistant    : {'AVA Active' if voice_assistant else 'Unavailable'}")
+    print(f"   🏆 Priority Engine    : {'Active' if priority_eng else 'Unavailable'}")
     print(f"   💳 Payment             : {'Razorpay Mock (demo mode)' if payment_engine.mock_mode else 'Razorpay LIVE'}")
-    print(f"   🌐 OCM API Key         : {OCM_API_KEY[:8]}...")
+    print(f"   🌐 OCM API Key         : {'Configured' if OCM_API_KEY else 'None (mock/fallback)'}")
     print(f"   📡 WebSockets          : /ws/car/{{user}} | /ws/kiosk/{{station}}")
     print("=" * 60)
 

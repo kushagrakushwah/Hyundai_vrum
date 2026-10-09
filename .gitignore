@@ -14,9 +14,14 @@ test.pdf
 
 # Environment & database
 .env
+.env.*
+!.env.example
+*.env
 smartreserve.db
 *.db
 
 # System & dependencies
 .DS_Store
 node_modules/
+.venv/
+venv/

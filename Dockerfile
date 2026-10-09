@@ -20,6 +20,9 @@ COPY smartreserve/smartreserve_frontend/ ./smartreserve_frontend/
 # Copy processed data (BEE stations CSV)
 COPY EVCS_Demand_Forecasting/processed/ ./EVCS_Demand_Forecasting/processed/
 
+# Copy India EV charging station dataset (Dataful)
+COPY data_ev_charging_stations_india/ ./data_ev_charging_stations_india/
+
 # Ensure dataset is accessible via both relative search paths in stations_db.py
 RUN mkdir -p /EVCS_Demand_Forecasting && \
     ln -s /app/EVCS_Demand_Forecasting/processed /EVCS_Demand_Forecasting/processed && \
