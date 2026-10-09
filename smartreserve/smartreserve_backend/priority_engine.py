@@ -224,18 +224,20 @@ class PriorityEngine:
             # Multi-criteria weighted normalization
             time_norm = max(0.0, 1.0 - (total_time / 150.0))
             cost_norm = max(0.0, 1.0 - (cost / 1800.0))
-            dist_norm = max(0.0, 1.0 - (dist / 45.0))
+            dist_norm = max(0.0, 1.0 / (1.0 + (dist / 2.0)))
             power_norm = min(1.0, effective_power / 150.0)
             
             # Urgency weights
-            if urgency == 'critical':
-                w_dist, w_time, w_rel, w_cost, w_power = 0.45, 0.25, 0.20, 0.05, 0.05
+            if urgency in ('nearest', 'proximity'):
+                w_dist, w_time, w_rel, w_cost, w_power = 0.85, 0.05, 0.05, 0.03, 0.02
+            elif urgency == 'critical':
+                w_dist, w_time, w_rel, w_cost, w_power = 0.60, 0.20, 0.10, 0.05, 0.05
             elif urgency == 'low' or current_soc < 20.0:
-                w_dist, w_time, w_rel, w_cost, w_power = 0.30, 0.35, 0.15, 0.10, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.45, 0.25, 0.15, 0.08, 0.07
             elif urgency == 'planning':
-                w_dist, w_time, w_rel, w_cost, w_power = 0.10, 0.20, 0.20, 0.40, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.15, 0.20, 0.20, 0.35, 0.10
             else:  # normal
-                w_dist, w_time, w_rel, w_cost, w_power = 0.20, 0.35, 0.20, 0.15, 0.10
+                w_dist, w_time, w_rel, w_cost, w_power = 0.35, 0.30, 0.15, 0.10, 0.10
                 
             score = (w_dist * dist_norm + 
                      w_time * time_norm + 
@@ -268,11 +270,17 @@ class PriorityEngine:
             )
             recommendations.append(rec)
             
-        recommendations.sort(key=lambda x: x.overall_score, reverse=True)
+        if urgency in ('nearest', 'proximity'):
+            recommendations.sort(key=lambda x: (x.distance_km, -x.overall_score))
+        else:
+            recommendations.sort(key=lambda x: x.overall_score, reverse=True)
         
         # Assign Distinct Labels and Spoken Reasoning
         if recommendations:
-            recommendations[0].label = '🥇 Best Overall'
+            if urgency in ('nearest', 'proximity'):
+                recommendations[0].label = '📍 Nearest'
+            else:
+                recommendations[0].label = '🥇 Best Overall'
             
             # Find nearest
             nearest = min(recommendations, key=lambda x: x.distance_km)

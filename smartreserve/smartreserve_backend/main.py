@@ -42,7 +42,7 @@ from payment import PaymentEngine
 from websocket_manager import WebSocketManager
 from stations_db import StationsDB
 from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
-from priority_engine import PriorityEngine
+from priority_engine import PriorityEngine, haversine
 from vehicle_intelligence import VehicleIntelligence
 from speech_service import SpeechService
 from llm_service import ask_gemini, is_available as llm_available
@@ -287,7 +287,7 @@ async def get_stations(
             continue
         dist_km = None
         if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
-            dist_km = round(math.hypot((s["lat"] - target_lat) * 111.0, (s["lng"] - target_lon) * 103.0), 1)
+            dist_km = round(haversine(target_lat, target_lon, s["lat"], s["lng"]), 1)
 
         result.append({
             **s,
@@ -299,6 +299,9 @@ async def get_stations(
             "is_live_ocm": s.get("is_live_ocm", False),
             "live_status_title": s.get("live_status_title", "Verified Operational"),
         })
+
+    if target_lat is not None and target_lon is not None:
+        result.sort(key=lambda x: (x["distance_km"] if x.get("distance_km") is not None else 9999, -x.get("power_kw", 0)))
 
     return {
         "stations": result,
