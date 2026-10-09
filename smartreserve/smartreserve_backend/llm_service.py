@@ -57,17 +57,25 @@ def _init_gemini():
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
-        _gemini_model = genai.GenerativeModel(
-            model_name="gemini-3.8-flash",
-            generation_config={
-                "temperature": 0.3,
-                "top_p": 0.9,
-                "max_output_tokens": 1024,
-            },
-            system_instruction=_SYSTEM_PROMPT,
-        )
-        logger.info("[LLM] Gemini 3.8 Flash initialized.")
-        return _gemini_model
+        # Try supported Gemini model names in order
+        candidate_models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+        for m_name in candidate_models:
+            try:
+                _gemini_model = genai.GenerativeModel(
+                    model_name=m_name,
+                    generation_config={
+                        "temperature": 0.3,
+                        "top_p": 0.9,
+                        "max_output_tokens": 1024,
+                    },
+                    system_instruction=_SYSTEM_PROMPT,
+                )
+                logger.info(f"[LLM] Gemini initialized with {m_name}")
+                return _gemini_model
+            except Exception as me:
+                logger.debug(f"[LLM] Model {m_name} failed: {me}")
+                continue
+        return None
     except Exception as e:
         logger.error(f"[LLM] Gemini init failed: {e}")
         return None

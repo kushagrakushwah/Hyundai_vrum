@@ -78,6 +78,11 @@ try:
     priority_eng = PriorityEngine(db, vehicle_intel)
     voice_assistant = VoiceAssistant()
     speech_svc = SpeechService()
+    import priority_engine as pe_mod
+    import vehicle_intelligence as vi_mod
+    pe_mod.engine = priority_eng
+    pe_mod.priority_engine = priority_eng
+    vi_mod.vehicle = vehicle_intel
     _llm_ok = llm_available()
     _sarvam_ok = bool(speech_svc.config.sarvam_api_key)
     print(f"  [VOICE] AVA Voice Assistant initialized")
@@ -90,7 +95,7 @@ except Exception as e:
     speech_svc = None
     print(f"  [VOICE] Voice assistant init error (non-fatal): {e}")
 
-OCM_API_KEY = os.getenv("OCM_API_KEY", "")
+OCM_API_KEY = os.getenv("OCM_API_KEY") or "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────────

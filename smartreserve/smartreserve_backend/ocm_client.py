@@ -9,7 +9,7 @@ import time
 import urllib.request
 from typing import Dict, List, Optional
 
-DEFAULT_API_KEY = os.getenv("OCM_API_KEY", "")
+DEFAULT_API_KEY = os.getenv("OCM_API_KEY") or "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 OCM_BASE_URL = "https://api.openchargemap.io/v3/poi/"
 
 

@@ -758,11 +758,171 @@
             color: var(--status-amber);
             margin-top: 8px;
         }
+
+        /* Telematics Header Pill & Voice Chips */
+        .telematics-pill {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            color: var(--text-main);
+            padding: 6px 14px;
+            font-size: 12px;
+            font-family: var(--font-head);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.25s ease;
+        }
+        .telematics-pill:hover {
+            background: rgba(0,170,212,0.2);
+            border-color: var(--hyundai-blue);
+            transform: translateY(-1px);
+        }
+        .voice-quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 6px 0;
+        }
+        .v-chip {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+        .v-chip:hover {
+            color: var(--electric-yellow);
+            border-color: var(--electric-yellow);
+            background: rgba(255,209,0,0.1);
+        }
+        .voice-input-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,170,212,0.3);
+            border-radius: 12px;
+            padding: 6px 10px;
+            margin-top: 6px;
+        }
+        .mic-icon-btn {
+            background: linear-gradient(135deg, #00AAD4, #0066AA);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .mic-icon-btn.listening {
+            background: #ef4444;
+            animation: voice-pulse 1.2s infinite;
+        }
+        .voice-input-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 13px;
+            font-family: var(--font-body);
+            outline: none;
+        }
+        .voice-send-btn {
+            background: var(--hyundai-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .voice-send-btn:hover {
+            background: #0088aa;
+        }
+        .vehicle-modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vehicle-modal-content {
+            width: 90%;
+            max-width: 620px;
+            border-radius: 16px;
+            padding: 24px;
+            background: #071022;
+            border: 1px solid rgba(0,170,212,0.4);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .diag-stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .d-stat-lbl {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: block;
+        }
+        .d-stat-val {
+            font-family: var(--font-head);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 2px;
+            display: block;
+        }
+        .tyre-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .tyre-warning {
+            border-color: rgba(245,158,11,0.4);
+            background: rgba(245,158,11,0.06);
+        }
+        .comp-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .comp-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header glass" style="margin: 20px 20px 0 20px; border-radius: 12px;">
+    <div class="header glass" style="margin: 20px 20px 0 20px; border-radius: 12px; display:flex; align-items:center; justify-content:space-between;">
         <div class="logo-title">
             <svg class="hyundai-logo" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
                 <ellipse cx="100" cy="60" rx="90" ry="50" fill="none" stroke="currentColor" stroke-width="12"/>
@@ -770,9 +930,17 @@
             </svg>
             <div class="title">SmartReserve <span style="color:var(--hyundai-blue); font-weight: 300;">EV</span></div>
         </div>
-        <div class="time-status">
-            <div class="status-dot" id="ws-status"></div>
-            <div id="clock">00:00:00</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button id="btn-vehicle-diag" class="telematics-pill" onclick="openVehicleModal()" title="View Vehicle Health & TPMS">
+                🚗 Ioniq 5 · <span id="hdr-soc" style="color:var(--electric-yellow); font-weight:700;">18%</span> · <span id="hdr-range">87 km</span> · <span style="color:#22c55e;">TPMS</span>
+            </button>
+            <button class="telematics-pill" onclick="toggleVoiceOverlay()" style="border-color:var(--hyundai-blue); background:rgba(0,170,212,0.12);" title="Toggle AVA Voice Co-Pilot">
+                🎙️ AVA Co-Pilot
+            </button>
+            <div class="time-status" style="margin-left:6px;">
+                <div class="status-dot" id="ws-status"></div>
+                <div id="clock">00:00:00</div>
+            </div>
         </div>
     </div>
 
@@ -975,16 +1143,169 @@
     </div>
 
     <!-- AVA Voice Assistant -->
-    <button class="voice-btn" id="voice-btn" title="AVA Voice Assistant (Hey AVA)">
+    <button class="voice-btn" id="voice-btn" title="AVA Voice Assistant (Hey AVA / Ctrl + J)" onclick="toggleVoiceOverlay()">
         🎙️
     </button>
 
     <div class="voice-overlay" id="voice-overlay">
+        <!-- Overlay Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:rgba(0,0,0,0.5); border-radius:12px; border:1px solid rgba(0,170,212,0.3);">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">🤖</span>
+                <span style="font-family:var(--font-head); font-weight:700; color:var(--hyundai-blue); font-size:14px; letter-spacing:1px;">AVA IN-CABIN CO-PILOT</span>
+                <span style="font-size:10px; background:rgba(255,209,0,0.15); color:var(--electric-yellow); padding:2px 6px; border-radius:4px; font-weight:600;">EN · HI · MR</span>
+            </div>
+            <button onclick="closeVoiceOverlay()" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:0 4px;" title="Close">✕</button>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="voice-quick-chips">
+            <button class="v-chip" onclick="quickAsk('Nearest charging station find karo')">⚡ Nearest Charger</button>
+            <button class="v-chip" onclick="quickAsk('Gaadi chi battery kiti aahe')">🔋 Battery Status</button>
+            <button class="v-chip" onclick="quickAsk('Recommend best station')">🏆 Best Station</button>
+            <button class="v-chip" onclick="quickAsk('Vehicle diagnostics check karo')">🔧 Diagnostics</button>
+            <button class="v-chip" onclick="quickAsk('Pehla reserve karo')">🔒 Reserve Pick #1</button>
+        </div>
+
+        <!-- Live transcript box -->
         <div class="voice-transcript" id="voice-transcript" style="display:none;">
             <span class="interim" id="voice-interim"></span>
             <span class="final" id="voice-final"></span>
         </div>
+
+        <!-- Response area -->
         <div class="voice-response" id="voice-response" style="display:none;"></div>
+
+        <!-- Input Bar (works with or without microphone!) -->
+        <div class="voice-input-bar">
+            <button id="mic-toggle-btn" class="mic-icon-btn" onclick="toggleListening()" title="Speak via Microphone">🎙️</button>
+            <input type="text" id="voice-text-box" placeholder="Ask AVA (e.g. 'nearest charging station', 'battery kiti aahe')..." onkeydown="if(event.key==='Enter') submitVoiceBox()">
+            <button class="voice-send-btn" onclick="submitVoiceBox()">Send</button>
+        </div>
+    </div>
+
+    <!-- Vehicle Intelligence & TPMS Modal -->
+    <div id="vehicle-modal" class="vehicle-modal-backdrop hidden" onclick="if(event.target===this) closeVehicleModal()">
+        <div class="vehicle-modal-content glass">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:24px;">🚗</span>
+                    <div>
+                        <div style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--text-main);">HYUNDAI IONIQ 5 — TELEMATICS & HEALTH</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Real-Time BMS, 4-Wheel TPMS & Predictive Diagnostics</div>
+                    </div>
+                </div>
+                <button onclick="closeVehicleModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Key Specs Grid -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:16px;">
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Battery SoC</span>
+                    <span class="d-stat-val" id="diag-soc" style="color:var(--electric-yellow);">18.0%</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Est. Range</span>
+                    <span class="d-stat-val" id="diag-range">86.6 km</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Efficiency</span>
+                    <span class="d-stat-val" id="diag-eff">6.6 km/kWh</span>
+                </div>
+                <div class="diag-stat-card">
+                    <span class="d-stat-lbl">Drive Time Left</span>
+                    <span class="d-stat-val" id="diag-hours">1.9 hrs</span>
+                </div>
+            </div>
+
+            <!-- TPMS 4-Wheel Visual -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:16px;">
+                <div style="font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--hyundai-blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                    🛞 Tyre Pressure Monitoring System (TPMS)
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="tyre-card tyre-warning">
+                        <span style="font-size:11px; color:var(--text-muted);">Front Left (FL)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-amber);">28.0 PSI</span>
+                            <span class="badge status-resv" style="font-size:9px;">LOW</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Front Right (FR)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">35.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Rear Left (RL)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">36.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                    <div class="tyre-card">
+                        <span style="font-size:11px; color:var(--text-muted);">Rear Right (RR)</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            <span style="font-family:var(--font-head); font-size:18px; font-weight:700; color:var(--status-green);">36.0 PSI</span>
+                            <span class="badge status-avail" style="font-size:9px;">OK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Health Scores -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:16px;">
+                <div style="font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--hyundai-blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                    ⚙️ Component Health & Predictive Life
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Traction Battery Pack (SOH)</span><span style="color:#22c55e; font-weight:600;">98.5%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:98.5%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Permanent Magnet Synchronous Motor</span><span style="color:#22c55e; font-weight:600;">99.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:99%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Regenerative & Friction Brake Pads</span><span style="color:var(--electric-yellow); font-weight:600;">75.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:75%; background:var(--electric-yellow);"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Inverter & Power Electronics Coolant</span><span style="color:#22c55e; font-weight:600;">90.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:90%; background:#22c55e;"></div></div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                            <span>Windshield Wiper Fluid</span><span style="color:var(--status-amber); font-weight:600;">40.0%</span>
+                        </div>
+                        <div class="comp-bar"><div class="comp-fill" style="width:40%; background:var(--status-amber);"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance & AI Insights -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,170,212,0.08); border:1px solid rgba(0,170,212,0.25); border-radius:10px; padding:12px 16px;">
+                <div>
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Scheduled Maintenance</div>
+                    <div style="font-family:var(--font-head); font-size:16px; font-weight:700; color:var(--hyundai-blue);">Due in 5,500 km</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11px; color:var(--text-muted);">Vehicle Health Status</div>
+                    <div style="font-weight:700; color:#22c55e; font-size:13px;">✅ Optimal</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="toast-container" id="toast-container"></div>
@@ -1745,84 +2066,128 @@
             startApp();
         }
 
-        // ── AVA Voice Assistant ────────────────────────────────────────────
+        // ── AVA Voice Assistant & Vehicle Telematics ─────────────────────────
         const voiceBtn = document.getElementById('voice-btn');
         const voiceOverlay = document.getElementById('voice-overlay');
         const voiceTranscript = document.getElementById('voice-transcript');
         const voiceInterim = document.getElementById('voice-interim');
         const voiceFinal = document.getElementById('voice-final');
         const voiceResponse = document.getElementById('voice-response');
+        const micToggleBtn = document.getElementById('mic-toggle-btn');
         
         let recognition = null;
         let isListening = false;
         let lastRecommendations = [];
         let pendingConfirmation = false;
+
+        function toggleVoiceOverlay() {
+            if (voiceOverlay.classList.contains('active')) {
+                closeVoiceOverlay();
+            } else {
+                voiceOverlay.classList.add('active');
+                const box = document.getElementById('voice-text-box');
+                if (box) setTimeout(() => box.focus(), 100);
+            }
+        }
+
+        function closeVoiceOverlay() {
+            stopListening();
+            voiceOverlay.classList.remove('active');
+            pendingConfirmation = false;
+        }
+
+        function toggleListening() {
+            if (isListening) stopListening();
+            else startListening();
+        }
+
+        function quickAsk(text) {
+            const box = document.getElementById('voice-text-box');
+            if (box) box.value = text;
+            processVoiceCommand(text);
+        }
+
+        function submitVoiceBox() {
+            const box = document.getElementById('voice-text-box');
+            if (box && box.value.trim()) {
+                const text = box.value.trim();
+                box.value = '';
+                processVoiceCommand(text);
+            }
+        }
         
         // Initialize Web Speech API
         function initSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                console.warn('Speech Recognition not supported');
+                console.warn('Speech Recognition not supported in this browser. Text input active.');
                 return;
             }
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            recognition.lang = 'en-IN';
-            recognition.maxAlternatives = 1;
-            
-            recognition.onstart = () => {
-                isListening = true;
-                voiceBtn.classList.add('listening');
-                voiceBtn.innerHTML = '⏹️';
-                voiceTranscript.style.display = 'block';
-                voiceOverlay.classList.add('active');
-                voiceInterim.innerText = 'Listening...';
-                voiceFinal.innerText = '';
-            };
-            
-            recognition.onresult = (event) => {
-                let interimTranscript = '';
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
-                    } else {
-                        interimTranscript += transcript;
+            try {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'en-IN';
+                recognition.maxAlternatives = 1;
+                
+                recognition.onstart = () => {
+                    isListening = true;
+                    voiceBtn.classList.add('listening');
+                    voiceBtn.innerHTML = '⏹️';
+                    if (micToggleBtn) micToggleBtn.classList.add('listening');
+                    voiceTranscript.style.display = 'block';
+                    voiceOverlay.classList.add('active');
+                    voiceInterim.innerText = 'Listening...';
+                    voiceFinal.innerText = '';
+                };
+                
+                recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
                     }
-                }
-                voiceInterim.innerText = interimTranscript;
-                if (finalTranscript) {
-                    voiceFinal.innerText = finalTranscript;
-                    processVoiceCommand(finalTranscript);
-                }
-            };
-            
-            recognition.onerror = (event) => {
-                console.warn('Speech error:', event.error);
-                stopListening();
-                if (event.error === 'not-allowed') {
-                    showToast('Microphone access denied. Please allow microphone.', 'error');
-                }
-            };
-            
-            recognition.onend = () => {
-                stopListening();
-            };
+                    voiceInterim.innerText = interimTranscript;
+                    if (finalTranscript) {
+                        voiceFinal.innerText = finalTranscript;
+                        processVoiceCommand(finalTranscript);
+                    }
+                };
+                
+                recognition.onerror = (event) => {
+                    console.warn('Speech error:', event.error);
+                    stopListening();
+                    if (event.error === 'not-allowed') {
+                        showToast('Microphone permission blocked. You can type query below.', 'warning');
+                    }
+                };
+                
+                recognition.onend = () => {
+                    stopListening();
+                };
+            } catch(e) {
+                console.warn('Speech recognition init error:', e);
+            }
         }
         
         function startListening() {
             if (!recognition) initSpeechRecognition();
             if (!recognition) {
-                // Fallback: show text input
-                showTextInputFallback();
+                voiceOverlay.classList.add('active');
+                const box = document.getElementById('voice-text-box');
+                if (box) box.focus();
                 return;
             }
             try {
                 recognition.start();
             } catch(e) {
                 console.warn('Recognition start error:', e);
+                voiceOverlay.classList.add('active');
             }
         }
         
@@ -1830,46 +2195,19 @@
             isListening = false;
             voiceBtn.classList.remove('listening');
             voiceBtn.innerHTML = '🎙️';
+            if (micToggleBtn) micToggleBtn.classList.remove('listening');
             try { if (recognition) recognition.stop(); } catch(e) {}
-        }
-        
-        function showTextInputFallback() {
-            voiceOverlay.classList.add('active');
-            voiceTranscript.style.display = 'block';
-            voiceTranscript.innerHTML = `
-                <div style="display:flex;gap:8px;">
-                    <input type="text" id="voice-text-input" placeholder="Type a command (e.g., 'nearest charging station find karo')..." 
-                        style="flex:1; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:8px; padding:10px; color:white; font-family:var(--font-body);">
-                    <button onclick="submitTextCommand()" style="background:var(--hyundai-blue); color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">→</button>
-                </div>
-            `;
-            setTimeout(() => {
-                const inp = document.getElementById('voice-text-input');
-                if (inp) {
-                    inp.focus();
-                    inp.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') submitTextCommand();
-                    });
-                }
-            }, 100);
-        }
-        
-        function submitTextCommand() {
-            const inp = document.getElementById('voice-text-input');
-            if (inp && inp.value.trim()) {
-                voiceFinal.innerText = inp.value.trim();
-                processVoiceCommand(inp.value.trim());
-            }
         }
         
         // Process voice command through backend
         async function processVoiceCommand(text) {
+            voiceOverlay.classList.add('active');
             voiceResponse.style.display = 'block';
             voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA Processing...</div><div style="color:var(--text-muted);font-size:13px;">Analysing: "${text}"</div>`;
             
             // Check for confirmation responses
             if (pendingConfirmation) {
-                const yesWords = ['yes', 'haan', 'ho', 'ha', 'ok', 'sure', 'confirm', 'karo', 'kar do', 'reserve'];
+                const yesWords = ['yes', 'haan', 'ho', 'ha', 'ok', 'sure', 'confirm', 'karo', 'kar do', 'reserve', 'lock'];
                 const noWords = ['no', 'nahi', 'nako', 'cancel', 'mat', 'band', 'stop', 'ruk'];
                 const lower = text.toLowerCase().trim();
                 
@@ -1893,11 +2231,20 @@
                     const data = await res.json();
                     displayVoiceResponse(data);
                     speakResponse(data.text);
+                    
+                    // If action was executed directly
+                    if (data.display_data && data.display_data.action === 'reserve' && data.display_data.reservation) {
+                        const resv = data.display_data.reservation;
+                        const sid = data.display_data.station_id || (resv.station && resv.station.station_id);
+                        if (sid) selectStation(sid);
+                        currentReservation = resv;
+                        if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        fetchStations();
+                    }
                 } else {
                     voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>Sorry, I couldn't process that. Try: "nearest charging station" or "vehicle status"</div>`;
                 }
             } catch (e) {
-                // Offline fallback
                 console.warn('Voice API error:', e);
                 handleOfflineCommand(text);
             }
@@ -1907,31 +2254,32 @@
             let html = `<div class="assistant-label">🤖 AVA</div>`;
             
             // Main response text
-            html += `<div style="margin-bottom:10px;">${data.text}</div>`;
+            html += `<div style="margin-bottom:10px; font-size:14px; line-height:1.5;">${data.text}</div>`;
             
             // Recommendation cards
-            if (data.display_data && data.display_data.recommendations) {
+            if (data.display_data && data.display_data.recommendations && data.display_data.recommendations.length > 0) {
                 const recs = data.display_data.recommendations;
                 lastRecommendations = recs;
                 recs.forEach((rec, idx) => {
                     const labelClass = idx === 0 ? 'gold' : (idx === 1 ? 'blue' : 'green');
                     const cardClass = idx === 0 ? 'best' : '';
+                    const stId = rec.station_id || rec.id || '';
                     html += `
                         <div class="recommendation-card ${cardClass}">
                             <span class="rec-label ${labelClass}">${rec.label || ('⭐ Pick ' + (idx+1))}</span>
-                            <div class="rec-row">
+                            <div class="rec-row" style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
-                                    <div class="rec-name">${rec.station_name || rec.name || 'Station'}</div>
-                                    <div class="rec-stats">
+                                    <div class="rec-name" style="font-weight:700; color:var(--text-main); font-size:14px;">${rec.station_name || rec.name || 'Station'}</div>
+                                    <div class="rec-stats" style="display:flex; gap:10px; font-size:12px; color:var(--text-muted); margin-top:4px;">
                                         <span>📍 ${(rec.distance_km || 0).toFixed(1)} km</span>
                                         <span>⚡ ${rec.rated_power_kw || rec.effective_power_kw || 60} kW</span>
                                         <span>⏱ ~${Math.round(rec.estimated_total_time_min || rec.estimated_charge_time_min || 30)} min</span>
                                         <span>💰 ₹${(rec.estimated_cost_rs || 0).toFixed(0)}</span>
                                     </div>
                                 </div>
-                                <button class="rec-action" onclick="voiceReserveStation('${rec.station_id}', ${idx})">🔒 Reserve</button>
+                                <button class="rec-action" onclick="voiceReserveStation('${stId}', ${idx})">🔒 Reserve</button>
                             </div>
-                            ${rec.reasoning ? `<div class="rec-reason">${rec.reasoning}</div>` : ''}
+                            ${rec.reasoning ? `<div class="rec-reason" style="font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic;">${rec.reasoning}</div>` : ''}
                         </div>
                     `;
                 });
@@ -1947,7 +2295,6 @@
                 if (vs.hours_remaining !== undefined) html += `<div class="insight-card"><div class="insight-label">Drive Time Left</div><div class="insight-value">${vs.hours_remaining}h</div></div>`;
                 html += `</div>`;
                 
-                // Warnings
                 if (vs.insights && vs.insights.length > 0) {
                     vs.insights.forEach(insight => {
                         html += `<div class="insight-warning">⚠️ ${insight}</div>`;
@@ -1960,7 +2307,7 @@
                 pendingConfirmation = true;
                 html += `
                     <div class="confirm-bar">
-                        <button class="confirm-yes" onclick="handleConfirmation(true)">✅ Haan / Yes</button>
+                        <button class="confirm-yes" onclick="handleConfirmation(true)">✅ Haan / Yes (Lock Slot)</button>
                         <button class="confirm-no" onclick="handleConfirmation(false)">❌ Nahi / No</button>
                     </div>
                 `;
@@ -1973,7 +2320,7 @@
         
         async function handleConfirmation(confirmed) {
             pendingConfirmation = false;
-            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);">${confirmed ? 'Confirming...' : 'Cancelled.'}</div>`;
+            voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);">${confirmed ? 'Confirming reservation...' : 'Cancelled.'}</div>`;
             
             try {
                 const res = await fetch(`${API}/api/voice/confirm`, {
@@ -1985,6 +2332,16 @@
                     const data = await res.json();
                     displayVoiceResponse(data);
                     speakResponse(data.text);
+                    
+                    if (confirmed && data.display_data && data.display_data.reservation) {
+                        const resv = data.display_data.reservation;
+                        const sid = data.display_data.station_id || (resv.station && resv.station.station_id);
+                        if (sid) selectStation(sid);
+                        currentReservation = resv;
+                        if (resv.pin) showReservationPIN(resv.pin, resv.expires_at);
+                        fetchStations();
+                        showToast(`Slot reserved! PIN: ${resv.pin}`, 'success');
+                    }
                 }
             } catch (e) {
                 voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA</div><div>${confirmed ? 'Reservation confirmed!' : 'Action cancelled.'}</div>`;
@@ -1992,24 +2349,32 @@
         }
         
         function voiceReserveStation(stationId, idx) {
-            processVoiceCommand(`reserve station ${idx + 1}`);
+            if (stationId) {
+                selectStation(stationId);
+                reserveStation(stationId);
+                showToast(`Slot lock requested for ${stationId}`, 'info');
+                speakResponse("Locking your 30 minute charging slot now.");
+            } else {
+                processVoiceCommand(`reserve station ${idx + 1}`);
+            }
         }
         
         // Text-to-Speech
         function speakResponse(text) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-IN';
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                
-                // Try to find an Indian English voice
-                const voices = window.speechSynthesis.getVoices();
-                const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-                if (indianVoice) utterance.voice = indianVoice;
-                
-                window.speechSynthesis.speak(utterance);
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-IN';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    
+                    const voices = window.speechSynthesis.getVoices();
+                    const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+                    if (indianVoice) utterance.voice = indianVoice;
+                    
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {}
             }
         }
         
@@ -2019,43 +2384,85 @@
             let response = { text: '', display_data: {}, action_type: 'info', needs_confirmation: false };
             
             if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
-                response.text = 'Vehicle is at 18% state of charge with approximately 59 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
-                response.display_data = { vehicle_status: { soc: 18, range_km: 59, efficiency: 6.6, hours_remaining: 1.3 } };
+                response.text = 'Vehicle is at 18% state of charge with approximately 87 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
+                response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6, hours_remaining: 1.9 } };
             } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
-                response.text = 'Looking for nearest charging stations. Open the map to see available stations near you.';
-                // Trigger the existing filter
+                response.text = 'Showing available charging stations nearby. You can pick any station to lock a slot.';
                 const filterBtn = document.querySelector('[data-filter="available"]');
                 if (filterBtn) filterBtn.click();
             } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
-                response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve assistant. Battery status, charging stations, ya reservations ke baare mein poochiye.';
+                response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve in-cabin assistant. Battery status, charging stations, ya slot reservations ke baare mein poochiye.';
             } else {
-                response.text = 'I can help with: "Vehicle status", "Find nearest charging station", "Reserve a slot", or "Vehicle diagnostics". Try one of these!';
+                response.text = 'I can help with: "Vehicle status", "Find nearest charging station", "Reserve a slot", or "Vehicle diagnostics".';
             }
             
             displayVoiceResponse(response);
             speakResponse(response.text);
         }
-        
-        // Voice button handler
-        voiceBtn.onclick = () => {
-            if (isListening) {
-                stopListening();
-            } else if (voiceOverlay.classList.contains('active') && !isListening) {
-                // Toggle overlay off
-                voiceOverlay.classList.remove('active');
-                voiceResponse.style.display = 'none';
-                voiceTranscript.style.display = 'none';
-                pendingConfirmation = false;
-            } else {
-                startListening();
+
+        // ── Vehicle Telematics Modal ──────────────────────────────────────────
+        async function openVehicleModal() {
+            const modal = document.getElementById('vehicle-modal');
+            if (modal) modal.classList.remove('hidden');
+            try {
+                const res = await fetch(`${API}/api/vehicle/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const st = data.status || {};
+                    if (st.soc !== undefined) {
+                        const dSoc = document.getElementById('diag-soc');
+                        const hSoc = document.getElementById('hdr-soc');
+                        if (dSoc) dSoc.innerText = `${st.soc}%`;
+                        if (hSoc) hSoc.innerText = `${st.soc}%`;
+                    }
+                    if (st.range_km !== undefined) {
+                        const dR = document.getElementById('diag-range');
+                        const hR = document.getElementById('hdr-range');
+                        if (dR) dR.innerText = `${st.range_km} km`;
+                        if (hR) hR.innerText = `${st.range_km} km`;
+                    }
+                    if (st.efficiency !== undefined) {
+                        const dEff = document.getElementById('diag-eff');
+                        if (dEff) dEff.innerText = `${st.efficiency} km/kWh`;
+                    }
+                    if (st.hours_remaining !== undefined) {
+                        const dH = document.getElementById('diag-hours');
+                        if (dH) dH.innerText = `${st.hours_remaining} hrs`;
+                    }
+                }
+            } catch(e) {
+                console.warn('Vehicle status fetch error:', e);
             }
-        };
-        
-        // Keyboard shortcut: Space to toggle voice (when not typing)
+        }
+
+        function closeVehicleModal() {
+            const modal = document.getElementById('vehicle-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function fetchVehicleHeaderStatus() {
+            try {
+                const res = await fetch(`${API}/api/vehicle/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const st = data.status || {};
+                    if (st.soc !== undefined) {
+                        const hSoc = document.getElementById('hdr-soc');
+                        if (hSoc) hSoc.innerText = `${st.soc}%`;
+                    }
+                    if (st.range_km !== undefined) {
+                        const hR = document.getElementById('hdr-range');
+                        if (hR) hR.innerText = `${st.range_km} km`;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        // Keyboard shortcut: Ctrl + J to toggle voice
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyJ' && e.ctrlKey) {
                 e.preventDefault();
-                voiceBtn.click();
+                toggleVoiceOverlay();
             }
         });
         
@@ -2064,8 +2471,9 @@
             window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
         
-        // Initialize speech recognition on load
+        // Initialize speech recognition & header status on load
         initSpeechRecognition();
+        fetchVehicleHeaderStatus();
 
     </script>
 </body>

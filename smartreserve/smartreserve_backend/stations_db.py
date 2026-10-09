@@ -124,8 +124,15 @@ class StationsDB:
                  latitude, longitude, chargers_type, charger_rating, connector_rating, total_connectors
         We prioritise Telangana rows but load all India for routing across states.
         """
-        if not os.path.exists(DATAFUL_CSV):
-            print(f"  [DB] Dataful CSV not found at: {DATAFUL_CSV}")
+        csv_candidates = [
+            DATAFUL_CSV,
+            os.path.join(os.path.dirname(__file__), "..", "..", "data_ev_charging_stations_india", "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv"),
+            os.path.join(os.path.dirname(__file__), "data_ev_charging_stations_india", "state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv"),
+            "/app/data_ev_charging_stations_india/state-district-city-and-location-wise-electric-vehicle-ev-charging-stations-in-india.csv",
+        ]
+        active_csv = next((p for p in csv_candidates if os.path.exists(p)), None)
+        if not active_csv:
+            print(f"  [DB] Dataful CSV not found at candidate paths")
             return
 
         # Map Dataful connector type strings → normalized internal connector type
@@ -147,7 +154,7 @@ class StationsDB:
         }
 
         try:
-            with open(DATAFUL_CSV, newline="", encoding="utf-8") as f:
+            with open(active_csv, newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for idx, row in enumerate(reader):
                     try:

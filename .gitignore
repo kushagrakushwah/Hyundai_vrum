@@ -23,3 +23,5 @@ smartreserve.db
 # System & dependencies
 .DS_Store
 node_modules/
+.venv/
+venv/

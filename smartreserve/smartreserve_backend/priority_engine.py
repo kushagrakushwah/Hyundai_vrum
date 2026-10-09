@@ -256,12 +256,18 @@ class PriorityEngine:
         best = recommendations[0]
         return f"I recommend heading to {best.station_name}. It's {best.distance_km} kilometers away. You'll arrive with about {best.arrival_soc}% battery, and it will take around {best.estimated_charge_time_min} minutes to reach your target charge."
 
-# Singleton default instance
-try:
-    from stations_db import StationsDB
-    from vehicle_intelligence import vehicle
-    priority_engine = PriorityEngine(StationsDB(), vehicle)
-    engine = priority_engine
-except Exception:
-    priority_engine = None
-    engine = None
+# Singleton instance (lazy or initialized by main.py)
+priority_engine = None
+engine = None
+
+def get_engine():
+    global engine, priority_engine
+    if engine is None:
+        try:
+            from stations_db import StationsDB
+            from vehicle_intelligence import vehicle
+            priority_engine = PriorityEngine(StationsDB(), vehicle)
+            engine = priority_engine
+        except Exception:
+            pass
+    return engine

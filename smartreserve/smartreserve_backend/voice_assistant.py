@@ -180,7 +180,8 @@ class VoiceAssistant:
         # 1. Try priority engine (real data)
         stations: List[dict] = []
         try:
-            from priority_engine import engine
+            from priority_engine import get_engine
+            engine = get_engine()
             if engine:
                 recs_list = engine.recommend(top_k=3)
                 stations = [vars(r) if hasattr(r, "__dict__") else r for r in recs_list]
@@ -393,7 +394,8 @@ class VoiceAssistant:
         st_id = ""
 
         try:
-            from priority_engine import engine
+            from priority_engine import get_engine
+            engine = get_engine()
             if engine:
                 recs = engine.recommend(top_k=3)
                 if recs and len(recs) >= rank:

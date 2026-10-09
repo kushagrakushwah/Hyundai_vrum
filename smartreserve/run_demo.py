@@ -30,6 +30,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(BASE_DIR, "smartreserve_backend")
 FRONTEND_DIR = os.path.join(BASE_DIR, "smartreserve_frontend")
 
+# Auto-detect .venv Python binary
+VENV_CANDIDATES = [
+    os.path.join(BASE_DIR, "..", ".venv", "Scripts", "python.exe"),
+    os.path.join(BASE_DIR, "..", ".venv", "bin", "python"),
+    os.path.join(BASE_DIR, ".venv", "Scripts", "python.exe"),
+    os.path.join(BASE_DIR, ".venv", "bin", "python"),
+]
+PYTHON_EXE = next((p for p in VENV_CANDIDATES if os.path.exists(p)), sys.executable)
+
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════════════╗
@@ -53,7 +62,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 def run_backend():
     """Start FastAPI + Uvicorn on port 8000."""
-    cmd = [sys.executable, "-m", "uvicorn", "main:app",
+    cmd = [PYTHON_EXE, "-m", "uvicorn", "main:app",
            "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
     p = subprocess.Popen(cmd, cwd=BACKEND_DIR)
     processes.append(p)
@@ -61,24 +70,17 @@ def run_backend():
 
 def run_frontend():
     """Start static file server on port 3000."""
-    cmd = [sys.executable, "server.py"]
+    cmd = [PYTHON_EXE, "server.py"]
     p = subprocess.Popen(cmd, cwd=FRONTEND_DIR)
     processes.append(p)
     p.wait()
 
 def check_deps():
-    """Verify required packages are installed."""
-    required = ['fastapi', 'uvicorn', 'pydantic']
-    missing = []
-    for pkg in required:
-        try:
-            __import__(pkg)
-        except ImportError:
-            missing.append(pkg)
-    if missing:
-        print(f"⚠  Missing packages: {', '.join(missing)}")
-        print(f"   Install with: pip install {' '.join(missing)}")
-        print(f"   Or run: pip install -r requirements.txt")
+    """Verify required packages are installed in PYTHON_EXE."""
+    res = subprocess.run([PYTHON_EXE, "-c", "import fastapi, uvicorn, pydantic, aiosqlite; print('OK')"], capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"⚠  Dependencies missing in {PYTHON_EXE}")
+        print(f"   Install with: pip install -r requirements.txt")
         return False
     return True
 
