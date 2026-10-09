@@ -5,6 +5,7 @@ AVA Voice Assistant + Gemini LLM + Sarvam STT/TTS + Real Dataful EV station data
 """
 import asyncio
 import json
+import math
 import os
 import random
 import string
@@ -230,14 +231,34 @@ async def get_stats():
 # ── Station Routes ─────────────────────────────────────────────────────────────
 @app.get("/api/stations")
 async def get_stations(
+    city: Optional[str] = None,
     district: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
-    limit: int = 1000,
+    limit: int = 500,
 ):
-    """Return stations with live status and AI congestion predictions."""
-    stations = db.get_stations(district=district, source=source, limit=limit)
+    """Return stations with live status, GPS proximity, and AI congestion predictions."""
+    target_city = city
+    target_lat = latitude
+    target_lon = longitude
+
+    # Fallback to vehicle's current location if not specified
+    if not target_city and target_lat is None:
+        target_city = vehicle_intel.state.city
+        target_lat = vehicle_intel.state.latitude
+        target_lon = vehicle_intel.state.longitude
+
+    stations = db.get_stations(
+        city=target_city,
+        district=district,
+        latitude=target_lat,
+        longitude=target_lon,
+        source=source,
+        limit=limit,
+    )
     active_res = await database.get_all_active_reservations()
     active_ses = await database.get_all_sessions()
 
@@ -264,10 +285,14 @@ async def get_stations(
             continue
         if min_power_kw and s.get("power_kw", 0) < min_power_kw:
             continue
+        dist_km = None
+        if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
+            dist_km = round(math.hypot((s["lat"] - target_lat) * 111.0, (s["lng"] - target_lon) * 103.0), 1)
 
         result.append({
             **s,
             "status": status,
+            "distance_km": dist_km,
             "congestion": congestion,
             "is_reserved": sid in reserved_ids,
             "is_charging": sid in session_ids,

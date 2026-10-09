@@ -14,6 +14,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 import re
+from smartreserve_brain import brain
 
 logger = logging.getLogger(__name__)
 
@@ -183,26 +184,12 @@ class VoiceAssistant:
                 break
 
         # 4. Browsing vs Reservation check
-        browse_kws = [
-            "see", "show", "view", "find", "search", "check", "look",
-            "dikhao", "dekho", "dekhna", "batao", "list", "kaunse", "kaha", "kahan", "kuthe", "where"
-        ]
-        is_browse = any(kw in cleaned_text for kw in browse_kws)
+        is_question = cleaned_text.startswith(("what", "how", "why", "explain", "about", "who")) or any(
+            cleaned_text.startswith(p) for p in ["can you explain", "tell me about", "what is", "how does", "why do"]
+        )
 
-        direct_reserve_kws = [
-            "reserve the nearest", "book the nearest", "lock nearest", "reserve nearest", "book nearest",
-            "lock the closest", "lock the nearest", "sabse paas wala reserve", "paas wala reserve",
-            "slot book", "slot reserve", "reserve station", "book station", "lock slot",
-            "book a slot", "reserve a slot", "lock a slot", "book slot", "reserve slot",
-            "reserve kardo", "book kardo", "lock kardo", "slot book kardo", "slot reserve kardo", "slot lock kardo",
-            "reserve first", "book first", "lock first", "pehla reserve", "doosra reserve", "teesra reserve",
-            "reserve this", "book this", "lock this", "reserve karo", "book karo", "lock karo",
-            "reserve in", "book in", "lock in"
-        ]
-        has_direct_reserve = any(kw in cleaned_text for kw in direct_reserve_kws)
-        has_single_reserve = any(kw in cleaned_text for kw in ["reserve", "book", "lock", "rok do"]) and not is_browse
-
-        is_reserve = (has_direct_reserve or has_single_reserve) and not is_browse
+        has_reserve_verb = bool(re.search(r'\b(reserve|book|lock|rok do|booking)\b', cleaned_text))
+        is_reserve = has_reserve_verb and not is_question
 
         # Check if user refers to currently selected station
         if any(w in cleaned_text for w in ["this", "selected", "current", "yeh", "ye", "ye wala", "yeh wala", "it"]):
@@ -242,15 +229,19 @@ class VoiceAssistant:
         if is_reserve:
             q_text = cleaned_text
             stop_words = [
-                "reserve", "book", "lock", "slot", "the", "a", "an", "this", "that", "these",
-                "it", "station", "charger", "kardo", "karo", "please", "at", "wala", "mein",
+                "reserve", "book", "lock", "slot", "slots", "the", "a", "an", "this", "that", "these",
+                "it", "station", "stations", "charger", "chargers", "kardo", "karo", "please", "at", "wala", "mein",
                 "for", "to", "my", "me", "yeh", "ye", "current", "selected", "one", "kar", "do",
-                "in", "at", "near"
+                "in", "at", "near", "can", "you", "could", "would", "want", "like", "need", "get", "charging",
+                "fast", "slow", "some", "any", "nearby", "here", "search", "searching", "find", "finding",
+                "am", "i", "and", "look", "looking", "located", "live", "coz", "because"
             ]
             for kw in stop_words:
                 q_text = re.sub(r'\b' + re.escape(kw) + r'\b', '', q_text)
+            for c_name in INDIAN_CITIES.keys():
+                q_text = re.sub(r'\b' + re.escape(c_name) + r'\b', '', q_text)
             q_text = re.sub(r'\s+', ' ', q_text).strip()
-            if len(q_text) >= 3 and q_text not in ["nearest", "closest", "first", "second", "third", "pehla", "doosra", "teesra", "paas", "sabse paas", "nagpur", "hyderabad", "pune", "mumbai"]:
+            if len(q_text) >= 3 and q_text not in ["nearest", "closest", "first", "second", "third", "pehla", "doosra", "teesra", "paas", "sabse paas"]:
                 entities["target_query"] = q_text
 
             return IntentResult(
@@ -336,18 +327,31 @@ class VoiceAssistant:
 
         if intent_res.intent == "REPEAT_PIN":
             return self._handle_repeat_pin(intent_res, user_id)
+        elif intent_res.intent == "CANCEL":
+            return self._handle_cancel_reservation(intent_res, user_id)
+        elif intent_res.intent == "SET_AC":
+            return self._handle_set_ac(intent_res)
+
+        # Check SmartReserveBrain for project, technical, hardware, telematics, or FAQ questions
+        brain_ans = brain.answer_query(text, vehicle_status=self._get_vehicle_context(), language=intent_res.language_mix)
+        if brain_ans:
+            spoken_txt, intent_name, display_d = brain_ans
+            return VoiceAssistantResponse(
+                text=spoken_txt,
+                display_data=display_d,
+                action_type="info",
+                language=intent_res.language_mix,
+                tool_calls=[f"brain.{intent_name.lower()}"]
+            )
+
+        if intent_res.intent == "RESERVE_SLOT":
+            return self._handle_reserve(intent_res, user_id)
         elif intent_res.intent == "FIND_CPO":
             return self._handle_find_cpo(intent_res, user_id)
         elif intent_res.intent == "VEHICLE_STATUS":
             return self._handle_vehicle_status(intent_res)
         elif intent_res.intent == "GET_DIAGNOSTICS":
             return self._handle_diagnostics(intent_res)
-        elif intent_res.intent == "RESERVE_SLOT":
-            return self._handle_reserve(intent_res, user_id)
-        elif intent_res.intent == "CANCEL":
-            return self._handle_cancel_reservation(intent_res, user_id)
-        elif intent_res.intent == "SET_AC":
-            return self._handle_set_ac(intent_res)
         elif intent_res.intent == "GREETING":
             return self._handle_greeting(intent_res)
         else:
@@ -361,11 +365,11 @@ class VoiceAssistant:
 
         if not active:
             if intent_res.language_mix in ("hi", "hi+en"):
-                msg = "Aapki koi active reservation nahi mili. Kripya pehle charging station reserve karein."
+                msg = "Aapka koi active reservation PIN nahi mila. Kripya pehle charging station reserve karein."
             elif intent_res.language_mix == "mr":
-                msg = "Tumchi kontihi active reservation nahi. Kripya aadhi charging slot reserve kara."
+                msg = "Tumcha kontahi active reservation PIN nahi. Kripya aadhi charging slot reserve kara."
             else:
-                msg = "You do not have an active reservation right now. Would you like me to find and reserve a charger for you?"
+                msg = "You do not have an active reservation PIN right now. Would you like me to find and reserve a charger for you?"
             return VoiceAssistantResponse(text=msg, action_type="info", language=intent_res.language_mix)
 
         resv = active[0]
@@ -864,11 +868,35 @@ class VoiceAssistant:
         except Exception as e:
             logger.warning(f"[AVA] Gemini unknown handler failed: {e}")
 
+        # Check brain fallback if not already captured
+        brain_ans = brain.answer_query(intent_res.raw_text, vehicle_status=self._get_vehicle_context(), language=intent_res.language_mix)
+        if brain_ans:
+            spoken_txt, intent_name, display_d = brain_ans
+            return VoiceAssistantResponse(
+                text=spoken_txt,
+                display_data=display_d,
+                action_type="info",
+                language=intent_res.language_mix,
+                tool_calls=[f"brain.{intent_name.lower()}"]
+            )
+
         if intent_res.language_mix in ("hi", "hi+en"):
-            return VoiceAssistantResponse(text="Samajh nahi aaya. Kripya dobara bolen.", action_type="error", language=intent_res.language_mix)
+            return VoiceAssistantResponse(
+                text="Aap pooch sakte hain: nearest charging station dhundna, slot reserve karna, battery status, tyre pressure ya SmartReserve project ke baare mein.",
+                action_type="info",
+                language=intent_res.language_mix
+            )
         elif intent_res.language_mix == "mr":
-            return VoiceAssistantResponse(text="Samajle nahi. Parat sangaa.", action_type="error", language=intent_res.language_mix)
-        return VoiceAssistantResponse(text="I didn't understand that. Could you rephrase?", action_type="error", language=intent_res.language_mix)
+            return VoiceAssistantResponse(
+                text="Tumhi vicharu shakta: charging station shodha, slot reserve kara, battery status, kiva tyre chi hawa.",
+                action_type="info",
+                language=intent_res.language_mix
+            )
+        return VoiceAssistantResponse(
+            text="I can assist with: finding charging stations, reserving a 30-minute slot, checking battery range, tyre pressure, or explaining the SmartReserve system.",
+            action_type="info",
+            language=intent_res.language_mix
+        )
 
     # ── Helper: vehicle context dict for LLM ─────────────────────────────────
     def _get_vehicle_context(self) -> Optional[dict]:

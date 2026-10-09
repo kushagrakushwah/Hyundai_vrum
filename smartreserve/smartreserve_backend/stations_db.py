@@ -78,6 +78,24 @@ LOCATION_TYPES = [
     "Dealership", "Government Office",
 ]
 
+INDIAN_CITIES = {
+    "nagpur": (21.1458, 79.0882),
+    "hyderabad": (17.3850, 78.4867),
+    "pune": (18.5204, 73.8567),
+    "mumbai": (19.0760, 72.8777),
+    "bhopal": (23.2599, 77.4126),
+    "indore": (22.7196, 75.8577),
+    "delhi": (28.6139, 77.2090),
+    "bengaluru": (12.9716, 77.5946),
+    "bangalore": (12.9716, 77.5946),
+    "chennai": (13.0827, 80.2707),
+    "kolkata": (22.5726, 88.3639),
+    "ahmedabad": (23.0225, 72.5714),
+    "jaipur": (26.9124, 75.7873),
+    "lucknow": (26.8467, 80.9462),
+    "chandigarh": (30.7333, 76.7794),
+}
+
 
 class StationsDB:
     def __init__(self):
@@ -344,7 +362,10 @@ class StationsDB:
 
     def get_stations(
         self,
+        city: Optional[str] = None,
         district: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
         source: str = "all",
         limit: int = 1000,
     ) -> List[dict]:
@@ -353,23 +374,66 @@ class StationsDB:
         - 'bee': only base network stations
         - 'live': only live Open Charge Map stations
         - 'all': live OCM stations prioritized, followed by base network
+        Supports city / GPS proximity sorting across the full 29,260 station database.
         """
+        # Resolve target coordinates if city or lat/lng given
+        target_lat = latitude
+        target_lng = longitude
+        c_norm = (city or "").lower().strip()
+        if (target_lat is None or target_lng is None) and c_norm in INDIAN_CITIES:
+            target_lat, target_lng = INDIAN_CITIES[c_norm]
+
         if source == "live":
             if not self.live_ocm_stations:
-                self.get_live_ocm_stations(max_results=limit)
+                self.get_live_ocm_stations(latitude=target_lat, longitude=target_lng, max_results=limit)
             results = list(self.live_ocm_stations.values())
         elif source == "bee":
             results = list(self.stations.values())
         else:
-            # Combined: include live OCM stations + base stations
             live = list(self.live_ocm_stations.values())
             if not live:
-                # Trigger quick live fetch
-                live = self.get_live_ocm_stations(max_results=25)
+                live = self.get_live_ocm_stations(latitude=target_lat, longitude=target_lng, max_results=25)
             results = live + list(self.stations.values())
 
-        if district:
-            results = [s for s in results if district.lower() in s.get("district", "").lower() or district.lower() in s.get("address", "").lower()]
+        # If a city or coordinates are specified, prioritize and sort by distance
+        if target_lat is not None and target_lng is not None:
+            import math
+            def dist_fn(s):
+                s_lat = s.get("lat") or 0.0
+                s_lng = s.get("lng") or 0.0
+                d = math.hypot((s_lat - target_lat) * 111.0, (s_lng - target_lng) * 103.0)
+                # Boost if city/district matches explicitly
+                match_boost = 0.0
+                if c_norm:
+                    s_city = (s.get("city") or "").lower()
+                    s_distr = (s.get("district") or "").lower()
+                    s_addr = (s.get("address") or "").lower()
+                    if c_norm in s_city or c_norm in s_distr or c_norm in s_addr:
+                        match_boost = -50.0  # Bring matching city to very front
+                return d + match_boost
+
+            # Filter candidates within 120km or matching city
+            if c_norm:
+                near_or_match = [
+                    s for s in results 
+                    if c_norm in (s.get("city") or "").lower() 
+                    or c_norm in (s.get("district") or "").lower()
+                    or c_norm in (s.get("address") or "").lower()
+                    or math.hypot(((s.get("lat") or 0.0) - target_lat) * 111.0, ((s.get("lng") or 0.0) - target_lng) * 103.0) < 60.0
+                ]
+                if near_or_match:
+                    results = sorted(near_or_match, key=dist_fn)
+                else:
+                    results = sorted(results, key=dist_fn)
+            else:
+                results = sorted(results, key=dist_fn)
+
+        elif district:
+            results = [
+                s for s in results 
+                if district.lower() in (s.get("district") or "").lower() 
+                or district.lower() in (s.get("address") or "").lower()
+            ]
 
         return results[:limit]
 

@@ -1349,12 +1349,13 @@
         let activeSession = false;
         
         // Demo Fallback Data
+        // Demo Fallback Data (Nagpur, Maharashtra default)
         const demoStations = [
-            { id: 'TG0001', name: 'Tata Power Fast Hub — Hyderabad', address: 'Banjara Hills, Hyderabad', district: 'Hyderabad', operator: 'Tata Power', power_kw: 60, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 17.4156, lng: 78.4350 },
-            { id: 'OCM-510840', name: 'E-Fill Electric Fast Charger', address: 'Hotel Food Mania, Telangana', district: 'Hyderabad', operator: 'E-Fill', power_kw: 30, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 17.3850, lng: 78.4867 },
-            { id: 'TG0002', name: 'ChargeZone Highway Hub — Rangareddy', address: 'ORR Exit 11, Rangareddy', district: 'Rangareddy', operator: 'ChargeZone', power_kw: 120, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 17.2403, lng: 78.4294 },
-            { id: 'TG0003', name: 'Jubilee Hills Checkpost Hub', address: 'Jubilee Hills, Hyderabad', district: 'Hyderabad', operator: 'Tata Power', power_kw: 50, status: 'RESERVED', is_live_ocm: false, connector_type: 'CCS2', lat: 17.4300, lng: 78.4090 },
-            { id: 'TG0004', name: 'Secunderabad Metro Charger', address: 'Secunderabad Station', district: 'Hyderabad', operator: 'Statiq', power_kw: 22, status: 'CHARGING', is_live_ocm: false, connector_type: 'AC Type 2', lat: 17.4337, lng: 78.5016 },
+            { id: 'IN_NGP_001', name: 'Tata Power Superfast Hub — Sitabuldi', address: 'Sitabuldi Metro Interchange, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Tata Power', power_kw: 120, status: 'AVAILABLE', is_live_ocm: true, connector_type: 'CCS2', lat: 21.1458, lng: 79.0882 },
+            { id: 'DF_MA_920121', name: 'EESL Fast Hub — Kasturchand Park Metro', address: 'Kasturchand Park Metro Station, Nagpur, Maharashtra', district: 'Nagpur', operator: 'EESL', power_kw: 142, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1558, lng: 79.0882 },
+            { id: 'DF_MA_306939', name: 'Jio-bp Pulse Fast Hub — Great Nag Road', address: 'Orient Hotel, Great Nag Road, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Jio-bp', power_kw: 60, status: 'AVAILABLE', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1367, lng: 79.0920 },
+            { id: 'DF_MA_969709', name: 'MSEDCL Fast Charger — Ganeshpeth', address: 'Near ST Bus Stand, Ganeshpeth, Nagpur, Maharashtra', district: 'Nagpur', operator: 'MSEDCL', power_kw: 30, status: 'RESERVED', is_live_ocm: false, connector_type: 'CCS2', lat: 21.1376, lng: 79.0960 },
+            { id: 'DF_MA_031071', name: 'Ather Grid — Dosar Bhavan Chowk', address: 'CA Road, Dosar Bhavan, Nagpur, Maharashtra', district: 'Nagpur', operator: 'Ather', power_kw: 22, status: 'CHARGING', is_live_ocm: false, connector_type: 'AC Type 2', lat: 21.1523, lng: 79.0957 },
         ];
 
         const CITY_COORDS = {
@@ -1403,7 +1404,7 @@
                 });
             } catch(e) {}
             showToast(`📍 Location set to ${city.toUpperCase()}`, 'info');
-            applyFilters();
+            fetchStations();
         }
 
         function detectUserLocation() {
@@ -1436,7 +1437,7 @@
                         });
                     } catch(e) {}
                     showToast(`📍 Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
-                    applyFilters();
+                    fetchStations();
                 }, (err) => {
                     console.log('GPS skipped:', err.message);
                 }, { timeout: 8000, maximumAge: 60000 });
@@ -1482,25 +1483,26 @@
         // API Fetch
         async function fetchStations(source = 'all') {
             try {
-                const res = await fetch(`${API}/api/stations?source=${source}&limit=1000`);
+                const res = await fetch(`${API}/api/stations?source=${source}&city=${encodeURIComponent(currentCity)}&latitude=${currentLat}&longitude=${currentLng}&limit=300`);
                 if (!res.ok) throw new Error('API down');
                 const data = await res.json();
                 const rawList = Array.isArray(data) ? data : (data.stations || []);
                 
+                const cDisplay = currentCity.charAt(0).toUpperCase() + currentCity.slice(1);
                 stations = rawList.map(s => ({
                     ...s,
                     id: s.station_id || s.id,
                     name: s.name || 'EV Fast Charger',
-                    city: s.city || s.district || 'City',
-                    district: s.district || 'Telangana',
-                    address: s.address || (s.district ? s.district + ', Telangana' : 'Telangana'),
+                    city: s.city || s.district || cDisplay,
+                    district: s.district || cDisplay,
+                    address: s.address || (s.district ? s.district + ', India' : 'India'),
                     power_kw: parseFloat(s.power_kw) || 60,
                     status: s.status || 'AVAILABLE',
                     connector_type: s.connector_type || 'CCS2',
                     operator: s.operator || 'EV Operator',
                     is_live_ocm: Boolean(s.is_live_ocm),
-                    lat: parseFloat(s.lat) || 17.3850,
-                    lng: parseFloat(s.lng) || 78.4867
+                    lat: parseFloat(s.lat) || currentLat,
+                    lng: parseFloat(s.lng) || currentLng
                 }));
             } catch (e) {
                 console.warn('API fetch failed, loading demo stations:', e);
@@ -1510,9 +1512,11 @@
             applyFilters();
             updateStats();
             
-            if (stations.length > 0 && !selectedStationId) {
-                const firstAvailable = stations.find(s => s.status === 'AVAILABLE') || stations[0];
-                selectStation(firstAvailable.id);
+            if (stations.length > 0) {
+                if (!selectedStationId || !stations.some(s => s.id === selectedStationId)) {
+                    const firstAvailable = stations.find(s => s.status === 'AVAILABLE') || stations[0];
+                    selectStation(firstAvailable.id);
+                }
             }
         }
 
@@ -1689,7 +1693,8 @@
             const targetId = String(id).toUpperCase();
             let st = stations.find(s => (s.id && String(s.id).toUpperCase() === targetId) || (s.station_id && String(s.station_id).toUpperCase() === targetId)) || stations.find(s => s.id === id);
             if (!st) {
-                st = { id: id, name: `Charging Station ${id}`, city: 'Hyderabad', district: 'Telangana', address: 'Telangana Hub', power_kw: 60, status: 'AVAILABLE', connector_type: 'CCS2', operator: 'Fast Charger', lat: 17.3850, lng: 78.4867 };
+                const cDisplay = currentCity.charAt(0).toUpperCase() + currentCity.slice(1);
+                st = { id: id, name: `Charging Station ${id}`, city: cDisplay, district: cDisplay, address: `${cDisplay} Charging Hub`, power_kw: 60, status: 'AVAILABLE', connector_type: 'CCS2', operator: 'Fast Charger', lat: currentLat, lng: currentLng };
                 stations.push(st);
             }
 
@@ -2635,17 +2640,42 @@
             const lower = text.toLowerCase();
             let response = { text: '', display_data: {}, action_type: 'info', needs_confirmation: false };
             
-            if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
+            if (lower.includes('book') || lower.includes('reserve') || lower.includes('lock')) {
+                const target = stations.find(s => s.status === 'AVAILABLE') || stations[0];
+                if (target) {
+                    selectStation(target.id);
+                    reserveStation(target.id);
+                    response.text = `Locked exclusive 30-minute slot at ${target.name}. Your PIN will appear on screen.`;
+                    response.display_data = { action: 'reserve', station_id: target.id, station_name: target.name };
+                    response.action_type = 'action_complete';
+                } else {
+                    response.text = 'Could not find an available charger right now. Please select one on screen.';
+                }
+            } else if (lower.includes('pin') || lower.includes('otp')) {
+                const activeRes = currentReservation || {};
+                const pin = activeRes.pin || '482910';
+                const spoken = pin.split('').join(', ');
+                response.text = `Your active reservation PIN is ${spoken}. Valid for 30 minutes.`;
+                response.display_data = { action: 'show_pin', pin: pin };
+            } else if (lower.includes('project') || lower.includes('smartreserve') || lower.includes('work') || lower.includes('overview')) {
+                response.text = 'Hyundai SmartReserve is an AI-powered in-cabin EV charging co-pilot for Hyundai Ideathon 2026. It features multi-criteria priority ranking across 29,260+ stations, OCPP 1.6J hardware locking, and secure kiosk PIN verification.';
+            } else if (lower.includes('ocpp')) {
+                response.text = 'OCPP 1.6J is the Open Charge Point Protocol standard used by SmartReserve to send ReserveNow, UnlockConnector, and RemoteStartTransaction commands to charging kiosks.';
+            } else if (lower.includes('tyre') || lower.includes('tire') || lower.includes('tpms') || lower.includes('pressure')) {
+                response.text = 'Tyre Pressure Alert: Front-left tyre is low at 28 PSI. Recommended is 36 PSI. Other three tyres are normal at 35 to 36 PSI.';
+            } else if (lower.includes('where am i') || lower.includes('location')) {
+                response.text = `Your vehicle is currently in ${currentCity.toUpperCase()}, with ${stations.length} verified charging hubs nearby.`;
+            } else if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
                 response.text = 'Vehicle is at 18% state of charge with approximately 87 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
                 response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6, hours_remaining: 1.9 } };
             } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
-                response.text = 'Showing available charging stations nearby. You can pick any station to lock a slot.';
+                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick is ${stations[0] ? stations[0].name : 'nearby'}.`;
                 const filterBtn = document.querySelector('[data-filter="available"]');
                 if (filterBtn) filterBtn.click();
             } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
                 response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve in-cabin assistant. Battery status, charging stations, ya slot reservations ke baare mein poochiye.';
             } else {
-                response.text = 'I can help with: "Vehicle status", "Find nearest charging station", "Reserve a slot", or "Vehicle diagnostics".';
+                response.text = 'I can help with: "Reserve a charging slot", "Vehicle status", "Check tyre pressure", or "How does SmartReserve work".';
             }
             
             displayVoiceResponse(response);
