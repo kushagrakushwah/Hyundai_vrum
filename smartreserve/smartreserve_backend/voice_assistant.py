@@ -607,7 +607,8 @@ class VoiceAssistant:
                         matched_station["station_id"] = top_sid
                         matched_station["station_name"] = top_sobj.get("name")
                         if user_lat is not None and user_lon is not None and top_sobj.get("lat") and top_sobj.get("lng"):
-                            matched_station["distance_km"] = round(haversine(user_lat, user_lon, top_sobj["lat"], top_sobj["lng"]), 1)
+                            from road_routing import get_road_distance
+                            matched_station["distance_km"] = round(get_road_distance(user_lat, user_lon, top_sobj["lat"], top_sobj["lng"]), 1)
                         else:
                             matched_station["distance_km"] = 0.5
                         matched_station["effective_power_kw"] = float(top_sobj.get("power_kw", 60.0))
@@ -948,8 +949,8 @@ class VoiceAssistant:
                         st_name = top_sobj.get('name')
                         st_id = top_sid
                         if user_lat is not None and user_lon is not None and top_sobj.get('lat') and top_sobj.get('lng'):
-                            from priority_engine import haversine
-                            st_dist = round(haversine(user_lat, user_lon, top_sobj['lat'], top_sobj['lng']), 1)
+                            from road_routing import get_road_distance
+                            st_dist = round(get_road_distance(user_lat, user_lon, top_sobj['lat'], top_sobj['lng']), 1)
                         else:
                             st_dist = 0.5
                         st_kw = float(top_sobj.get('power_kw', 60.0))

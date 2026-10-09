@@ -30,7 +30,7 @@ except ImportError:
 
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -43,6 +43,7 @@ from websocket_manager import WebSocketManager
 from stations_db import StationsDB
 from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
 from priority_engine import PriorityEngine, haversine
+from road_routing import get_road_distance, get_road_route
 from vehicle_intelligence import VehicleIntelligence
 from speech_service import SpeechService
 from llm_service import ask_gemini, is_available as llm_available
@@ -287,7 +288,11 @@ async def get_stations(
             continue
         dist_km = None
         if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
-            dist_km = round(haversine(target_lat, target_lon, s["lat"], s["lng"]), 1)
+            crow = haversine(target_lat, target_lon, s["lat"], s["lng"])
+            if crow <= 35.0:
+                dist_km = round(get_road_distance(target_lat, target_lon, s["lat"], s["lng"]), 1)
+            else:
+                dist_km = round(crow * 1.25, 1)
 
         result.append({
             **s,
@@ -309,6 +314,16 @@ async def get_stations(
         "source": source,
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+@app.get("/api/route")
+async def get_navigation_route(
+    from_lat: float = Query(...),
+    from_lon: float = Query(...),
+    to_lat: float = Query(...),
+    to_lon: float = Query(...),
+):
+    """Get real-world road navigation route, driving distance, duration and polyline coordinates."""
+    return get_road_route(from_lat, from_lon, to_lat, to_lon)
 
 @app.get("/api/stations/live")
 async def get_live_stations(

@@ -166,13 +166,23 @@ class PriorityEngine:
             st_lat = float(station.get('lat') or station.get('latitude') or vehicle_lat)
             st_lon = float(station.get('lng') or station.get('lon') or station.get('longitude') or vehicle_lon)
             
-            # Distance
-            dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
+            # Fast straight-line pre-filter to discard stations outside search radius
+            crow_dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
             max_dist = 40.0 if norm_city else 85.0
-            if dist > max_dist:  # Skip stations beyond target locality/drive limit
+            if crow_dist > max_dist:  # Skip stations beyond target locality/drive limit
                 continue
             
-            # Energy to reach station
+            # Real road distance & driving duration (OSRM road network with urban fallback)
+            try:
+                from road_routing import get_road_route
+                route_res = get_road_route(vehicle_lat, vehicle_lon, st_lat, st_lon)
+                dist = float(route_res.get("road_distance_km", crow_dist * 1.30))
+                drive_time = float(route_res.get("drive_time_min", (dist / 32.0) * 60.0))
+            except Exception:
+                dist = round(crow_dist * 1.30, 2)
+                drive_time = round((dist / 30.0) * 60.0, 1)
+
+            # Energy to reach station by road
             energy_to_reach = dist * consumption_per_km
             soc_drop = (energy_to_reach / battery_capacity) * 100.0
             arrival_soc = current_soc - soc_drop
@@ -187,9 +197,6 @@ class PriorityEngine:
                 continue
                 
             rated_power = float(station.get('power_kw') or station.get('rated_power_kw') or 60.0)
-            
-            # Drive time (assume 40 km/h city + highway transit)
-            drive_time = (dist / 40.0) * 60.0
             
             # Effective charging power using vehicle charge curve
             if hasattr(self.vehicle, 'get_charge_curve'):

@@ -94,9 +94,12 @@ class VehicleIntelligence:
         }
 
     def can_reach_destination(self, dest_name: str, dest_lat: float, dest_lng: float):
-        # Haversine formula
-        distance_straight = self.get_range_to_destination(dest_lat, dest_lng) / 1.3
-        distance_km = distance_straight * 1.15 # Road factor for destination
+        try:
+            from road_routing import get_road_distance
+            distance_km = get_road_distance(self.state.gps_lat, self.state.gps_lng, dest_lat, dest_lng)
+        except Exception:
+            distance_straight = self.get_range_to_destination(dest_lat, dest_lng)
+            distance_km = distance_straight * 1.25 # Road factor for destination
 
         energy_needed = distance_km / self.profile.efficiency_km_per_kwh_nominal
         soc_needed = (energy_needed / self.profile.battery_capacity_kwh) * 100
