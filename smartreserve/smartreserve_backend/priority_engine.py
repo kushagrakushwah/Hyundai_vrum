@@ -172,15 +172,10 @@ class PriorityEngine:
             if crow_dist > max_dist:  # Skip stations beyond target locality/drive limit
                 continue
             
-            # Real road distance & driving duration (OSRM road network with urban fallback)
-            try:
-                from road_routing import get_road_route
-                route_res = get_road_route(vehicle_lat, vehicle_lon, st_lat, st_lon)
-                dist = float(route_res.get("road_distance_km", crow_dist * 1.30))
-                drive_time = float(route_res.get("drive_time_min", (dist / 32.0) * 60.0))
-            except Exception:
-                dist = round(crow_dist * 1.30, 2)
-                drive_time = round((dist / 30.0) * 60.0, 1)
+            # Fast urban/highway road network model (instant 0.001ms, no network blocking)
+            circuity = 1.30 if crow_dist <= 15.0 else (1.25 if crow_dist <= 40.0 else 1.18)
+            dist = 0.1 if crow_dist < 0.04 else round(crow_dist * circuity, 1)
+            drive_time = round((dist / (28.0 if crow_dist <= 15.0 else 45.0)) * 60.0, 0)
 
             # Energy to reach station by road
             energy_to_reach = dist * consumption_per_km
@@ -281,6 +276,19 @@ class PriorityEngine:
             recommendations.sort(key=lambda x: (x.distance_km, -x.overall_score))
         else:
             recommendations.sort(key=lambda x: x.overall_score, reverse=True)
+
+        # Refine top recommendations with live OSRM turn-by-turn road route
+        try:
+            from road_routing import get_road_route
+            all_st = self.stations_db.stations if hasattr(self.stations_db, 'stations') else {}
+            for r in recommendations[:min(len(recommendations), top_k + 1)]:
+                st_obj = all_st.get(r.station_id)
+                if st_obj and st_obj.get('lat') and st_obj.get('lng'):
+                    rr = get_road_route(vehicle_lat, vehicle_lon, float(st_obj['lat']), float(st_obj['lng']))
+                    r.distance_km = round(rr.get('road_distance_km', r.distance_km), 1)
+                    r.drive_time_min = round(rr.get('drive_time_min', r.drive_time_min), 0)
+        except Exception:
+            pass
         
         # Assign Distinct Labels and Spoken Reasoning
         if recommendations:

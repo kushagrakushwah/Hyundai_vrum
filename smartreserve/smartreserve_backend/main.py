@@ -289,10 +289,14 @@ async def get_stations(
         dist_km = None
         if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
             crow = haversine(target_lat, target_lon, s["lat"], s["lng"])
-            if crow <= 35.0:
-                dist_km = round(get_road_distance(target_lat, target_lon, s["lat"], s["lng"]), 1)
-            else:
+            if crow < 0.04:
+                dist_km = 0.1
+            elif crow <= 15.0:
+                dist_km = round(crow * 1.30, 1)
+            elif crow <= 40.0:
                 dist_km = round(crow * 1.25, 1)
+            else:
+                dist_km = round(crow * 1.18, 1)
 
         result.append({
             **s,
