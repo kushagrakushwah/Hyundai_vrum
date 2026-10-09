@@ -541,8 +541,114 @@
         }
         .marker-avail { border-color: var(--status-green); box-shadow: 0 0 10px var(--status-green); }
         .marker-reserv { border-color: var(--status-amber); box-shadow: 0 0 10px var(--status-amber); }
-        .marker-charg { border-color: var(--hyundai-blue); box-shadow: 0 0 10px var(--hyundai-blue); }
         .marker-unavail { border-color: var(--status-red); }
+
+        /* Vehicle Pin-point Radar Marker */
+        .user-car-marker-container {
+            background: transparent !important;
+            border: none !important;
+        }
+        .user-car-marker {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .user-car-radar {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(0, 170, 212, 0.25);
+            border: 2px solid var(--hyundai-blue);
+            animation: car-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+            pointer-events: none;
+        }
+        @keyframes car-radar-ping {
+            0% { transform: scale(0.6); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .user-car-pin {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #00AAD4, #003366);
+            border: 2.5px solid #FFFFFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--hyundai-blue), 0 4px 10px rgba(0,0,0,0.8);
+            z-index: 5;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .user-car-pin:hover { transform: scale(1.15); }
+        .user-car-tag {
+            position: absolute;
+            bottom: -8px;
+            background: rgba(5, 10, 24, 0.92);
+            border: 1px solid var(--hyundai-blue);
+            color: var(--electric-yellow);
+            font-size: 9px;
+            font-weight: 800;
+            font-family: var(--font-head);
+            letter-spacing: 0.5px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 6;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        }
+
+        /* Map Controls */
+        .map-overlay-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .map-car-btn {
+            background: rgba(5, 10, 24, 0.85);
+            border: 1px solid var(--hyundai-blue);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-family: var(--font-head);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        .map-car-btn:hover {
+            background: var(--hyundai-blue);
+            color: #000;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0,170,212,0.6);
+        }
+        .map-coord-pill {
+            background: rgba(5, 10, 24, 0.85);
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            color: var(--electric-yellow);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
 
         .marker-icon { width: 16px; height: 16px; }
 
@@ -978,8 +1084,16 @@
         </div>
 
         <!-- Center Panel -->
-        <div class="panel-center">
+        <div class="panel-center" style="position: relative;">
             <div id="map" class="glass"></div>
+            <div class="map-overlay-controls">
+                <button class="map-car-btn" onclick="locateUserCar(true)" title="Recenter to Exact Vehicle Coordinates">
+                    <span>🎯</span> Recenter on My Car
+                </button>
+                <div class="map-coord-pill" id="map-coord-pill">
+                    📍 GPS: 21.1458° N, 79.0882° E (NAGPUR)
+                </div>
+            </div>
             
             <div id="charging-panel" class="glass charging-panel hidden">
                 <div class="chg-header">
@@ -1371,17 +1485,75 @@
         let currentCity = 'nagpur';
         let currentLat = 21.1458;
         let currentLng = 79.0882;
+        let userCarMarker = null;
+
+        function renderUserCarMarker(lat, lng) {
+            if (!map || typeof L === 'undefined') return;
+            if (userCarMarker) {
+                userCarMarker.setLatLng([lat, lng]);
+            } else {
+                const carIcon = L.divIcon({
+                    className: 'user-car-marker-container',
+                    html: `
+                        <div class="user-car-marker">
+                            <div class="user-car-radar"></div>
+                            <div class="user-car-pin">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#00AAD4">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/>
+                                    <circle cx="7.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                    <circle cx="16.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                </svg>
+                            </div>
+                            <div class="user-car-tag">📍 YOUR CAR</div>
+                        </div>
+                    `,
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 30]
+                });
+                userCarMarker = L.marker([lat, lng], { icon: carIcon, zIndexOffset: 2500 }).addTo(map);
+                userCarMarker.on('click', () => {
+                    locateUserCar(false);
+                });
+            }
+            userCarMarker.bindPopup(`
+                <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span style="font-size:16px;">🚗</span>
+                        <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">YOUR HYUNDAI IONIQ 5</b>
+                    </div>
+                    <div style="font-size:12px; color:#FFD100; font-weight:700;">📍 ${currentCity.toUpperCase()}, India</div>
+                    <div style="font-size:11px; color:#8E9AA8; margin-top:2px;">Exact GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E</div>
+                    <div style="font-size:11px; color:#00FF66; margin-top:4px;">⚡ In range of 137 verified EV Hubs</div>
+                </div>
+            `);
+            const coordPill = document.getElementById('map-coord-pill');
+            if (coordPill) {
+                coordPill.innerHTML = `📍 GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (${currentCity.toUpperCase()})`;
+            }
+        }
+
+        function locateUserCar(fly = true) {
+            if (!map) return;
+            if (fly) {
+                map.flyTo([currentLat, currentLng], 14, { duration: 1.2 });
+            }
+            if (userCarMarker) {
+                setTimeout(() => userCarMarker.openPopup(), 450);
+            }
+            showToast(`📍 Vehicle Centered: ${currentLat.toFixed(4)}° N, ${currentLng.toFixed(4)}° E`, 'info');
+        }
 
         // Init Map with OpenStreetMap (Default: Nagpur, India)
         function initMap() {
             try {
                 if (typeof L !== 'undefined') {
-                    map = L.map('map', { zoomControl: false }).setView([21.1458, 79.0882], 12);
+                    map = L.map('map', { zoomControl: false }).setView([21.1458, 79.0882], 13);
                     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; OpenStreetMap contributors',
                         maxZoom: 19
                     }).addTo(map);
                     L.control.zoom({ position: 'bottomright' }).addTo(map);
+                    renderUserCarMarker(currentLat, currentLng);
                 }
             } catch (e) {
                 console.warn('Map init error:', e);
@@ -1393,8 +1565,9 @@
             const coords = CITY_COORDS[currentCity] || [21.1458, 79.0882];
             currentLat = coords[0];
             currentLng = coords[1];
+            renderUserCarMarker(currentLat, currentLng);
             if (map) {
-                map.flyTo(coords, 12, { duration: 1.2 });
+                map.flyTo(coords, 13, { duration: 1.2 });
             }
             try {
                 await fetch(`${API}/api/vehicle/location`, {
@@ -1428,6 +1601,7 @@
                         const select = document.getElementById('city-select');
                         if (select) select.value = currentCity;
                     }
+                    renderUserCarMarker(lat, lng);
                     if (map) map.setView([lat, lng], 13);
                     try {
                         await fetch(`${API}/api/vehicle/location`, {
@@ -2464,6 +2638,16 @@
                         }
                         if (data.display_data.station_id) selectStation(data.display_data.station_id);
                         showToast(`🔑 Active PIN: ${data.display_data.pin}`, 'info');
+                    } else if (data.display_data && (data.display_data.action === 'show_car_location' || data.display_data.action === 'locate_car')) {
+                        locateUserCar(true);
+                        showToast(`📍 Exact Location: ${currentCity.toUpperCase()} (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`, 'info');
+                    } else if (data.display_data && data.display_data.action === 'show_petrol_pump') {
+                        if (data.display_data.lat && data.display_data.lng && map) {
+                            map.flyTo([data.display_data.lat, data.display_data.lng], 14, { duration: 1.2 });
+                        }
+                        showToast(`⛽ Nearest Fuel Outlet: ${data.display_data.pump_name} (${data.display_data.distance_km} km)`, 'warning');
+                    } else if (data.display_data && data.display_data.action === 'show_cost_breakdown') {
+                        showToast(`💰 ${data.display_data.cpo}: ₹${data.display_data.estimated_cost_rs} to 80% SoC`, 'success');
                     }
                     if (data.display_data && data.display_data.city && data.display_data.city !== currentCity) {
                         const sel = document.getElementById('city-select');
@@ -2657,25 +2841,35 @@
                 const spoken = pin.split('').join(', ');
                 response.text = `Your active reservation PIN is ${spoken}. Valid for 30 minutes.`;
                 response.display_data = { action: 'show_pin', pin: pin };
+            } else if (lower.includes('petrol') || lower.includes('fuel') || lower.includes('gas station') || lower.includes('diesel')) {
+                response.text = 'The nearest petrol pump is IOCL Indian Oil Retail Outlet at Civil Lines / Sitabuldi, Nagpur, approximately 0.8 km away. Note that your Hyundai Ioniq 5 is fully electric, but this station provides tyre air inflation, nitrogen, and basic amenities.';
+                response.display_data = { action: 'show_petrol_pump', pump_name: 'IOCL Civil Lines / Sitabuldi', distance_km: 0.8, lat: 21.1526, lng: 79.0882 };
+                locateUserCar(true);
+            } else if (lower.includes('cost') || lower.includes('tariff') || lower.includes('rate') || lower.includes('price') || lower.includes('kharcha')) {
+                response.text = 'Tata Power EZ Charge superfast DC charging tariff is ₹22.50 per kWh. To charge your Hyundai Ioniq 5 from 18% to 80% (approx 45.0 kWh), the estimated cost is ₹1,012. Ultra-fast 120 kW charging takes around 20 minutes.';
+                response.display_data = { action: 'show_cost_breakdown', cpo: 'Tata Power', estimated_cost_rs: 1012, estimated_time_mins: 20 };
+            } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest charger') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
+                const target = stations[0] || {};
+                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick is ${target.name || 'Sitabuldi Fast Hub'} (${target.power_kw || 120} kW, 0.2 km away). Shall I reserve it for you?`;
+                const filterBtn = document.querySelector('[data-filter="available"]');
+                if (filterBtn) filterBtn.click();
+            } else if (lower.includes('city') || lower.includes('where am i') || lower.includes('location') || lower.includes('gps')) {
+                response.text = `Your vehicle is currently centered in ${currentCity.toUpperCase()}, Maharashtra (GPS coordinates: ${currentLat.toFixed(4)}° N, ${currentLng.toFixed(4)}° E, near Sitabuldi Interchange). There are 137 verified EV charging hubs within range.`;
+                response.display_data = { action: 'show_car_location' };
+                locateUserCar(true);
             } else if (lower.includes('project') || lower.includes('smartreserve') || lower.includes('work') || lower.includes('overview')) {
                 response.text = 'Hyundai SmartReserve is an AI-powered in-cabin EV charging co-pilot for Hyundai Ideathon 2026. It features multi-criteria priority ranking across 29,260+ stations, OCPP 1.6J hardware locking, and secure kiosk PIN verification.';
             } else if (lower.includes('ocpp')) {
                 response.text = 'OCPP 1.6J is the Open Charge Point Protocol standard used by SmartReserve to send ReserveNow, UnlockConnector, and RemoteStartTransaction commands to charging kiosks.';
             } else if (lower.includes('tyre') || lower.includes('tire') || lower.includes('tpms') || lower.includes('pressure')) {
                 response.text = 'Tyre Pressure Alert: Front-left tyre is low at 28 PSI. Recommended is 36 PSI. Other three tyres are normal at 35 to 36 PSI.';
-            } else if (lower.includes('where am i') || lower.includes('location')) {
-                response.text = `Your vehicle is currently in ${currentCity.toUpperCase()}, with ${stations.length} verified charging hubs nearby.`;
             } else if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
                 response.text = 'Vehicle is at 18% state of charge with approximately 87 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
                 response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6, hours_remaining: 1.9 } };
-            } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
-                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick is ${stations[0] ? stations[0].name : 'nearby'}.`;
-                const filterBtn = document.querySelector('[data-filter="available"]');
-                if (filterBtn) filterBtn.click();
             } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
                 response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve in-cabin assistant. Battery status, charging stations, ya slot reservations ke baare mein poochiye.';
             } else {
-                response.text = 'I can help with: "Reserve a charging slot", "Vehicle status", "Check tyre pressure", or "How does SmartReserve work".';
+                response.text = 'I can help with: "Nearest charging station", "Nearest petrol pump", "Charging cost", "Which city am I in", or "Reserve a charging slot".';
             }
             
             displayVoiceResponse(response);

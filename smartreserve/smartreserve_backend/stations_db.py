@@ -441,10 +441,38 @@ class StationsDB:
         if station_id.startswith("OCM-"):
             if station_id in self.live_ocm_stations:
                 return self.live_ocm_stations[station_id]
-            # Try fetching if not currently cached
             self.get_live_ocm_stations(max_results=50)
             return self.live_ocm_stations.get(station_id)
         return self.stations.get(station_id)
+
+    def get_petrol_pumps(self, city: Optional[str] = None, latitude: Optional[float] = None, longitude: Optional[float] = None, limit: int = 5) -> List[dict]:
+        """Find nearest fuel / petrol pump retail outlets (IOCL, BPCL, HPCL, Reliance BP) sorted by proximity."""
+        target_lat = latitude
+        target_lng = longitude
+        c_norm = (city or "nagpur").lower().strip()
+        if (target_lat is None or target_lng is None) and c_norm in INDIAN_CITIES:
+            target_lat, target_lng = INDIAN_CITIES[c_norm]
+        if target_lat is None or target_lng is None:
+            target_lat, target_lng = (21.1458, 79.0882)
+
+        import math
+        pumps = []
+        fuel_kws = ["iocl", "bpcl", "hpcl", "reliance bp", "petrol", "fuel", "diesel", "retail outlet", "pump"]
+        for s in self.stations.values():
+            s_op = (s.get("operator") or "").lower()
+            s_nm = (s.get("name") or "").lower()
+            s_lt = (s.get("location_type") or "").lower()
+            s_addr = (s.get("address") or "").lower()
+            if any(k in s_op or k in s_nm or k in s_lt or k in s_addr for k in fuel_kws):
+                s_lat = s.get("lat") or 0.0
+                s_lng = s.get("lng") or 0.0
+                d = math.hypot((s_lat - target_lat) * 111.0, (s_lng - target_lng) * 103.0)
+                p_copy = dict(s)
+                p_copy["distance_km"] = round(d, 2)
+                pumps.append((p_copy, d))
+
+        pumps.sort(key=lambda x: x[1])
+        return [p[0] for p in pumps[:limit]]
 
 
 if __name__ == "__main__":

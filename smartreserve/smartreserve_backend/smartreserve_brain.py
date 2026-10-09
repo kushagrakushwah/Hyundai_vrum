@@ -38,7 +38,48 @@ class SmartReserveBrain:
                 q = q[len(ww):].strip(",. ")
                 break
 
-        # ── 1. WHAT IS SMARTRESERVE / PROJECT OVERVIEW ─────────────────────────
+        # ── 0. DO NOT INTERCEPT PRIMARY RESERVATION OR CHARGER DISCOVERY ACTIONS ─
+        charger_action_kws = [
+            "nearest charging", "nearest charger", "nearest station", "charging station from",
+            "charger from my", "reserve", "book", "lock slot", "slot book", "book slot",
+            "find charging", "find charger", "show charger", "search charger", "chargers nearby",
+            "stations nearby", "ev station", "charging hubs nearby", "nearest cpo",
+            "charging station", "charger near"
+        ]
+        if any(k in q for k in charger_action_kws):
+            return None
+
+        # ── 1. EXACT CITY & PINPOINT LOCATION / WHERE AM I ────────────────────
+        if self._matches(q, [
+            "which city", "in which city", "what city", "current city", "city am i in",
+            "where am i", "what is my location", "current location", "where is the car",
+            "my location", "kahan hoon main", "location kya hai", "kuthe aaho mee",
+            "shahar kaunsa", "konte shahar", "meri location", "exact location", "gps location",
+            "which city i am", "which city am i", "tell me in which city", "where are we",
+            (["which", "what", "where", "tell me"], ["city", "location", "shahar", "shehar"]),
+        ]):
+            return self._ans_location(vehicle_status, language)
+
+        # ── 2. NEAREST PETROL PUMP / FUEL STATION ─────────────────────────────
+        if self._matches(q, [
+            "petrol pump", "petrol", "fuel station", "gas station", "diesel pump",
+            "fuel pump", "nearest petrol", "paas ka petrol pump", "petrol pump kahan",
+            "petrol pump kuthe", "petrol bunk", "gas bunk",
+            (["petrol", "fuel", "gas", "diesel"], ["pump", "station", "bunk", "kahan", "kuthe", "near", "nearest"]),
+        ]):
+            return self._ans_petrol_pump(vehicle_status, language)
+
+        # ── 3. CHARGING COST & SPECIFIC OPERATOR TARIFFS ──────────────────────
+        if self._matches(q, [
+            "cost of", "tariff of", "how much does it cost", "charging cost", "cost to charge",
+            "charging tariff", "cost per kwh", "rate per kwh", "kharcha kitna", "charge kiti lagel",
+            "price of charging", "what is the cost", "tata power cost", "tata power tariff",
+            "cost of tata power",
+            (["cost", "tariff", "rate", "price", "kharcha", "bill", "kitna kharch"], ["charge", "charging", "tata power", "kwh", "unit", "station", "fast", "super fast"]),
+        ]):
+            return self._ans_charging_cost(q, vehicle_status, language)
+
+        # ── 4. WHAT IS SMARTRESERVE / PROJECT OVERVIEW ─────────────────────────
         if self._matches(q, [
             "what is smartreserve", "explain this project", "how does smartreserve work",
             "what have i built", "what did we build", "project overview", "what is this project",
@@ -50,7 +91,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_project_overview(language)
 
-        # ── 2. WHAT IS OCPP / OCPP 1.6J / KIOSK PROTOCOL ───────────────────────
+        # ── 5. WHAT IS OCPP / OCPP 1.6J / KIOSK PROTOCOL ───────────────────────
         if self._matches(q, [
             "what is ocpp", "ocpp 1.6j", "open charge point protocol", "how does the kiosk work",
             "how does kiosk work", "how does unlock work", "remotestarttransaction", "reservenow",
@@ -60,7 +101,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_ocpp(language)
 
-        # ── 3. WHY RS. 200 ESCROW / DEPOSIT / REFUND ───────────────────────────
+        # ── 6. WHY RS. 200 ESCROW / DEPOSIT / REFUND ───────────────────────────
         if self._matches(q, [
             "why 200", "why deposit", "escrow", "is deposit refundable",
             "deposit fee", "why do i have to pay deposit", "refund", "razorpay", "upi payment",
@@ -69,7 +110,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_escrow(language)
 
-        # ── 4. DEMAND FORECASTING / MACHINE LEARNING / CONGESTION ──────────────
+        # ── 7. DEMAND FORECASTING / MACHINE LEARNING / CONGESTION ──────────────
         if self._matches(q, [
             "demand forecast", "demand forecasting", "how does demand forecasting work",
             "congestion score", "what ml model", "machine learning", "forecasting",
@@ -79,7 +120,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_demand_forecasting(language)
 
-        # ── 5. PRIORITY ENGINE / MULTI-CRITERIA RANKING ────────────────────────
+        # ── 8. PRIORITY ENGINE / MULTI-CRITERIA RANKING ────────────────────────
         if self._matches(q, [
             "how does priority engine work", "priority engine", "ranking algorithm",
             "how do you rank", "how do you choose stations", "recommendation logic",
@@ -88,7 +129,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_priority_engine(language)
 
-        # ── 6. VEHICLE SPECS / HYUNDAI IONIQ 5 / 800V PLATFORM ─────────────────
+        # ── 9. VEHICLE SPECS / HYUNDAI IONIQ 5 / 800V PLATFORM ─────────────────
         if self._matches(q, [
             "what car is this", "ioniq 5 specs", "battery capacity", "battery size",
             "800v", "e-gmp", "hyundai ioniq 5", "car specifications", "vehicle specs",
@@ -98,18 +139,17 @@ class SmartReserveBrain:
         ]):
             return self._ans_vehicle_specs(vehicle_status, language)
 
-        # ── 7. CHARGING TECH / CCS2 / AC VS DC / TARIFFS ───────────────────────
+        # ── 10. CHARGING TECH / CCS2 / AC VS DC ───────────────────────────────
         if self._matches(q, [
             "what is ccs2", "ac vs dc", "slow vs fast charging", "type 2", "connector type",
             "charging speed", "how fast can i charge", "tariff", "charging cost", "cost per kwh",
             "ccs2 kya hai", "ac dc mein kya farak", "charging ka kitna kharcha", "rate kya hai",
             (["ccs2", "connector", "plug"], ["what", "type", "compatible", "kya"]),
             (["ac", "dc"], ["vs", "difference", "farak", "speed", "fast"]),
-            (["tariff", "cost", "rate", "kharcha"], ["charging", "kwh", "unit", "kitna", "kya"]),
         ]):
             return self._ans_charging_tech(language)
 
-        # ── 8. TYRE PRESSURE / TPMS ────────────────────────────────────────────
+        # ── 11. TYRE PRESSURE / TPMS ───────────────────────────────────────────
         if self._matches(q, [
             "tyre pressure", "tire pressure", "tpms", "are tyres ok", "tyre status",
             "tyre health", "hawa kitni hai", "tyre ki hawa", "tyre check karo", "tyre chi hawa",
@@ -117,7 +157,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_tyre_pressure(vehicle_status, language)
 
-        # ── 9. BATTERY HEALTH / STATE OF HEALTH (SoH) ──────────────────────────
+        # ── 12. BATTERY HEALTH / STATE OF HEALTH (SoH) ─────────────────────────
         if self._matches(q, [
             "battery health", "state of health", "soh", "battery condition", "battery life",
             "battery degradation", "battery ki health", "battery chi health",
@@ -125,7 +165,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_battery_health(vehicle_status, language)
 
-        # ── 10. SERVICE / MAINTENANCE DUE ──────────────────────────────────────
+        # ── 13. SERVICE / MAINTENANCE DUE ─────────────────────────────────────
         if self._matches(q, [
             "service status", "maintenance due", "when is next service", "service due",
             "maintenance schedule", "service kab hai", "service kadhi aahe", "car service",
@@ -133,15 +173,7 @@ class SmartReserveBrain:
         ]):
             return self._ans_service_status(vehicle_status, language)
 
-        # ── 11. CURRENT LOCATION / WHERE AM I ──────────────────────────────────
-        if ("charger" not in q and "battery" not in q) and self._matches(q, [
-            "where am i", "what is my location", "current location", "where is the car",
-            "my location", "kahan hoon main", "location kya hai", "kuthe aaho mee", "current city",
-            (["where", "location", "kahan", "kuthe"], ["am i", "city", "we", "hum", "aaho"]),
-        ]):
-            return self._ans_location(vehicle_status, language)
-
-        # ── 12. NAGPUR CHARGERS & CHARGING NETWORK IN NAGPUR (informational only) ──
+        # ── 14. NAGPUR CHARGERS & CHARGING NETWORK (informational only) ─────────
         if not any(w in q for w in ["find", "see", "show", "view", "reserve", "book", "lock"]) and self._matches(q, [
             "chargers in nagpur", "nagpur chargers", "how many chargers in nagpur",
             "nagpur network", "nagpur mein kitne", "nagpur madhe kiti",
@@ -149,15 +181,15 @@ class SmartReserveBrain:
         ]):
             return self._ans_nagpur_network(language)
 
-        # ── 13. INDIAN CPOs / NETWORKS SUPPORTED ───────────────────────────────
+        # ── 15. INDIAN CPOs / NETWORKS SUPPORTED ──────────────────────────────
         if self._matches(q, [
             "which cpos", "supported networks", "who are the operators", "charging networks in india",
-            "tata power", "zeon", "statiq", "chargezone", "kazam", "cpos in india",
-            (["cpo", "cpos", "network", "networks", "operator", "operators"], ["in india", "supported", "list", "kaunse", "konta"]),
+            "cpos in india", "list of cpos", "all operators",
+            (["cpo", "cpos", "network", "networks", "operator", "operators"], ["in india", "supported", "list", "kaunse", "konta", "all", "which"]),
         ]):
             return self._ans_cpo_networks(language)
 
-        # ── 14. HELP / CAPABILITIES / WHAT CAN YOU DO ──────────────────────────
+        # ── 16. HELP / CAPABILITIES / WHAT CAN YOU DO ─────────────────────────
         if self._matches(q, [
             "what can you do", "help", "commands", "options", "kya kar sakti ho",
             "kya kar sakte ho", "help me", "features", "kay karu shaktes",
@@ -165,14 +197,14 @@ class SmartReserveBrain:
         ]):
             return self._ans_help(language)
 
-        # ── 15. THANK YOU / APPRECIATION ───────────────────────────────────────
+        # ── 17. THANK YOU / APPRECIATION ──────────────────────────────────────
         if self._matches(q, [
             "thank you", "thanks", "dhanyawad", "shukriya", "good job",
             "great job", "well done", "bahut badhiya", "dhanyavaad",
         ]):
             return self._ans_thank_you(language)
 
-        # ── 16. WHO ARE YOU / IDENTITY ─────────────────────────────────────────
+        # ── 18. WHO ARE YOU / IDENTITY ────────────────────────────────────────
         if self._matches(q, [
             "who are you", "who made you", "what is your name", "aap kaun ho",
             "tum kaun ho", "naam kya hai", "tu kon aahes",
@@ -460,6 +492,92 @@ class SmartReserveBrain:
             "wiper_fluid": wiper
         })
 
+    def _ans_petrol_pump(self, v_status: Optional[dict], lang: str):
+        pumps = [
+            {"name": "IOCL Indian Oil Retail Outlet", "address": "Civil Lines / Sitabuldi, Nagpur", "dist": 0.8, "lat": 21.1526, "lng": 79.0882},
+            {"name": "HP Petrol Pump", "address": "Dosar Bhavan Chowk, CA Road, Nagpur", "dist": 1.1, "lat": 21.1523, "lng": 79.0957},
+            {"name": "Reliance BP Retail Outlet", "address": "Orient Hotel, Great Nag Road, Nagpur", "dist": 1.1, "lat": 21.1367, "lng": 79.0920},
+            {"name": "BPCL Retail Outlet", "address": "Gaddigodam Chowk, Wardha Road, Nagpur", "dist": 1.6, "lat": 21.1599, "lng": 79.0830},
+        ]
+        p1 = pumps[0]
+        if lang in ("hi", "hi+en"):
+            txt = (
+                f"Aapke exact location se sabse paas ka petrol pump {p1['name']} hai ({p1['address']}), lagbhag {p1['dist']} km door. "
+                "Aapki Hyundai Ioniq 5 all-electric EV hai isliye fuel ki zaroorat nahi hai, par hawa (air inflation), nitrogen, aur windshield wash ke liye yeh station available hai."
+            )
+        elif lang == "mr":
+            txt = (
+                f"Tumchya exact location pasun sarvat javalcha petrol pump {p1['name']} ({p1['address']}) aahe, fakt {p1['dist']} km antaravar. "
+                "Tumchi Ioniq 5 electric car aahe, pan tyre air kiva windscreen cleaning sathi tumhi ithe jau shakta."
+            )
+        else:
+            txt = (
+                f"The nearest petrol pump to your exact location in Nagpur is {p1['name']} at {p1['address']}, approximately {p1['dist']} km away. "
+                "Note that your Hyundai Ioniq 5 is a 100% electric vehicle running on its 72.6 kWh battery, but this fuel station provides tyre air inflation, nitrogen, and basic amenities."
+            )
+        return (txt, "PETROL_PUMP_INFO", {
+            "title": "Nearest Petrol Pump",
+            "pump_name": p1["name"],
+            "address": p1["address"],
+            "distance_km": p1["dist"],
+            "lat": p1["lat"],
+            "lng": p1["lng"],
+            "action": "show_petrol_pump",
+            "pumps": pumps
+        })
+
+    def _ans_charging_cost(self, q: str, v_status: Optional[dict], lang: str):
+        soc = 18.0
+        if v_status and "soc" in v_status:
+            soc = float(v_status["soc"])
+        battery_kwh = 72.6
+        kwh_needed = round((80.0 - min(soc, 80.0)) / 100.0 * battery_kwh, 1)
+
+        cpo_name = "Tata Power EZ Charge"
+        rate = 22.50
+        kw = 120
+        if "bpcl" in q:
+            cpo_name = "BPCL EV Hub"; rate = 21.00; kw = 60
+        elif "jio" in q or "pulse" in q:
+            cpo_name = "Jio-bp Pulse"; rate = 23.00; kw = 150
+        elif "statiq" in q:
+            cpo_name = "Statiq Fast Hub"; rate = 20.50; kw = 60
+        elif "eesl" in q:
+            cpo_name = "EESL Metro Hub"; rate = 18.50; kw = 142
+        elif "ac" in q or "slow" in q or "type 2" in q:
+            cpo_name = "AC Fast Charger"; rate = 12.00; kw = 22
+
+        est_cost = round(kwh_needed * rate)
+        mins = round((kwh_needed / (kw * 0.9)) * 60)
+
+        if lang in ("hi", "hi+en"):
+            txt = (
+                f"{cpo_name} ka fast charging tariff Rs. {rate:.2f} per unit (kWh) hai. "
+                f"Aapki Ioniq 5 ko {soc:.0f}% se 80% tak charge karne ke liye {kwh_needed} units lagenge, jiska estimated cost Rs. {est_cost} hoga. "
+                f"Superfast {kw} kW charger par lagbhag {mins} minutes ka samay lagega."
+            )
+        elif lang == "mr":
+            txt = (
+                f"{cpo_name} cha fast charging dar Rs. {rate:.2f} prati kWh aahe. "
+                f"Tumchya Ioniq 5 la {soc:.0f}% te 80% charge karnyasathi {kwh_needed} units lagtil, jyacha ekun kharch Rs. {est_cost} hoil. "
+                f"Charging sathi sumare {mins} min lagtil."
+            )
+        else:
+            txt = (
+                f"{cpo_name} superfast DC charging tariff is Rs. {rate:.2f} per kWh. "
+                f"To charge your Hyundai Ioniq 5 from {soc:.0f}% to 80% (approx {kwh_needed} kWh), the estimated cost is Rs. {est_cost}. "
+                f"At {kw} kW power, this charging session will take approximately {mins} minutes."
+            )
+        return (txt, "CHARGING_COST_INFO", {
+            "cpo": cpo_name,
+            "tariff_per_kwh": rate,
+            "soc_current": soc,
+            "kwh_required": kwh_needed,
+            "estimated_cost_rs": est_cost,
+            "estimated_time_mins": mins,
+            "action": "show_cost_breakdown"
+        })
+
     def _ans_location(self, v_status: Optional[dict], lang: str):
         city = (v_status or {}).get("city", "Nagpur")
         lat = (v_status or {}).get("latitude", 21.1458)
@@ -483,7 +601,8 @@ class SmartReserveBrain:
             "city": city,
             "latitude": lat,
             "longitude": lng,
-            "stations_in_city": 137
+            "stations_in_city": 137,
+            "action": "show_car_location"
         })
 
     def _ans_nagpur_network(self, lang: str):

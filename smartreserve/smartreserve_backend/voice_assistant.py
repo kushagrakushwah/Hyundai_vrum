@@ -157,11 +157,18 @@ class VoiceAssistant:
             "tell the pin again", "say the pin again", "say pin again", "pin again", "repeat otp",
             "what is my pin", "what's my pin", "what is the pin", "what's the pin",
             "get pin", "my pin", "show pin", "reservation pin", "kiosk pin",
-            "pin code", "pin kya hai", "pin batao", "pin bolo", "dobara pin",
+            "pin code", "pin kya hai", "pin batao", "pin bolo", "dobara pin", "pin dobara",
             "pin repeat karo", "pin repeat", "pin sanga", "punha pin sanga",
-            "pin once again", "can you repeat the pin", "can you tell the pin"
+            "pin once again", "can you repeat the pin", "can you tell the pin",
+            "ek baar aur pin", "firse pin", "pin firse", "pin punha", "mera pin"
         ]
-        if any(kw in cleaned_text for kw in repeat_pin_kws):
+        has_pin_kw = any(kw in cleaned_text for kw in repeat_pin_kws)
+        if not has_pin_kw and ("pin" in cleaned_text or "otp" in cleaned_text):
+            query_actions = ["batao", "bolo", "sanga", "dobara", "firse", "again", "repeat", "kya", "what", "tell", "say", "show", "punha", "ek baar"]
+            if any(qa in cleaned_text for qa in query_actions):
+                has_pin_kw = True
+
+        if has_pin_kw:
             return IntentResult(
                 intent="REPEAT_PIN",
                 confidence=0.98,
@@ -272,13 +279,34 @@ class VoiceAssistant:
                 "ac", "temperature", "cooling", "heating", "thanda", "garam",
                 "aircon", "climate",
             ],
+            "LOCATION_QUERY": [
+                "where am i", "which city", "what city", "current city", "city am i in",
+                "my location", "current location", "where are we", "kahan hoon", "kuthe aaho",
+                "meri location", "shahar kaunsa", "konte shahar", "tell me my location",
+                "exact location", "gps location", "in which city", "which city i am"
+            ],
+            "FIND_PETROL_PUMP": [
+                "petrol pump", "petrol", "fuel station", "gas station", "fuel pump", "diesel",
+                "petrol pump kahan", "petrol pump kuthe", "petrol bunk", "gas bunk"
+            ],
+            "CHARGING_COST": [
+                "cost of", "tariff of", "how much does it cost", "charging cost", "cost to charge",
+                "rate per kwh", "kharcha kitna", "charge kiti lagel", "tata power cost", "tata power tariff"
+            ],
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
 
         best_intent = "UNKNOWN"
         best_score = 0
         for intent, keywords in intents.items():
-            score = sum(1 for kw in keywords if kw in cleaned_text)
+            score = 0
+            for kw in keywords:
+                if " " in kw:
+                    if kw in cleaned_text:
+                        score += 2
+                else:
+                    if re.search(r'\b' + re.escape(kw) + r'\b', cleaned_text):
+                        score += 1
             if score > best_score:
                 best_score = score
                 best_intent = intent
@@ -325,14 +353,23 @@ class VoiceAssistant:
             intent_res.entities["user_lat"] = float(user_lat)
             intent_res.entities["user_lon"] = float(user_lon)
 
+        # 1. Primary Action Handlers: Repeat PIN, Cancel, AC, Booking, and Finding Chargers
         if intent_res.intent == "REPEAT_PIN":
             return self._handle_repeat_pin(intent_res, user_id)
         elif intent_res.intent == "CANCEL":
             return self._handle_cancel_reservation(intent_res, user_id)
         elif intent_res.intent == "SET_AC":
             return self._handle_set_ac(intent_res)
+        elif intent_res.intent == "RESERVE_SLOT":
+            return self._handle_reserve(intent_res, user_id)
+        elif intent_res.intent == "FIND_CPO":
+            return self._handle_find_cpo(intent_res, user_id)
+        elif intent_res.intent == "VEHICLE_STATUS":
+            return self._handle_vehicle_status(intent_res)
+        elif intent_res.intent == "GET_DIAGNOSTICS":
+            return self._handle_diagnostics(intent_res)
 
-        # Check SmartReserveBrain for project, technical, hardware, telematics, or FAQ questions
+        # 2. Deep Cognitive Brain (Location, Petrol Pumps, Tariffs, Architecture, Telematics)
         brain_ans = brain.answer_query(text, vehicle_status=self._get_vehicle_context(), language=intent_res.language_mix)
         if brain_ans:
             spoken_txt, intent_name, display_d = brain_ans
@@ -344,15 +381,7 @@ class VoiceAssistant:
                 tool_calls=[f"brain.{intent_name.lower()}"]
             )
 
-        if intent_res.intent == "RESERVE_SLOT":
-            return self._handle_reserve(intent_res, user_id)
-        elif intent_res.intent == "FIND_CPO":
-            return self._handle_find_cpo(intent_res, user_id)
-        elif intent_res.intent == "VEHICLE_STATUS":
-            return self._handle_vehicle_status(intent_res)
-        elif intent_res.intent == "GET_DIAGNOSTICS":
-            return self._handle_diagnostics(intent_res)
-        elif intent_res.intent == "GREETING":
+        if intent_res.intent == "GREETING":
             return self._handle_greeting(intent_res)
         else:
             return self._handle_unknown_with_llm(intent_res)
