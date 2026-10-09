@@ -1587,57 +1587,53 @@
 
         function renderUserCarMarker(lat, lng) {
             if (!map || typeof L === 'undefined') return;
-            if (userCarMarker) {
-                userCarMarker.setLatLng([lat, lng]);
-            } else {
-                const carIcon = L.divIcon({
-                    className: 'user-car-marker-container',
-                    html: `
-                        <div class="user-car-marker">
-                            <div class="user-car-radar"></div>
-                            <div class="user-car-pin">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#00AAD4">
-                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/>
-                                    <circle cx="7.5" cy="14.5" r="1.5" fill="#FFD100"/>
-                                    <circle cx="16.5" cy="14.5" r="1.5" fill="#FFD100"/>
-                                </svg>
+            try {
+                if (userCarMarker) {
+                    userCarMarker.setLatLng([lat, lng]);
+                } else {
+                    const carIcon = L.divIcon({
+                        className: 'user-car-marker-container',
+                        html: `
+                            <div class="user-car-marker">
+                                <div class="user-car-radar"></div>
+                                <div class="user-car-pin">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#00AAD4">
+                                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/>
+                                        <circle cx="7.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                        <circle cx="16.5" cy="14.5" r="1.5" fill="#FFD100"/>
+                                    </svg>
+                                </div>
+                                <div class="user-car-tag">📍 YOUR CAR</div>
                             </div>
-                            <div class="user-car-tag">📍 YOUR CAR</div>
-                        </div>
-                    `,
-                    iconSize: [60, 60],
-                    iconAnchor: [30, 30]
-                });
-                userCarMarker = L.marker([lat, lng], { icon: carIcon, zIndexOffset: 2500 }).addTo(map);
-                userCarMarker.on('click', () => {
-                    locateUserCar(false);
-                });
-            }
-            userCarMarker.bindPopup(`
-                <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
-                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                        <span style="font-size:16px;">🚗</span>
-                        <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">YOUR HYUNDAI IONIQ 5</b>
-                    </div>
-                    const isVNIT = Math.hypot((lat - 21.1255) * 111.0, (lng - 79.0524) * 103.0) <= 1.2;
-                    const placeName = isVNIT ? 'VNIT Nagpur Campus' : (currentCity.toUpperCase() + ', India');
-                    userCarMarker.bindPopup(`
-                        <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                <span style="font-size:16px;">🚗</span>
-                                <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">YOUR HYUNDAI IONIQ 5</b>
-                            </div>
-                            <div style="font-size:12px; color:#FFD100; font-weight:700;">📍 ${placeName}</div>
-                            <div style="font-size:11px; color:#8E9AA8; margin-top:2px;">South Ambazari Road, Nagpur</div>
-                            <div style="font-size:11px; color:#00FF66; margin-top:4px;">⚡ In range of 137 verified EV Hubs</div>
-                        </div>
-                    `);
-                    const coordPill = document.getElementById('map-coord-pill');
-                    if (coordPill) {
-                        coordPill.innerHTML = `📍 ${placeName}`;
-                    }
+                        `,
+                        iconSize: [60, 60],
+                        iconAnchor: [30, 30]
+                    });
+                    userCarMarker = L.marker([lat, lng], { icon: carIcon, zIndexOffset: 2500 }).addTo(map);
+                    userCarMarker.on('click', () => {
+                        locateUserCar(false);
+                    });
                 }
-            } catch(e) {}
+                const isVNIT = Math.hypot((lat - 21.1255) * 111.0, (lng - 79.0524) * 103.0) <= 1.2;
+                const placeName = isVNIT ? 'VNIT Nagpur Campus' : (currentCity.toUpperCase() + ', India');
+                userCarMarker.bindPopup(`
+                    <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <span style="font-size:16px;">🚗</span>
+                            <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">YOUR HYUNDAI IONIQ 5</b>
+                        </div>
+                        <div style="font-size:12px; color:#FFD100; font-weight:700;">📍 ${placeName}</div>
+                        <div style="font-size:11px; color:#8E9AA8; margin-top:2px;">South Ambazari Road, Nagpur</div>
+                        <div style="font-size:11px; color:#00FF66; margin-top:4px;">⚡ In range of 137 verified EV Hubs</div>
+                    </div>
+                `);
+                const coordPill = document.getElementById('map-coord-pill');
+                if (coordPill) {
+                    coordPill.innerHTML = `📍 ${placeName}`;
+                }
+            } catch(e) {
+                console.warn('renderUserCarMarker error:', e);
+            }
         }
 
         function locateUserCar(fly = true) {
