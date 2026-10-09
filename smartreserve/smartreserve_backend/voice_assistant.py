@@ -393,7 +393,8 @@ class VoiceAssistant:
         selected_station_id: Optional[str] = None,
         city: Optional[str] = None,
         user_lat: Optional[float] = None,
-        user_lon: Optional[float] = None
+        user_lon: Optional[float] = None,
+        language: Optional[str] = None
     ) -> VoiceAssistantResponse:
         # Check pending confirmation first using whole-word tokens to avoid false matches (e.g. 'sure' in 'pressure')
         if user_id in self._pending_confirmations:
@@ -411,6 +412,16 @@ class VoiceAssistant:
                 self._pending_confirmations.pop(user_id, None)
 
         intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
+
+        # Explicit language override from frontend language toggle (e.g. 'hi-IN', 'mr-IN', 'en-IN')
+        if language and language not in ("auto", ""):
+            l_code = language.lower()
+            if "hi" in l_code:
+                intent_res.language_mix = "hi"
+            elif "mr" in l_code:
+                intent_res.language_mix = "mr"
+            elif "en" in l_code:
+                intent_res.language_mix = "en" 
 
         # Merge city / coordinates: explicit device GPS coordinates take absolute precedence
         if user_lat is not None and user_lon is not None:

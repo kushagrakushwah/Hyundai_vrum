@@ -594,7 +594,8 @@ async def process_voice_input(req: VoiceInputRequest):
         selected_station_id=req.selected_station_id,
         city=req.city,
         user_lat=req.latitude,
-        user_lon=req.longitude
+        user_lon=req.longitude,
+        language=req.language
     )
     
     # If the assistant wants to reserve, wire it to the actual reserve API
@@ -627,6 +628,17 @@ async def process_voice_input(req: VoiceInputRequest):
         "language": response.language,
         "needs_confirmation": response.needs_confirmation,
     }
+
+@app.post("/api/voice/tts")
+async def generate_speech_tts(req: TTSRequest):
+    """Synthesize high-fidelity Indian speech audio using free Edge-TTS (or Sarvam if configured)."""
+    if not speech_svc:
+        raise HTTPException(status_code=503, detail="Speech service unavailable")
+    audio = await speech_svc.synthesize(req.text, req.language)
+    if not audio:
+        raise HTTPException(status_code=500, detail="TTS synthesis failed")
+    from fastapi.responses import Response
+    return Response(content=audio, media_type="audio/mpeg")
 
 @app.post("/api/voice/confirm")
 async def confirm_voice_action(req: VoiceConfirmRequest):

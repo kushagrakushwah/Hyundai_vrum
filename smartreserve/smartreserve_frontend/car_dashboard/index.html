@@ -1080,16 +1080,20 @@
 .proactive-alert {
     display: none;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 4px;
     font-size: 13px;
     font-weight: 600;
-    animation: slideInTop 0.4s ease;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.45);
+    animation: slideInTop 0.35s ease;
+    z-index: 10;
 }
-.proactive-alert.danger { background: rgba(255,68,68,0.15); border: 1px solid #ff4444; color: #ff6666; display: flex; }
-.proactive-alert.warning { background: rgba(255,209,0,0.1); border: 1px solid #FFD100; color: #FFD100; display: flex; }
+.proactive-alert.danger { background: rgba(239, 68, 68, 0.16); border: 1px solid #ef4444; color: #fca5a5; display: flex; }
+.proactive-alert.warning { background: rgba(255, 209, 0, 0.12); border: 1px solid #FFD100; color: #FFD100; display: flex; }
 @keyframes slideInTop {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -1137,6 +1141,15 @@
                     <option value="indore" style="background:#050A18; color:white;">Indore</option>
                 </select>
             </div>
+            <!-- Multi-Language Voice Selector (100% Free Neural Voice) -->
+            <div class="lang-selector-wrap" style="display:flex; align-items:center; background:rgba(255,209,0,0.12); border:1px solid rgba(255,209,0,0.35); border-radius:20px; padding:4px 10px; gap:6px;" title="Switch AVA Voice Assistant Language">
+                <span style="font-size:14px;">🌐</span>
+                <select id="lang-select" onchange="changeVoiceLanguage(this.value)" style="background:transparent; border:none; color:#FFD100; font-family:var(--font-head); font-size:14px; font-weight:700; cursor:pointer; outline:none;">
+                    <option value="en-IN" selected style="background:#050A18; color:white;">English</option>
+                    <option value="hi-IN" style="background:#050A18; color:white;">हिंदी (Hindi)</option>
+                    <option value="mr-IN" style="background:#050A18; color:white;">मराठी (Marathi)</option>
+                </select>
+            </div>
             <!-- Unified Vehicle Telematics Badge -->
             <button id="btn-vehicle-diag" class="telematics-pill" onclick="openVehicleModal()" title="View Vehicle Health & TPMS" style="background:rgba(0,170,212,0.08); border-color:rgba(0,170,212,0.3); padding:4px 12px; gap:8px;">
                 <span>🔋 <strong id="hdr-soc" style="color:var(--electric-yellow);">18%</strong> (<span id="hdr-range">87 km</span>)</span>
@@ -1173,19 +1186,23 @@
         </div>
 
         <!-- Center Panel -->
-        <div class="panel-center" style="position: relative;">
-            <!-- Proactive Battery Alert Banner (Clean Top Banner) -->
-            <div id="proactive-alert" class="proactive-alert" style="margin-bottom: 8px;"></div>
-            <div id="map" class="glass"></div>
-            <div class="map-overlay-controls">
-                <button class="map-car-btn" onclick="detectUserLocation(true)" style="background:rgba(255,209,0,0.15); border-color:#FFD100; color:#FFD100;" title="Get Exact Device GPS Location">
-                    <span>📍</span> Live GPS
-                </button>
-                <button class="map-car-btn" onclick="locateUserCar(true)" title="Recenter to Exact Vehicle Coordinates">
-                    <span>🎯</span> Recenter
-                </button>
-                <div class="map-coord-pill" id="map-coord-pill">
-                    📍 VNIT Nagpur Campus
+        <div class="panel-center" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Proactive Battery Alert Banner (Clean Top Floating Banner) -->
+            <div id="proactive-alert" class="proactive-alert"></div>
+
+            <!-- Map Container: Controls are anchored strictly inside here, preventing any text overlap -->
+            <div class="map-container" style="position:relative; flex:1; min-height:0; display:flex; flex-direction:column; border-radius:16px; overflow:hidden;">
+                <div id="map" class="glass" style="flex:1; width:100%; border-radius:16px;"></div>
+                <div class="map-overlay-controls">
+                    <button class="map-car-btn" onclick="detectUserLocation(true)" style="background:rgba(255,209,0,0.15); border-color:#FFD100; color:#FFD100;" title="Get Exact Device GPS Location">
+                        <span>📍</span> Live GPS
+                    </button>
+                    <button class="map-car-btn" onclick="locateUserCar(true)" title="Recenter to Exact Vehicle Coordinates">
+                        <span>🎯</span> Recenter
+                    </button>
+                    <div class="map-coord-pill" id="map-coord-pill">
+                        📍 VNIT Nagpur Campus
+                    </div>
                 </div>
             </div>
             
@@ -2031,14 +2048,24 @@
 
                     const roadKm = data.road_distance_km;
                     const driveMin = data.drive_time_min;
+                    // Ioniq 5 efficiency 6.6 km/kWh, 72.6 kWh battery
+                    const kwhEst = (roadKm / 6.6).toFixed(2);
+                    const socDelta = ((kwhEst / 72.6) * 100).toFixed(1);
+                    const currSoc = (typeof vehicleState !== 'undefined' && vehicleState.soc) ? vehicleState.soc : 18;
+                    const arrivalSoc = Math.max(0, (currSoc - parseFloat(socDelta))).toFixed(1);
+
                     currentRoutePolyline.bindPopup(`
-                        <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px 14px; border-radius:8px; border:1px solid #00AAD4; min-width:210px;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:12px 16px; border-radius:10px; border:1px solid #00AAD4; min-width:240px; box-shadow:0 8px 24px rgba(0,0,0,0.8);">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                                 <span style="font-size:16px;">🚗</span>
-                                <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">LIVE ROAD ROUTE</b>
+                                <b style="color:#00AAD4; font-size:13px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">HYUNDAI LIVE NAVIGATION ROUTE</b>
                             </div>
-                            <div style="font-size:14px; color:#FFD100; font-weight:700;">🛣️ ${roadKm} km by road</div>
+                            <div style="font-size:15px; color:#FFD100; font-weight:700;">🛣️ ${roadKm} km by road</div>
                             <div style="font-size:12px; color:#00FF66; font-weight:600; margin-top:2px;">⏱️ ~${Math.round(driveMin)} min driving time</div>
+                            <div style="display:flex; justify-content:space-between; margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.12); font-size:11px;">
+                                <span style="color:#8E9AA8;">⚡ Energy: <b style="color:#fff;">${kwhEst} kWh</b> (-${socDelta}%)</span>
+                                <span style="color:#8E9AA8;">Arrival SoC: <b style="color:${arrivalSoc < 15 ? '#ff6666' : '#FFD100'};">${arrivalSoc}%</b></span>
+                            </div>
                             <div style="font-size:11px; color:#8E9AA8; margin-top:4px;">Destination: ${stationName || 'Charging Hub'}</div>
                         </div>
                     `);
@@ -2677,7 +2704,7 @@
                 recognition = new SpeechRecognition();
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.lang = 'en-IN';
+                recognition.lang = currentVoiceLang || 'en-IN';
                 recognition.maxAlternatives = 1;
                 
                 recognition.onstart = () => {
@@ -2837,6 +2864,7 @@
                     body: JSON.stringify({ 
                         text: text, 
                         user_id: DRIVER_ID,
+                        language: currentVoiceLang,
                         selected_station_id: detectedLandmark || selectedStationId,
                         city: currentCity,
                         latitude: currentLat,
@@ -3072,50 +3100,122 @@ if (data.display_data && data.display_data.action === 'range_check') {
             }
         }
         
-        // Text-to-Speech with Hands-Free Audio Loop Prevention
-        function speakResponse(text) {
-            if ('speechSynthesis' in window) {
+        // Multi-Language Management & 100% Free Neural Voice Architecture
+        let currentVoiceLang = 'en-IN';
+        let currentAudioPlayer = null;
+
+        function changeVoiceLanguage(lang) {
+            currentVoiceLang = lang || 'en-IN';
+            if (recognition) {
                 try {
-                    window.speechSynthesis.cancel();
-                    isSpeakingTTS = true;
-                    // Pause recognition so AVA never hears herself speak
-                    if (recognition && isListening) {
-                        try { recognition.abort(); } catch(e) {}
+                    const wasListening = isListening;
+                    recognition.lang = currentVoiceLang;
+                    if (wasListening) {
+                        recognition.stop();
+                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 200);
                     }
+                } catch(e) {}
+            }
+            const langNames = { 'en-IN': 'English', 'hi-IN': 'हिंदी (Hindi)', 'mr-IN': 'मराठी (Marathi)' };
+            showToast(`🌐 AVA Language set to ${langNames[lang] || lang}`, 'info');
+            if (lang === 'hi-IN') {
+                speakResponse('नमस्ते! अब मैं आपसे हिंदी में बात करूँगी। अपना सवाल पूछिए।', 'hi-IN');
+            } else if (lang === 'mr-IN') {
+                speakResponse('नमस्कार! आता मी तुमच्याशी मराठीत बोलेन. तुमचा प्रश्न विचारा.', 'mr-IN');
+            } else {
+                speakResponse('English mode active. How can I assist you today?', 'en-IN');
+            }
+        }
 
-                    // Clean text for TTS: convert 4 to 6 digit numbers (PINs) into comma-separated individual digits
-                    // This strictly prevents Web Speech API (en-IN) from pronouncing PINs like 871422 as "eight lakh"
-                    let speechText = text;
-                    speechText = speechText.replace(/\b(\d{4,6})\b/g, (m) => m.split('').join(', '));
-
-                    const utterance = new SpeechSynthesisUtterance(speechText);
-                    utterance.lang = 'en-IN';
-                    utterance.rate = 1.0;
-                    utterance.pitch = 1.0;
-                    
-                    const voices = window.speechSynthesis.getVoices();
-                    const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-                    if (indianVoice) utterance.voice = indianVoice;
-
-                    utterance.onend = () => {
-                        isSpeakingTTS = false;
-                        if (handsFreeActive) {
-                            clearTimeout(restartTimer);
-                            restartTimer = setTimeout(startListening, 300);
-                        }
-                    };
-                    utterance.onerror = () => {
-                        isSpeakingTTS = false;
-                        if (handsFreeActive) {
-                            clearTimeout(restartTimer);
-                            restartTimer = setTimeout(startListening, 300);
-                        }
-                    };
-                    
-                    window.speechSynthesis.speak(utterance);
-                } catch(e) {
-                    isSpeakingTTS = false;
+        // Text-to-Speech: Primary Neural Edge-TTS (100% Free) with Browser SpeechSynthesis Fallback
+        async function speakResponse(text, lang = currentVoiceLang) {
+            if (!text) return;
+            try {
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                if (currentAudioPlayer) {
+                    try { currentAudioPlayer.pause(); } catch(e) {}
+                    currentAudioPlayer = null;
                 }
+                isSpeakingTTS = true;
+                if (recognition && isListening) {
+                    try { recognition.abort(); } catch(e) {}
+                }
+
+                // Clean text for speech: convert PINs to digit sequence
+                let speechText = text.replace(/\b(\d{4,6})\b/g, (m) => m.split('').join(', '));
+
+                // 1. Try high-fidelity Neural Edge-TTS endpoint from backend (100% free, no key required)
+                try {
+                    const resp = await fetch(`${API}/api/voice/tts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: speechText, language: lang || currentVoiceLang })
+                    });
+                    if (resp.ok) {
+                        const blob = await resp.blob();
+                        const audioUrl = URL.createObjectURL(blob);
+                        const audio = new Audio(audioUrl);
+                        currentAudioPlayer = audio;
+                        audio.onended = () => {
+                            isSpeakingTTS = false;
+                            currentAudioPlayer = null;
+                            URL.revokeObjectURL(audioUrl);
+                            if (handsFreeActive) {
+                                clearTimeout(restartTimer);
+                                restartTimer = setTimeout(startListening, 300);
+                            }
+                        };
+                        audio.onerror = () => {
+                            isSpeakingTTS = false;
+                            currentAudioPlayer = null;
+                            fallbackBrowserTTS(speechText, lang);
+                        };
+                        await audio.play();
+                        return;
+                    }
+                } catch(netErr) {
+                    // Backend offline or error -> fallback to browser TTS
+                }
+
+                fallbackBrowserTTS(speechText, lang);
+            } catch(e) {
+                isSpeakingTTS = false;
+            }
+        }
+
+        function fallbackBrowserTTS(speechText, lang) {
+            if (!('speechSynthesis' in window)) {
+                isSpeakingTTS = false;
+                return;
+            }
+            try {
+                const utterance = new SpeechSynthesisUtterance(speechText);
+                utterance.lang = lang || currentVoiceLang || 'en-IN';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                const targetPrefix = (lang || currentVoiceLang || 'en-IN').slice(0, 2);
+                const matchingVoice = voices.find(v => v.lang && v.lang.startsWith(targetPrefix));
+                if (matchingVoice) utterance.voice = matchingVoice;
+
+                utterance.onend = () => {
+                    isSpeakingTTS = false;
+                    if (handsFreeActive) {
+                        clearTimeout(restartTimer);
+                        restartTimer = setTimeout(startListening, 300);
+                    }
+                };
+                utterance.onerror = () => {
+                    isSpeakingTTS = false;
+                    if (handsFreeActive) {
+                        clearTimeout(restartTimer);
+                        restartTimer = setTimeout(startListening, 300);
+                    }
+                };
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                isSpeakingTTS = false;
             }
         }
         
@@ -3314,13 +3414,39 @@ if (data.display_data && data.display_data.action === 'range_check') {
             
             // Proactive battery alert
             const alertEl = document.getElementById('proactive-alert');
-            if (alertEl) {
+            if (alertEl && !window._proactiveAlertDismissed) {
                 if (soc <= 10) {
                     alertEl.className = 'proactive-alert danger';
-                    alertEl.innerHTML = `🚨 <strong>CRITICAL BATTERY: ${soc}%</strong> — ${Math.round(range)} km range remaining. Say "Reserve nearest station" to lock a charger NOW.`;
+                    alertEl.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <span style="font-size:20px;">🚨</span>
+                            <div>
+                                <div style="font-weight:700; color:#ff6666;">CRITICAL BATTERY: ${soc}% • ${Math.round(range)} km remaining</div>
+                                <div style="font-size:11px; color:rgba(255,255,255,0.7); font-weight:normal;">Say "Reserve nearest station" or tap Reserve to secure an emergency charger.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button onclick="quickReserveNearest()" style="background:#ff4444; color:#fff; border:none; font-weight:700; font-family:var(--font-head); padding:5px 12px; border-radius:6px; cursor:pointer; font-size:11px;">RESERVE NOW</button>
+                            <button onclick="dismissProactiveAlert()" style="background:transparent; color:rgba(255,255,255,0.6); border:none; font-size:16px; cursor:pointer; padding:0 4px;" title="Dismiss alert">✕</button>
+                        </div>
+                    `;
+                    alertEl.style.display = 'flex';
                 } else if (soc <= 20) {
                     alertEl.className = 'proactive-alert warning';
-                    alertEl.innerHTML = `⚠️ <strong>LOW BATTERY: ${soc}%</strong> — Only ${Math.round(range)} km of range. Recommend charging soon. EESL Kasturchand Park (1.3 km, 142 kW) available.`;
+                    alertEl.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <span style="font-size:20px;">⚠️</span>
+                            <div>
+                                <div style="font-weight:700; color:#FFD100;">LOW BATTERY ALERT: ${soc}% • ${Math.round(range)} km remaining</div>
+                                <div style="font-size:11px; color:rgba(255,255,255,0.7); font-weight:normal;">Recommend charging soon. EESL Kasturchand Park (1.3 km, 142 kW) is available.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button onclick="quickReserveNearest()" style="background:#FFD100; color:#000; border:none; font-weight:700; font-family:var(--font-head); padding:5px 12px; border-radius:6px; cursor:pointer; font-size:11px;">RESERVE</button>
+                            <button onclick="dismissProactiveAlert()" style="background:transparent; color:rgba(255,255,255,0.6); border:none; font-size:16px; cursor:pointer; padding:0 4px;" title="Dismiss alert">✕</button>
+                        </div>
+                    `;
+                    alertEl.style.display = 'flex';
                 } else {
                     alertEl.className = 'proactive-alert';
                     alertEl.style.display = 'none';
@@ -3361,6 +3487,25 @@ if (data.display_data && data.display_data.action === 'range_check') {
                 try { startListening(); } catch(e) {}
             }
         }, { once: true });
+
+
+        function dismissProactiveAlert() {
+            window._proactiveAlertDismissed = true;
+            const alertEl = document.getElementById('proactive-alert');
+            if (alertEl) alertEl.style.display = 'none';
+        }
+
+        function quickReserveNearest() {
+            if (stations && stations.length > 0) {
+                const best = stations.find(s => s.status === 'AVAILABLE') || stations[0];
+                if (best) {
+                    selectStation(best.id);
+                    reserveStation(best.id);
+                }
+            } else {
+                processVoiceCommand("reserve nearest station");
+            }
+        }
 
     </script>
 </body>
