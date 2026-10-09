@@ -138,6 +138,17 @@ class VoiceAssistant:
                 cleaned_text = cleaned_text[len(ww):].strip(",. ")
                 break
 
+        # Deduplicate repeated identical phrases (from speech recognition stutters)
+        half = len(cleaned_text) // 2
+        if half >= 6 and cleaned_text[:half].strip() == cleaned_text[half:].strip():
+            cleaned_text = cleaned_text[:half].strip()
+        else:
+            words = cleaned_text.split()
+            if len(words) >= 4 and len(words) % 2 == 0:
+                h_w = len(words) // 2
+                if words[:h_w] == words[h_w:]:
+                    cleaned_text = " ".join(words[:h_w])
+
         entities: Dict[str, Any] = {}
 
         # 1. Cancellation check
@@ -195,6 +206,9 @@ class VoiceAssistant:
             ("congress nagar", "EESL — Congress Nagar Metro Station"),
             ("kasturchand", "EESL — Kasturchand Park Metro Station"),
             ("sitabuldi", "Tata Power — Sitabuldi Interchange"),
+            ("vnit", "EESL — Congress Nagar Metro Station"),
+            ("vnit nagpur", "EESL — Congress Nagar Metro Station"),
+            ("bajaj nagar", "Tata Power Superfast Hub — Sitabuldi"),
             ("wardha road", "ChargeZone — Wardha Road Hotel Pride"),
             ("airport", "ChargeZone — Airport Hotel Pride Nagpur"),
             ("jhansi rani", "EESL — Jhansi Rani Square Metro Station"),
@@ -329,6 +343,14 @@ class VoiceAssistant:
             "CABIN_CONTROL": [
                 "set ac", "set temperature", "ac on", "ac off", "turn on ac", "thanda karo", "garam karo", "climate",
             ],
+            "DISTANCE_QUERY": [
+                "how far", "how far is", "how far am i", "how far i am", "distance to", "distance from",
+                "kitni door", "kitna door", "kitne kilometer", "kiti antar", "how much km"
+            ],
+            "SET_LOCATION": [
+                "my location is", "i am at", "i'm at", "set location to", "set car location to",
+                "hum vnit", "main vnit"
+            ],
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
 
@@ -379,41 +401,34 @@ class VoiceAssistant:
 
         intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
 
-        # Merge city / coordinates if passed explicitly and not extracted from text
-        if city and not intent_res.entities.get("city"):
-            c_norm = city.lower().strip()
-            intent_res.entities["city"] = c_norm
-            if c_norm in INDIAN_CITIES:
-                intent_res.entities["user_lat"], intent_res.entities["user_lon"] = INDIAN_CITIES[c_norm]
-        if user_lat is not None and user_lon is not None and not intent_res.entities.get("user_lat"):
+        # Merge city / coordinates: explicit device GPS coordinates take absolute precedence
+        if user_lat is not None and user_lon is not None:
             intent_res.entities["user_lat"] = float(user_lat)
             intent_res.entities["user_lon"] = float(user_lon)
+        elif city and not intent_res.entities.get("user_lat"):
+            c_norm = city.lower().strip()
+            if c_norm in INDIAN_CITIES:
+                intent_res.entities["user_lat"], intent_res.entities["user_lon"] = INDIAN_CITIES[c_norm]
+
+        if city and not intent_res.entities.get("city"):
+            intent_res.entities["city"] = city.lower().strip()
 
         if intent_res.entities.get("station_landmark") and intent_res.intent in ("FIND_CPO", "RESERVE_SLOT"):
             intent_res.entities["target_query"] = intent_res.entities["station_name_hint"]
 
-        # 1. Primary Action Handlers: Repeat PIN, Cancel, AC, Booking, and Finding Chargers
+        # 1. Primary Action Handlers: Repeat PIN, Cancel, Direct Reservation, AC
         if intent_res.intent == "REPEAT_PIN":
             return self._handle_repeat_pin(intent_res, user_id)
         elif intent_res.intent == "CANCEL":
             return self._handle_cancel_reservation(intent_res, user_id)
-        elif intent_res.intent == "SET_AC":
-            return self._handle_set_ac(intent_res)
         elif intent_res.intent == "RESERVE_SLOT":
             return self._handle_reserve(intent_res, user_id)
-        elif intent_res.intent == "FIND_CPO":
-            return self._handle_find_cpo(intent_res, user_id)
-        elif intent_res.intent == "VEHICLE_STATUS":
-            return self._handle_vehicle_status(intent_res)
-        elif intent_res.intent == "GET_DIAGNOSTICS":
-            return self._handle_diagnostics(intent_res)
-        elif intent_res.intent == "DESTINATION_RANGE":
-            return self._handle_destination_range(intent_res, user_id)
-        elif intent_res.intent == "CABIN_CONTROL":
-            return self._handle_cabin_control(intent_res)
+        elif intent_res.intent == "SET_AC":
+            return self._handle_set_ac(intent_res)
 
-        # 2. Deep Cognitive Brain (Location, Petrol Pumps, Tariffs, Architecture, Telematics)
-        brain_ans = brain.answer_query(text, vehicle_status=self._get_vehicle_context(), language=intent_res.language_mix)
+        # 2. Deep Cognitive Brain (Architecture, Priority Engine, Battery Health, Location, Tariffs, Specs)
+        v_ctx = self._get_vehicle_context(intent_res.entities.get("user_lat"), intent_res.entities.get("user_lon"), intent_res.entities.get("city"))
+        brain_ans = brain.answer_query(text, vehicle_status=v_ctx, language=intent_res.language_mix)
         if brain_ans:
             spoken_txt, intent_name, display_d = brain_ans
             return VoiceAssistantResponse(
@@ -423,6 +438,18 @@ class VoiceAssistant:
                 language=intent_res.language_mix,
                 tool_calls=[f"brain.{intent_name.lower()}"]
             )
+
+        # 3. Discovery, Diagnostics, and Control Handlers
+        if intent_res.intent == "FIND_CPO":
+            return self._handle_find_cpo(intent_res, user_id)
+        elif intent_res.intent == "VEHICLE_STATUS":
+            return self._handle_vehicle_status(intent_res)
+        elif intent_res.intent == "GET_DIAGNOSTICS":
+            return self._handle_diagnostics(intent_res)
+        elif intent_res.intent == "DESTINATION_RANGE":
+            return self._handle_destination_range(intent_res, user_id)
+        elif intent_res.intent == "CABIN_CONTROL":
+            return self._handle_cabin_control(intent_res)
 
         if intent_res.intent == "GREETING":
             return self._handle_greeting(intent_res)
@@ -983,7 +1010,7 @@ class VoiceAssistant:
         )
 
     def _handle_destination_range(self, intent_res: IntentResult, user_id: str) -> VoiceAssistantResponse:
-        v_status = self._get_vehicle_context()
+        v_status = self._get_vehicle_context(intent_res.entities.get("user_lat"), intent_res.entities.get("user_lon"), intent_res.entities.get("city"))
         brain_ans = brain.answer_query(intent_res.raw_text, vehicle_status=v_status, language=intent_res.language_mix)
         if brain_ans:
             spoken_txt, intent_name, display_d = brain_ans
@@ -997,7 +1024,7 @@ class VoiceAssistant:
         return self._handle_unknown_with_llm(intent_res)
 
     def _handle_cabin_control(self, intent_res: IntentResult) -> VoiceAssistantResponse:
-        v_status = self._get_vehicle_context()
+        v_status = self._get_vehicle_context(intent_res.entities.get("user_lat"), intent_res.entities.get("user_lon"), intent_res.entities.get("city"))
         brain_ans = brain.answer_query(intent_res.raw_text, vehicle_status=v_status, language=intent_res.language_mix)
         if brain_ans:
             spoken_txt, intent_name, display_d = brain_ans
@@ -1011,10 +1038,18 @@ class VoiceAssistant:
         return self._handle_set_ac(intent_res)
 
     # ── Helper: vehicle context dict for LLM ─────────────────────────────────
-    def _get_vehicle_context(self) -> Optional[dict]:
+    def _get_vehicle_context(self, user_lat: Optional[float] = None, user_lon: Optional[float] = None, city: Optional[str] = None) -> Optional[dict]:
         try:
             from vehicle_intelligence import vehicle
-            return vehicle.get_vehicle_status()
+            if user_lat is not None and user_lon is not None:
+                vehicle.set_location(user_lat, user_lon, city or "Nagpur")
+            ctx = vehicle.get_vehicle_status()
+            if user_lat is not None and user_lon is not None:
+                ctx["latitude"] = float(user_lat)
+                ctx["longitude"] = float(user_lon)
+            if city:
+                ctx["city"] = city
+            return ctx
         except Exception:
             return None
 

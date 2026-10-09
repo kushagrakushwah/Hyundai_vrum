@@ -8,6 +8,131 @@ import re
 from typing import Optional, Dict, Any, Tuple
 
 
+import math
+
+NAGPUR_LANDMARKS = {
+    "vnit": {
+        "name": "VNIT Nagpur (Visvesvaraya National Institute of Technology)",
+        "address": "South Ambazari Road, Bajaj Nagar, Nagpur 440010",
+        "lat": 21.1255,
+        "lng": 79.0524,
+        "category": "Premier Institute & Engineering Campus",
+    },
+    "vnit nagpur": {
+        "name": "VNIT Nagpur (Visvesvaraya National Institute of Technology)",
+        "address": "South Ambazari Road, Bajaj Nagar, Nagpur 440010",
+        "lat": 21.1255,
+        "lng": 79.0524,
+        "category": "Premier Institute & Engineering Campus",
+    },
+    "visvesvaraya": {
+        "name": "VNIT Nagpur (Visvesvaraya National Institute of Technology)",
+        "address": "South Ambazari Road, Bajaj Nagar, Nagpur 440010",
+        "lat": 21.1255,
+        "lng": 79.0524,
+        "category": "Premier Institute & Engineering Campus",
+    },
+    "sitabuldi": {
+        "name": "Sitabuldi Interchange & Market",
+        "address": "Sitabuldi, Nagpur 440012",
+        "lat": 21.1458,
+        "lng": 79.0882,
+        "category": "Metro Interchange & Commercial Hub",
+    },
+    "dharampeth": {
+        "name": "Dharampeth Shopping District",
+        "address": "West High Court Road, Dharampeth, Nagpur 440010",
+        "lat": 21.1415,
+        "lng": 79.0620,
+        "category": "Commercial & Cafe District",
+    },
+    "sadar": {
+        "name": "Sadar Residency Road",
+        "address": "Residency Road, Sadar, Nagpur 440001",
+        "lat": 21.1610,
+        "lng": 79.0830,
+        "category": "Commercial Center",
+    },
+    "civil lines": {
+        "name": "Civil Lines Administrative Area",
+        "address": "Civil Lines, Nagpur 440001",
+        "lat": 21.1526,
+        "lng": 79.0720,
+        "category": "Administrative & High Court Area",
+    },
+    "ambazari": {
+        "name": "Ambazari Lake & Garden",
+        "address": "Ambazari Road, Nagpur 440033",
+        "lat": 21.1280,
+        "lng": 79.0430,
+        "category": "Lakefront & Recreation",
+    },
+    "futala": {
+        "name": "Futala Lake Waterfront",
+        "address": "Futala Lake Road, Nagpur 440001",
+        "lat": 21.1560,
+        "lng": 79.0480,
+        "category": "Waterfront Promenade",
+    },
+    "seminary hills": {
+        "name": "Seminary Hills",
+        "address": "Seminary Hills, Nagpur 440006",
+        "lat": 21.1650,
+        "lng": 79.0550,
+        "category": "Green Hills & Botanical Gardens",
+    },
+    "aiims": {
+        "name": "AIIMS Nagpur & MIHAN",
+        "address": "Plot No. 2, MIHAN, Nagpur 441108",
+        "lat": 21.0500,
+        "lng": 79.0450,
+        "category": "Medical & SEZ Campus",
+    },
+    "mihan": {
+        "name": "MIHAN SEZ & Tech Park",
+        "address": "MIHAN, Nagpur 441108",
+        "lat": 21.0500,
+        "lng": 79.0450,
+        "category": "SEZ & Tech Campus",
+    },
+    "airport": {
+        "name": "Dr. Babasaheb Ambedkar International Airport, Nagpur",
+        "address": "Wardha Road, Sonegaon, Nagpur 440005",
+        "lat": 21.0920,
+        "lng": 79.0610,
+        "category": "Airport Terminal",
+    },
+    "railway station": {
+        "name": "Nagpur Central Railway Station",
+        "address": "Station Road, Sitabuldi, Nagpur 440001",
+        "lat": 21.1520,
+        "lng": 79.0890,
+        "category": "Major Transit Hub",
+    },
+    "congress nagar": {
+        "name": "Congress Nagar Metro Station",
+        "address": "Congress Nagar, Nagpur 440012",
+        "lat": 21.1304,
+        "lng": 79.0857,
+        "category": "Metro Hub",
+    },
+    "kasturchand park": {
+        "name": "Kasturchand Park Ground",
+        "address": "Kasturchand Park, Nagpur 440001",
+        "lat": 21.1509,
+        "lng": 79.0802,
+        "category": "Heritage Ground & Metro Hub",
+    },
+    "bajaj nagar": {
+        "name": "Bajaj Nagar (near VNIT)",
+        "address": "Bajaj Nagar, Nagpur 440010",
+        "lat": 21.1270,
+        "lng": 79.0600,
+        "category": "Residential & Student Hub",
+    }
+}
+
+
 class SmartReserveBrain:
     """
     AVA Cognitive Brain:
@@ -38,7 +163,32 @@ class SmartReserveBrain:
                 q = q[len(ww):].strip(",. ")
                 break
 
+        # Deduplicate repeated identical phrases (e.g. from speech recognition stutters)
+        # e.g., "how far i am from vnit nagpur how far i am from vnit nagpur"
+        half = len(q) // 2
+        if half >= 6 and q[:half].strip() == q[half:].strip():
+            q = q[:half].strip()
+        else:
+            words = q.split()
+            if len(words) >= 4 and len(words) % 2 == 0:
+                h_w = len(words) // 2
+                if words[:h_w] == words[h_w:]:
+                    q = " ".join(words[:h_w])
+
+        # ── SET LOCATION (e.g. "my location is vnit nagpur", "i am at vnit nagpur", "set location to vnit")
+        if any(p in q for p in ["my location is", "i am at", "i'm at", "set location to", "set my location to", "hum vnit", "main vnit", "location set karo"]):
+            return self._ans_set_location(q, vehicle_status, language)
+
+        # ── DISTANCE / HOW FAR AM I (e.g. "how far i am from vnit nagpur", "how far is vnit nagpur")
+        if self._matches(q, [
+            "how far", "how far is", "how far am i", "how far i am", "distance to", "distance from",
+            "how much distance", "kitni door", "kitna door", "kitne kilometer", "kiti antar", "how much km",
+            (["how", "kitni", "kitna"], ["far", "distance", "door", "antar"]),
+        ]):
+            return self._ans_distance_check(q, vehicle_status, language)
+
         # ── 0. DO NOT INTERCEPT PRIMARY RESERVATION OR CHARGER DISCOVERY ACTIONS ─
+        is_explaining_query = any(q.startswith(w) for w in ["how", "what", "why", "explain", "tell me about", "who"]) or "how does" in q or "how do" in q
         charger_action_kws = [
             "nearest charging", "nearest charger", "nearest station", "charging station from",
             "charger from my", "reserve", "book", "lock slot", "slot book", "book slot",
@@ -46,8 +196,9 @@ class SmartReserveBrain:
             "stations nearby", "ev station", "charging hubs nearby", "nearest cpo",
             "charging station", "charger near"
         ]
-        if any(k in q for k in charger_action_kws):
-            return None
+        if not is_explaining_query:
+            if any(re.search(r'\b' + re.escape(k) + r'(?:s)?\b', q) for k in charger_action_kws):
+                return None
 
         # ── 0. EMERGENCY / LOW BATTERY (highest priority) ──────────────────────────
         current_soc = (vehicle_status or {}).get('soc', 100)
@@ -663,30 +814,152 @@ class SmartReserveBrain:
 
     def _ans_location(self, v_status: Optional[dict], lang: str):
         city = (v_status or {}).get("city", "Nagpur")
-        lat = (v_status or {}).get("latitude", 21.1458)
-        lng = (v_status or {}).get("longitude", 79.0882)
+        lat = float((v_status or {}).get("latitude", 21.1458))
+        lng = float((v_status or {}).get("longitude", 79.0882))
+
+        # Check if at or near a known landmark
+        lm_desc = ""
+        if abs(lat - 21.1255) < 0.015 and abs(lng - 79.0524) < 0.015:
+            lm_desc = " at VNIT Nagpur (Visvesvaraya National Institute of Technology, South Ambazari Road)"
+        elif abs(lat - 21.1458) < 0.005 and abs(lng - 79.0882) < 0.005:
+            lm_desc = " near Sitabuldi Metro Interchange, Nagpur Center"
+
         if lang in ("hi", "hi+en"):
             txt = (
-                f"Aapki current vehicle location {city}, Maharashtra hai (coordinates: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Aapki current vehicle location {city}, Maharashtra{lm_desc} hai "
+                f"(coordinates: {lat:.4f}° N, {lng:.4f}° E). "
                 f"Nagpur mein aapke paas 137 se zyada verified fast charging hubs available hain."
             )
         elif lang == "mr":
             txt = (
-                f"Aapli sadyachi location {city}, Maharashtra aahe (GPS: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Aapli sadyachi location {city}, Maharashtra{lm_desc} aahe (GPS: {lat:.4f}° N, {lng:.4f}° E). "
                 f"Nagpur madhe 137 peksha jasta verified EV charging hubs uplabdh aahet."
             )
         else:
             txt = (
-                f"Your vehicle is currently centered in {city}, Maharashtra (GPS coordinates: {lat:.4f}° N, {lng:.4f}° E). "
+                f"Your vehicle is currently positioned in {city}, Maharashtra{lm_desc} "
+                f"(GPS coordinates: {lat:.4f}° N, {lng:.4f}° E). "
                 f"There are over 137 verified EV charging hubs within range in the Nagpur metropolitan area."
             )
         return (txt, "LOCATION_INFO", {
             "city": city,
             "latitude": lat,
             "longitude": lng,
+            "landmark": lm_desc.strip(),
             "stations_in_city": 137,
             "action": "show_car_location"
         })
+
+    def _ans_set_location(self, q: str, v_status: Optional[dict], lang: str):
+        matched_lm = None
+        for k, info in NAGPUR_LANDMARKS.items():
+            if k in q:
+                matched_lm = info
+                break
+        
+        if matched_lm:
+            dest_lat = matched_lm["lat"]
+            dest_lng = matched_lm["lng"]
+            dest_name = matched_lm["name"]
+            
+            try:
+                from vehicle_intelligence import vehicle
+                if vehicle:
+                    vehicle.set_location(dest_lat, dest_lng, "Nagpur")
+            except Exception:
+                pass
+                
+            if lang in ("hi", "hi+en"):
+                txt = f"Vehicle location update ho gayi hai! Aapki Hyundai Ioniq 5 ab {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E) par locate ho gayi hai. Map par car marker update kar diya gaya hai."
+            elif lang == "mr":
+                txt = f"Vehicle location update zali! Tumchi Hyundai Ioniq 5 aata {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E) var locate keli aahe."
+            else:
+                txt = f"Vehicle location updated! Your Hyundai Ioniq 5 is now located at {dest_name} (GPS: {dest_lat:.4f}° N, {dest_lng:.4f}° E). The navigation map has centered on your exact position."
+                
+            return (txt, "SET_LOCATION", {
+                "location_name": dest_name,
+                "latitude": dest_lat,
+                "longitude": dest_lng,
+                "city": "Nagpur",
+                "action": "update_car_location"
+            })
+        else:
+            return self._ans_location(v_status, lang)
+
+    def _ans_distance_check(self, q: str, v_status: Optional[dict], lang: str):
+        cur_lat = float((v_status or {}).get("latitude", 21.1458))
+        cur_lng = float((v_status or {}).get("longitude", 79.0882))
+        soc = float((v_status or {}).get("soc", 18.0))
+        range_km = float((v_status or {}).get("range_km", 86.6))
+
+        # Check landmarks first
+        matched_lm = None
+        for k, info in NAGPUR_LANDMARKS.items():
+            if k in q:
+                matched_lm = info
+                break
+
+        if matched_lm:
+            dest_lat = matched_lm["lat"]
+            dest_lng = matched_lm["lng"]
+            dest_name = matched_lm["name"]
+            
+            # Geodesic with city road factor (1.25x)
+            d_km = math.hypot((dest_lat - cur_lat) * 111.0, (dest_lng - cur_lng) * 103.0) * 1.25
+            
+            if d_km < 0.4:
+                # User is at this exact location!
+                if lang in ("hi", "hi+en"):
+                    txt = f"Aap abhi {dest_name} par hi hain! Doori 0 km hai. Aapki battery {soc:.0f}% hai ({range_km:.0f} km range)."
+                elif lang == "mr":
+                    txt = f"Tumhi sadyas {dest_name} yethech aahat! Antar 0 km aahe. Battery {soc:.0f}% aahe."
+                else:
+                    txt = f"You are currently located right at {dest_name}! Distance is 0 km. Your battery is at {soc:.0f}% ({range_km:.0f} km range)."
+                return (txt, "DISTANCE_CHECK", {
+                    "destination": dest_name,
+                    "distance_km": 0.0,
+                    "lat": dest_lat,
+                    "lng": dest_lng,
+                    "at_destination": True,
+                    "action": "show_landmark_location"
+                })
+
+            drive_mins = max(2, int(d_km / 22.0 * 60))  # avg 22 km/h city driving
+            rem_soc = max(0.0, soc - (d_km / max(1.0, range_km)) * soc)
+            
+            if lang in ("hi", "hi+en"):
+                txt = (
+                    f"Aapki current location se {dest_name} lagbhag {d_km:.1f} km door hai "
+                    f"(lagbhag {drive_mins} minute ka drive via city roads). "
+                    f"Aapki {soc:.0f}% battery ({range_km:.0f} km range) se aap araam se pahunch sakte hain, "
+                    f"wahan pahunchne par lagbhag {rem_soc:.1f}% battery bachegi."
+                )
+            elif lang == "mr":
+                txt = (
+                    f"Aaplya sadyachya location pasun {dest_name} sumare {d_km:.1f} km antaravar aahe "
+                    f"(drive time ~{drive_mins} minte). "
+                    f"Tumchya {soc:.0f}% battery ({range_km:.0f} km range) ne tumhi sahajpane pohchu shakta, "
+                    f"tithe pohchlyavar {rem_soc:.1f}% battery shillak rahil."
+                )
+            else:
+                txt = (
+                    f"You are approximately {d_km:.1f} km away from {dest_name}. "
+                    f"Estimated drive time is about {drive_mins} minutes via city routes. "
+                    f"With your current battery at {soc:.0f}% ({range_km:.0f} km range), you can easily reach "
+                    f"with approximately {rem_soc:.1f}% battery remaining."
+                )
+            return (txt, "DISTANCE_CHECK", {
+                "destination": dest_name,
+                "distance_km": round(d_km, 1),
+                "drive_time_mins": drive_mins,
+                "lat": dest_lat,
+                "lng": dest_lng,
+                "arrival_soc": round(rem_soc, 1),
+                "action": "show_landmark_route"
+            })
+
+        # Inter-city fallback
+        return self._ans_range_check(q, v_status, lang)
 
     def _ans_nagpur_network(self, lang: str):
         if lang in ("hi", "hi+en"):

@@ -81,6 +81,8 @@ LOCATION_TYPES = [
 
 INDIAN_CITIES = {
     "nagpur": (21.1458, 79.0882),
+    "vnit": (21.1255, 79.0524),
+    "vnit nagpur": (21.1255, 79.0524),
     "hyderabad": (17.3850, 78.4867),
     "pune": (18.5204, 73.8567),
     "mumbai": (19.0760, 72.8777),
@@ -330,6 +332,7 @@ class StationsDB:
             {"station_id": "IN_NGP_001", "name": "Tata Power Superfast Hub — Sitabuldi", "district": "Nagpur", "address": "Sitabuldi Metro Interchange, Nagpur, Maharashtra", "lat": 21.1458, "lng": 79.0882, "power_kw": 120.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "Metro Station", "monthly_units_kwh": 6200.0, "peak_load_kw": 90.0, "is_live_ocm": False},
             {"station_id": "IN_NGP_002", "name": "ChargeZone Express Hub — Wardha Road Airport", "district": "Nagpur", "address": "Hotel Pride, Wardha Road, Sonegaon, Nagpur, Maharashtra", "lat": 21.0890, "lng": 79.0620, "power_kw": 150.0, "connector_type": "CCS2", "total_ports": 4, "operator": "ChargeZone", "location_type": "Airport Highway", "monthly_units_kwh": 6900.0, "peak_load_kw": 110.0, "is_live_ocm": False},
             {"station_id": "IN_NGP_003", "name": "Statiq Fast Hub — Dharampeth", "district": "Nagpur", "address": "West High Court Road, Dharampeth, Nagpur, Maharashtra", "lat": 21.1420, "lng": 79.0650, "power_kw": 60.0, "connector_type": "CCS2", "total_ports": 2, "operator": "Statiq", "location_type": "Commercial Hub", "monthly_units_kwh": 3800.0, "peak_load_kw": 48.0, "is_live_ocm": False},
+            {"station_id": "IN_NGP_004", "name": "Tata Power Fast Hub — VNIT Campus Bajaj Nagar", "district": "Nagpur", "address": "South Ambazari Road, Near VNIT Gate, Bajaj Nagar, Nagpur, Maharashtra", "lat": 21.1255, "lng": 79.0524, "power_kw": 60.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "University Campus", "monthly_units_kwh": 4500.0, "peak_load_kw": 55.0, "is_live_ocm": False},
             
             # Indore
             {"station_id": "IN_IND_001", "name": "Tata Power Supercharge — Vijay Nagar", "district": "Indore", "address": "Malhar Mega Mall, Vijay Nagar, Indore, MP", "lat": 22.7533, "lng": 75.8937, "power_kw": 120.0, "connector_type": "CCS2", "total_ports": 4, "operator": "Tata Power", "location_type": "Shopping Mall", "monthly_units_kwh": 6500.0, "peak_load_kw": 95.0, "is_live_ocm": False},

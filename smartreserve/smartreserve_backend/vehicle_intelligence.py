@@ -174,7 +174,10 @@ class VehicleIntelligence:
             'tyre_pressure_status': tyre_status,
             'service_status': service_status,
             'component_health': health_scores,
-            'insights': insights
+            'insights': insights,
+            'latitude': self.state.gps_lat,
+            'longitude': self.state.gps_lng,
+            'city': self.state.city
         }
 
     def get_charge_curve(self, soc, battery_temp=None):
