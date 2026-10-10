@@ -236,6 +236,8 @@ async def get_stations(
     district: Optional[str] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
+    user_lat: Optional[float] = None,
+    user_lon: Optional[float] = None,
     source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
@@ -243,8 +245,8 @@ async def get_stations(
 ):
     """Return stations with live status, GPS proximity, and AI congestion predictions."""
     target_city = city
-    target_lat = latitude
-    target_lon = longitude
+    target_lat = latitude if latitude is not None else user_lat
+    target_lon = longitude if longitude is not None else user_lon
 
     # Fallback to vehicle's current location if not specified
     if not target_city and target_lat is None:
