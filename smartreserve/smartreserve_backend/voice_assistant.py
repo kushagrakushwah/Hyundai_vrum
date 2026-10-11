@@ -188,18 +188,30 @@ class VoiceAssistant:
                 language_mix=self._detect_language(text),
             )
 
-        # 3. Extract city if mentioned in text
+        # 3. Extract city if mentioned in text (with phonetic/typo tolerance)
+        city_aliases = {
+            "hydradabad": "hyderabad",
+            "hydrabad": "hyderabad",
+            "hyderbad": "hyderabad",
+            "hyd": "hyderabad",
+            "bombay": "mumbai",
+            "bangalore": "bengaluru",
+            "calcutta": "kolkata",
+            "madras": "chennai",
+            "dilli": "delhi",
+            "gurgaon": "delhi",
+            "noida": "delhi",
+            "nagpore": "nagpur",
+        }
+        for alias, target_city in city_aliases.items():
+            if re.search(r'\b' + re.escape(alias) + r'\b', cleaned_text):
+                cleaned_text = re.sub(r'\b' + re.escape(alias) + r'\b', target_city, cleaned_text)
+
         for city_name, coords in INDIAN_CITIES.items():
             if re.search(r'\b' + re.escape(city_name) + r'\b', cleaned_text):
                 entities["city"] = city_name
-                entities["user_lat"], entities["user_lon"] = coords
+                entities["destination_coords"] = coords
                 entities["explicit_query_city"] = True
-                try:
-                    from vehicle_intelligence import vehicle
-                    if vehicle and hasattr(vehicle, 'set_location'):
-                        vehicle.set_location(coords[0], coords[1], city_name.capitalize())
-                except Exception:
-                    pass
                 break
 
         # Fuzzy station name lookup from query
@@ -296,6 +308,12 @@ class VoiceAssistant:
 
         # General intent dictionary for discovery, vehicle status, AC, etc.
         intents = {
+            "CORRIDOR_TRIP": [
+                "on the way", "on my way", "on route", "en route", "on the route", "along the way", "along the route",
+                "if i go to", "when i go to", "going to", "drive to", "driving to", "trip to", "traveling to", "travelling to",
+                "route to", "highway chargers", "highway stations", "highway charger", "highway station", "corridor", "interstate",
+                "jaate waqt", "raste mein", "raste me", "ke raste", "highway par", "highway pe", "jatanna", "rastyavar", "rastyat"
+            ],
             "NEARBY_AMENITIES": [
                 "hospital", "cafe", "restaurant", "food", "atm", "pharmacy", "medical store", "mechanic", "tyre shop", "puncture shop",
                 "nearest parking", "parking nearby", "parking", "car park"
@@ -354,6 +372,12 @@ class VoiceAssistant:
                 "my location is", "i am at", "i'm at", "set location to", "set car location to",
                 "hum vnit", "main vnit"
             ],
+            "CORRIDOR_TRIP": [
+                "on the way", "on route", "en route", "along the way", "on the highway",
+                "if i go to", "going to", "drive to", "trip to", "route to",
+                "jaate waqt", "raste mein", "raste me", "highway par", "jatanna", "rastyavar",
+                "highway chargers", "highway stations", "stops on the way"
+            ],
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
 
@@ -371,6 +395,15 @@ class VoiceAssistant:
             if score > best_score:
                 best_score = score
                 best_intent = intent
+
+        # Force CORRIDOR_TRIP if user mentions highway/on-the-way and a destination city or route
+        corridor_phrases = [
+            "on the way", "on route", "en route", "along the way", "if i go to", "going to", "drive to",
+            "trip to", "route to", "highway", "corridor", "jaate waqt", "raste mein", "raste me", "jatanna"
+        ]
+        if any(cp in cleaned_text for cp in corridor_phrases) and (entities.get("city") or "to" in cleaned_text or "se" in cleaned_text):
+            best_intent = "CORRIDOR_TRIP"
+            best_score = 10
 
         if best_intent == "UNKNOWN" and (entities.get("station_name_hint") or entities.get("station_landmark")):
             best_intent = "FIND_CPO"
@@ -451,6 +484,8 @@ class VoiceAssistant:
             return self._handle_reserve(intent_res, user_id)
         elif intent_res.intent == "SET_AC":
             return self._handle_set_ac(intent_res)
+        elif intent_res.intent == "CORRIDOR_TRIP":
+            return self._handle_corridor_trip(intent_res, user_id, current_city=city, user_lat=user_lat, user_lon=user_lon)
 
         # 2. Deep Cognitive Brain (Architecture, Priority Engine, Battery Health, Location, Tariffs, Specs)
         v_ctx = self._get_vehicle_context(intent_res.entities.get("user_lat"), intent_res.entities.get("user_lon"), intent_res.entities.get("city"))
@@ -733,6 +768,144 @@ class VoiceAssistant:
             needs_confirmation=True,
             pending_action=self._pending_confirmations[user_id],
             tool_calls=["priority_engine.recommend"],
+        )
+
+    # ── CORRIDOR_TRIP handler ─────────────────────────────────────────────────
+    def _handle_corridor_trip(
+        self,
+        intent_res: IntentResult,
+        user_id: str,
+        current_city: Optional[str] = None,
+        user_lat: Optional[float] = None,
+        user_lon: Optional[float] = None
+    ) -> VoiceAssistantResponse:
+        from corridor_planner import plan_corridor_trip
+        from vehicle_intelligence import vehicle
+
+        # 1. Resolve Origin
+        orig_city = (current_city or "Nagpur").capitalize()
+        orig_lat = float(user_lat) if user_lat is not None else 21.1255
+        orig_lon = float(user_lon) if user_lon is not None else 79.0524
+
+        if user_lat is None and hasattr(vehicle, 'state'):
+            orig_lat = getattr(vehicle.state, 'gps_lat', orig_lat)
+            orig_lon = getattr(vehicle.state, 'gps_lng', orig_lon)
+
+        # 2. Resolve Destination City & Route Pairs (e.g. "Delhi to Jaipur" or "Nagpur se Hyderabad")
+        dest_city = (intent_res.entities.get("city") or "Hyderabad").capitalize()
+        dest_coords = INDIAN_CITIES.get(dest_city.lower(), (17.3850, 78.4867))
+        dest_lat, dest_lon = dest_coords
+
+        q_low = (intent_res.raw_text or "").lower()
+        city_aliases = {
+            "hydradabad": "hyderabad", "hydrabad": "hyderabad", "hyderbad": "hyderabad",
+            "bombay": "mumbai", "bangalore": "bengaluru", "calcutta": "kolkata",
+            "madras": "chennai", "dilli": "delhi", "nagpore": "nagpur"
+        }
+        route_pair_match = re.search(r'\b([a-z]+)\s+(?:se|to|te|from)\s+([a-z]+)\b', q_low)
+        if route_pair_match:
+            c1 = city_aliases.get(route_pair_match.group(1), route_pair_match.group(1))
+            c2 = city_aliases.get(route_pair_match.group(2), route_pair_match.group(2))
+            if c1 in INDIAN_CITIES and c2 in INDIAN_CITIES:
+                orig_city = c1.capitalize()
+                orig_lat, orig_lon = INDIAN_CITIES[c1]
+                dest_city = c2.capitalize()
+                dest_lat, dest_lon = INDIAN_CITIES[c2]
+            elif c2 in INDIAN_CITIES:
+                dest_city = c2.capitalize()
+                dest_lat, dest_lon = INDIAN_CITIES[c2]
+
+        # 3. Resolve Current Battery SoC
+        current_soc = 18.0
+        if hasattr(vehicle, 'state'):
+            current_soc = float(getattr(vehicle.state, 'soc', 18.0))
+
+        # 4. Plan the corridor trip
+        try:
+            plan = plan_corridor_trip(
+                origin_lat=orig_lat,
+                origin_lon=orig_lon,
+                dest_lat=dest_lat,
+                dest_lon=dest_lon,
+                origin_city=orig_city,
+                dest_city=dest_city,
+                current_soc=current_soc
+            )
+        except Exception as e:
+            logger.error(f"[AVA] Corridor planning failed: {e}")
+            return VoiceAssistantResponse(
+                text=f"Could not calculate corridor route to {dest_city}. Please try again.",
+                action_type="error"
+            )
+
+        total_km = plan["total_distance_km"]
+        hours = plan["drive_time_hours"]
+        stops = plan["charging_stops"]
+        n_stops = len(stops)
+        cur_range = plan["current_range_km"]
+
+        # 5. Build Spoken Voice Text
+        s1 = stops[0] if stops else None
+        s1_name = s1["name"] if s1 else "highway hub"
+        s1_km = s1["milestone_km"] if s1 else 50
+        s1_kw = s1["power_kw"] if s1 else 60
+
+        s2 = stops[1] if len(stops) > 1 else None
+        s2_text = f", and Stop 2 at {s2['name']} ({s2['milestone_km']:.0f} km mark, {s2['power_kw']:.0f} kW)" if s2 else ""
+        s2_text_hi = f", aur Stop 2 {s2['name']} ({s2['milestone_km']:.0f} km, {s2['power_kw']:.0f} kW)" if s2 else ""
+        s2_text_mr = f", ani Stop 2 {s2['name']} ({s2['milestone_km']:.0f} km)" if s2 else ""
+
+        if plan["direct_reachable"]:
+            if intent_res.language_mix in ("hi", "hi+en"):
+                spoken = (
+                    f"{orig_city} se {dest_city} tak {total_km:.0f} km ka highway route hai (~{hours:.1f} ghante). "
+                    f"Aapki current {current_soc:.0f}% battery ({cur_range:.0f} km range) ke saath aap bina kisi stop ke seedhe pahunch sakte hain. "
+                    f"Maine poora route map par plot kar diya hai!"
+                )
+            elif intent_res.language_mix == "mr":
+                spoken = (
+                    f"{orig_city} te {dest_city} highway route {total_km:.0f} km aahe (~{hours:.1f} taas). "
+                    f"Current {current_soc:.0f}% battery sobat tumhi direct pohchu shakta. "
+                    f"Sampurna route map var dakhavla aahe!"
+                )
+            else:
+                spoken = (
+                    f"Planning your route from {orig_city} to {dest_city} ({total_km:.0f} km, ~{hours:.1f} hours). "
+                    f"With your current {current_soc:.0f}% battery ({cur_range:.0f} km range), you can reach directly without charging on the way. "
+                    f"I've displayed the full route on your dashboard screen!"
+                )
+        else:
+            if intent_res.language_mix in ("hi", "hi+en"):
+                spoken = (
+                    f"{orig_city} se {dest_city} tak {total_km:.0f} km ka highway route plan kiya hai (lagbhag {hours:.1f} ghante). "
+                    f"Current {current_soc:.0f}% battery ({cur_range:.0f} km range) ke saath aapko raste mein {n_stops} charging stop(s) lene honge: "
+                    f"Stop 1 {s1_name} ({s1_km:.0f} km, {s1_kw:.0f} kW){s2_text_hi}. "
+                    f"Maine poora highway route aur charging milestones dashboard map par dikha diye hain!"
+                )
+            elif intent_res.language_mix == "mr":
+                spoken = (
+                    f"{orig_city} te {dest_city} highway route plan kela aahe ({total_km:.0f} km, summare {hours:.1f} taas). "
+                    f"Current {current_soc:.0f}% battery sobat rastyat {n_stops} charging stop(s) lagtil: "
+                    f"Stop 1 {s1_name} ({s1_km:.0f} km, {s1_kw:.0f} kW){s2_text_mr}. "
+                    f"Sampurna highway route map var plot kela aahe!"
+                )
+            else:
+                spoken = (
+                    f"Planning your road trip from {orig_city} to {dest_city} via highway corridor ({total_km:.0f} km, ~{hours:.1f} hours). "
+                    f"With your current {current_soc:.0f}% battery ({cur_range:.0f} km range), you cannot reach directly. "
+                    f"I have planned {n_stops} highway fast charging stop(s): "
+                    f"Stop 1 at {s1_name} ({s1_km:.0f} km mark, {s1_kw:.0f} kW){s2_text}. "
+                    f"I have drawn the full highway route and charging milestones on your dashboard map!"
+                )
+
+        plan["action"] = "show_corridor_route"
+        plan["recommendations"] = stops
+        return VoiceAssistantResponse(
+            text=spoken,
+            display_data=plan,
+            action_type="corridor_route",
+            language=intent_res.language_mix,
+            tool_calls=["corridor_planner.plan_corridor_trip"]
         )
 
     def _ask_gemini_for_cpo(self, intent_res: IntentResult) -> str:
