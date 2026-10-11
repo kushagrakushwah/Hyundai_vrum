@@ -25,6 +25,10 @@ class ChargingRecommendation:
     overall_score: float
     label: str
     reasoning: str
+    address: str = ""
+    city: str = ""
+    lat: float = 0.0
+    lng: float = 0.0
 
 
 def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -121,12 +125,23 @@ class PriorityEngine:
         # City or GPS overrides
         norm_city = city.lower().strip() if city else None
         if norm_city and norm_city in CITY_COORDINATES:
-            vehicle_lat, vehicle_lon = CITY_COORDINATES[norm_city]
+            city_lat, city_lon = CITY_COORDINATES[norm_city]
+            if user_lat is not None and user_lon is not None:
+                # If user GPS is already within 60 km of this requested city, use user's precise GPS
+                dist_to_city = haversine(float(user_lat), float(user_lon), city_lat, city_lon)
+                if dist_to_city <= 60.0:
+                    vehicle_lat = float(user_lat)
+                    vehicle_lon = float(user_lon)
+                else:
+                    vehicle_lat = city_lat
+                    vehicle_lon = city_lon
+            else:
+                vehicle_lat = city_lat
+                vehicle_lon = city_lon
             if hasattr(self.vehicle, 'state'):
                 self.vehicle.state.gps_lat = vehicle_lat
                 self.vehicle.state.gps_lng = vehicle_lon
-
-        if user_lat is not None and user_lon is not None:
+        elif user_lat is not None and user_lon is not None:
             vehicle_lat = float(user_lat)
             vehicle_lon = float(user_lon)
             if hasattr(self.vehicle, 'state'):
@@ -145,7 +160,7 @@ class PriorityEngine:
         else:
             all_stations = []
 
-        # If city requested, prioritize stations strictly located in that city
+        # If city requested, strictly isolate stations located in that city
         if norm_city:
             city_matches = [
                 s for s in all_stations
@@ -154,7 +169,7 @@ class PriorityEngine:
                 or norm_city in str(s.get('address', '')).lower()
             ]
             if city_matches:
-                all_stations = city_matches + [s for s in all_stations if s not in city_matches]
+                all_stations = city_matches
             
         recommendations = []
         for station in all_stations:
@@ -168,7 +183,7 @@ class PriorityEngine:
             
             # Fast straight-line pre-filter to discard stations outside search radius
             crow_dist = haversine(vehicle_lat, vehicle_lon, st_lat, st_lon)
-            max_dist = 40.0 if norm_city else 85.0
+            max_dist = 60.0 if norm_city else 85.0
             if crow_dist > max_dist:  # Skip stations beyond target locality/drive limit
                 continue
             
@@ -268,7 +283,11 @@ class PriorityEngine:
                 arrival_soc=round(arrival_soc, 1),
                 overall_score=round(score, 3),
                 label='',
-                reasoning=''
+                reasoning='',
+                address=str(station.get('address', '')),
+                city=str(station.get('city', norm_city or '')),
+                lat=float(st_lat),
+                lng=float(st_lon)
             )
             recommendations.append(rec)
             

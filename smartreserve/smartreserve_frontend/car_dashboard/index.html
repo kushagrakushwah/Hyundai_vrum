@@ -2598,6 +2598,8 @@
             voiceOverlay.classList.remove('active');
             document.body.classList.remove('voice-active');
             pendingConfirmation = false;
+            if (voiceInterim) voiceInterim.innerText = '';
+            if (voiceFinal) voiceFinal.innerText = '';
         }
 
         function toggleListening() {
@@ -2709,6 +2711,8 @@
                 
                 recognition.onstart = () => {
                     isListening = true;
+                    if (voiceInterim) voiceInterim.innerText = '';
+                    if (voiceFinal) voiceFinal.innerText = '';
                     if (voiceBtn) {
                         voiceBtn.classList.add('listening');
                         voiceBtn.innerHTML = '🎙️';
@@ -2735,6 +2739,7 @@
                     }
                     if (finalTranscript && finalTranscript.trim()) {
                         voiceTranscript.style.display = 'block';
+                        if (voiceInterim) voiceInterim.innerText = '';
                         voiceFinal.innerText = finalTranscript;
                         processVoiceCommand(finalTranscript.trim());
                     }
@@ -2802,6 +2807,9 @@
         // Process voice command through backend
         async function processVoiceCommand(text) {
             voiceOverlay.classList.add('active');
+            if (voiceTranscript) voiceTranscript.style.display = 'block';
+            if (voiceInterim) voiceInterim.innerText = '';
+            if (voiceFinal) voiceFinal.innerText = text;
             voiceResponse.style.display = 'block';
             voiceResponse.innerHTML = `<div class="assistant-label">🤖 AVA Processing...</div><div style="color:var(--text-muted);font-size:13px;">Analysing: "${text}"</div>`;
             

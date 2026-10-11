@@ -193,6 +193,7 @@ class VoiceAssistant:
             if re.search(r'\b' + re.escape(city_name) + r'\b', cleaned_text):
                 entities["city"] = city_name
                 entities["user_lat"], entities["user_lon"] = coords
+                entities["explicit_query_city"] = True
                 try:
                     from vehicle_intelligence import vehicle
                     if vehicle and hasattr(vehicle, 'set_location'):
@@ -423,8 +424,11 @@ class VoiceAssistant:
             elif "en" in l_code:
                 intent_res.language_mix = "en" 
 
-        # Merge city / coordinates: explicit device GPS coordinates take absolute precedence
-        if user_lat is not None and user_lon is not None:
+        # Merge city / coordinates: explicit query city takes precedence over client device GPS
+        if intent_res.entities.get("explicit_query_city"):
+            # Driver explicitly asked about an external city (e.g. Hyderabad, Pune) — keep target city coordinates
+            pass
+        elif user_lat is not None and user_lon is not None:
             intent_res.entities["user_lat"] = float(user_lat)
             intent_res.entities["user_lon"] = float(user_lon)
         elif city and not intent_res.entities.get("user_lat"):
@@ -643,7 +647,14 @@ class VoiceAssistant:
             )
 
         # 3. Build spoken response from real data
-        recs_data = {"recommendations": stations, "stations": stations, "source": "priority_engine", "city": city}
+        recs_data = {
+            "recommendations": stations,
+            "stations": stations,
+            "source": "priority_engine",
+            "city": city,
+            "latitude": user_lat,
+            "longitude": user_lon,
+        }
         s1 = stations[0]
         s1_name = s1.get("station_name") or s1.get("name") or "the nearest station"
         s1_dist = s1.get("distance_km", 0)
