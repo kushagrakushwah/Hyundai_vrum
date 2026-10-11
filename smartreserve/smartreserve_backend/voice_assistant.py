@@ -603,6 +603,10 @@ class VoiceAssistant:
                     matches = []
                     all_st = {**engine.stations_db.stations, **engine.stations_db.live_ocm_stations}
                     for sid, sobj in all_st.items():
+                        if city:
+                            s_city_str = f"{sobj.get('city', '')} {sobj.get('district', '')} {sobj.get('address', '')}".lower()
+                            if city.lower() not in s_city_str:
+                                continue
                         s_nm = (sobj.get("name") or "").lower()
                         s_addr = (sobj.get("address") or "").lower()
                         score = 0
@@ -910,6 +914,10 @@ class VoiceAssistant:
                     matched = next((r for r in recs if target_operator.lower() in (getattr(r, 'operator', '') or '').lower() or target_operator.lower() in (getattr(r, 'station_name', '') or '').lower()), None)
                     if not matched and hasattr(engine, 'stations_db'):
                         for sid, sobj in engine.stations_db.stations.items():
+                            if city:
+                                s_city_str = f"{sobj.get('city', '')} {sobj.get('district', '')} {sobj.get('address', '')}".lower()
+                                if city.lower() not in s_city_str:
+                                    continue
                             s_op = sobj.get("operator", "").lower()
                             s_nm = sobj.get("name", "").lower()
                             if target_operator.lower() in s_op or target_operator.lower() in s_nm:
@@ -929,6 +937,10 @@ class VoiceAssistant:
                     matched = next((r for r in recs if target_query.lower() in (getattr(r, 'station_name', '') or '').lower() or target_query.lower() in (getattr(r, 'address', '') or '').lower()), None)
                     if not matched and hasattr(engine, 'stations_db'):
                         for sid, sobj in engine.stations_db.stations.items():
+                            if city:
+                                s_city_str = f"{sobj.get('city', '')} {sobj.get('district', '')} {sobj.get('address', '')}".lower()
+                                if city.lower() not in s_city_str:
+                                    continue
                             s_name = sobj.get("name", "").lower()
                             s_addr = sobj.get("address", "").lower()
                             s_city = sobj.get("city", "").lower()
@@ -953,6 +965,10 @@ class VoiceAssistant:
                     matches = []
                     all_st = {**(engine.stations_db.stations if hasattr(engine, 'stations_db') else {}), **(engine.stations_db.live_ocm_stations if hasattr(engine, 'stations_db') else {})}
                     for sid, sobj in all_st.items():
+                        if city:
+                            s_city_str = f"{sobj.get('city', '')} {sobj.get('district', '')} {sobj.get('address', '')}".lower()
+                            if city.lower() not in s_city_str:
+                                continue
                         s_nm = (sobj.get('name') or '').lower()
                         s_addr = (sobj.get('address') or '').lower()
                         score = 0
