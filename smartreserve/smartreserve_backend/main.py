@@ -44,7 +44,8 @@ from stations_db import StationsDB
 from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
 from priority_engine import PriorityEngine, haversine
 from road_routing import get_road_distance, get_road_route
-from vehicle_intelligence import VehicleIntelligence
+from vehicle_intelligence import VehicleIntelligence, VEHICLE_CATALOG, check_station_compatibility
+from live_chargers_service import live_chargers
 from speech_service import SpeechService
 from llm_service import ask_gemini, is_available as llm_available
 
@@ -140,6 +141,9 @@ class VoiceConfirmRequest(BaseModel):
 class TTSRequest(BaseModel):
     text: str
     language: str = "hi-IN"  # en-IN | hi-IN | mr-IN
+
+class VehicleSelectRequest(BaseModel):
+    model_id: str
 
 class VehicleStateUpdate(BaseModel):
     """Allows the frontend/car SDK to push live telemetry into the VehicleState."""
@@ -241,9 +245,10 @@ async def get_stations(
     source: str = "all",
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
+    compatibility_filter: Optional[str] = None,
     limit: int = 500,
 ):
-    """Return stations with live status, GPS proximity, and AI congestion predictions."""
+    """Return stations with live status, GPS proximity, vehicle compatibility, and AI congestion predictions."""
     target_city = city
     target_lat = latitude if latitude is not None else user_lat
     target_lon = longitude if longitude is not None else user_lon
@@ -268,6 +273,9 @@ async def get_stations(
     reserved_ids = {r["station_id"] for r in active_res}
     session_ids = {s["station_id"] for s in active_ses}
 
+    active_profile = vehicle_intel.profile.catalog_data if vehicle_intel else None
+    active_soc = vehicle_intel.state.soc if vehicle_intel else 18.0
+
     result = []
     for s in stations:
         sid = s["station_id"]
@@ -288,6 +296,24 @@ async def get_stations(
             continue
         if min_power_kw and s.get("power_kw", 0) < min_power_kw:
             continue
+
+        # Evaluate vehicle compatibility using active profile
+        compat = check_station_compatibility(s, active_profile, current_soc=active_soc)
+
+        # Apply compatibility filter if specified
+        if compatibility_filter:
+            cf = compatibility_filter.lower().strip()
+            if cf in ("compatible", "compatible_only") and not compat["is_compatible"]:
+                continue
+            elif cf == "ultra_fast" and (not compat["is_compatible"] or compat.get("effective_kw", 0) < 120):
+                continue
+            elif cf == "fast_dc" and (not compat["is_compatible"] or compat.get("effective_kw", 0) < 50):
+                continue
+            elif cf == "ccs2" and compat.get("matched_connector") != "CCS2":
+                continue
+            elif cf == "type2" and compat.get("matched_connector") != "AC Type 2":
+                continue
+
         dist_km = None
         if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
             crow = haversine(target_lat, target_lon, s["lat"], s["lng"])
@@ -305,6 +331,7 @@ async def get_stations(
             "status": status,
             "distance_km": dist_km,
             "congestion": congestion,
+            "compatibility": compat,
             "is_reserved": sid in reserved_ids,
             "is_charging": sid in session_ids,
             "is_live_ocm": s.get("is_live_ocm", False),
@@ -318,6 +345,7 @@ async def get_stations(
         "stations": result,
         "total": len(result),
         "source": source,
+        "active_vehicle": vehicle_intel.profile.catalog_data["short_name"] if vehicle_intel else "Ioniq 5 AWD",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
@@ -363,6 +391,103 @@ async def get_station(station_id: str):
     is_reserved = bool(reservation and reservation["expires_at"] > time.time())
     congestion = get_congestion_score(station_id)
     return {**station, "congestion": congestion, "is_reserved": is_reserved}
+
+
+# ── Vehicle Intelligence & Three-Things Pattern Routes ──────────────────────────
+@app.get("/api/vehicles")
+async def get_available_vehicles():
+    """Return all 8 vehicles structured by Three-Things Pattern (5 Hyundai + 3 Competitor)."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence service unavailable")
+    return {
+        "vehicles": vehicle_intel.get_available_models(),
+        "active_model_id": vehicle_intel.profile.model_id,
+        "total": len(VEHICLE_CATALOG),
+        "three_things_dimensions": [
+            "1. Energy & Range Architecture (Battery kWh, Range, Efficiency)",
+            "2. Charging & Connector Architecture (Connectors, Max DC kW, 10-80% Time, V2L)",
+            "3. Health & Telematics Diagnostics (Nominal TPMS, Service Interval, Battery SOH)"
+        ]
+    }
+
+@app.post("/api/vehicle/select")
+async def select_vehicle(req: VehicleSelectRequest):
+    """Switch the active vehicle model and dynamically update telematics, range, and compatibility."""
+    if not vehicle_intel:
+        raise HTTPException(status_code=503, detail="Vehicle intelligence service unavailable")
+    if req.model_id not in VEHICLE_CATALOG:
+        raise HTTPException(status_code=400, detail=f"Invalid vehicle model_id. Must be one of: {list(VEHICLE_CATALOG.keys())}")
+    
+    context = vehicle_intel.set_vehicle_model(req.model_id)
+    return {
+        "success": True,
+        "active_model_id": req.model_id,
+        "model_name": vehicle_intel.profile.name,
+        "short_name": vehicle_intel.profile.short_name,
+        "brand": vehicle_intel.profile.brand,
+        "is_hyundai": vehicle_intel.profile.is_hyundai,
+        "specs": vehicle_intel.profile.catalog_data,
+        "telematics": context,
+    }
+
+
+# ── Hyderabad Live Telematics & Statiq CPO Routes ──────────────────────────────
+@app.get("/api/stations/live-hyderabad")
+async def get_hyderabad_live_stations(
+    user_lat: float = 17.3850,
+    user_lon: float = 78.4867,
+    compatibility_filter: Optional[str] = None
+):
+    """
+    Live real-time charging stations across Hyderabad (Statiq, Tata Power, ChargeZone, Jio-bp, Zeon).
+    Includes port-by-port telematics, currently charging vehicle model, live battery %, kW rate,
+    and compatibility check for active vehicle.
+    """
+    stations = live_chargers.get_hyderabad_live_stations(user_lat=user_lat, user_lon=user_lon)
+    active_profile = vehicle_intel.profile.catalog_data if vehicle_intel else None
+    active_soc = vehicle_intel.state.soc if vehicle_intel else 18.0
+
+    annotated = []
+    for s in stations:
+        compat = check_station_compatibility(s, active_profile, current_soc=active_soc)
+        if compatibility_filter:
+            cf = compatibility_filter.lower().strip()
+            if cf in ("compatible", "compatible_only") and not compat["is_compatible"]:
+                continue
+            elif cf == "ultra_fast" and (not compat["is_compatible"] or compat.get("effective_kw", 0) < 120):
+                continue
+            elif cf == "fast_dc" and (not compat["is_compatible"] or compat.get("effective_kw", 0) < 50):
+                continue
+            elif cf == "ccs2" and compat.get("matched_connector") != "CCS2":
+                continue
+        
+        st_copy = dict(s)
+        st_copy["compatibility"] = compat
+        annotated.append(st_copy)
+
+    return {
+        "city": "Hyderabad",
+        "total": len(annotated),
+        "active_vehicle": vehicle_intel.profile.short_name if vehicle_intel else "Ioniq 5 AWD",
+        "stations": annotated,
+    }
+
+@app.get("/api/telemetry/station/{station_id}")
+async def get_station_telemetry(station_id: str):
+    """Get live port-by-port IoT telemetry for a specific Hyderabad charging station."""
+    telemetry = live_chargers.get_station_live_telemetry(station_id)
+    if not telemetry:
+        raise HTTPException(status_code=404, detail="Station telemetry not found")
+    return telemetry
+
+@app.get("/api/iot-device/specs")
+async def get_iot_device_specs():
+    """
+    Hackathon Blueprint & Commercial API Purchasing Guide:
+    1. Real-time CPO APIs (Pulse Energy, Kazam, TomTom, Open Charge Map).
+    2. Sub-₹800 ($10) IoT hardware sensor blueprint (ESP32 + CT sensor / ELM327 BLE).
+    """
+    return live_chargers.get_api_buying_and_iot_guide()
 
 
 # ── Reservation Routes ─────────────────────────────────────────────────────────
