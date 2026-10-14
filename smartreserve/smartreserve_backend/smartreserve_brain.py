@@ -311,12 +311,12 @@ class SmartReserveBrain:
             return self._ans_priority_engine(language)
 
         # ── 9. VEHICLE SPECS / HYUNDAI IONIQ 5 / 800V PLATFORM ─────────────────
-        if self._matches(q, [
+        if "joke" not in q and self._matches(q, [
             "what car is this", "ioniq 5 specs", "battery capacity", "battery size",
             "800v", "e-gmp", "hyundai ioniq 5", "car specifications", "vehicle specs",
             "gaadi kaunsi hai", "ioniq 5 ke features", "battery size kitna hai",
             "ioniq", "ioniq 5", "tell me about ioniq", "about the car",
-            (["car", "vehicle", "ioniq"], ["specs", "model", "features", "details", "specification", "battery size", "capacity", "about", "tell"]),
+            (["car", "vehicle", "ioniq"], ["specs", "model", "features", "details", "specification", "battery size", "capacity", "tell me about"]),
         ]):
             return self._ans_vehicle_specs(vehicle_status, language)
 
@@ -548,12 +548,17 @@ class SmartReserveBrain:
     # ──────────────────────────────────────────────────────────────────────────
     def _matches(self, text: str, patterns: list) -> bool:
         t = text.lower()
+        def match_token(w, s):
+            if ' ' in w:
+                return w in s
+            return bool(re.search(r'\b' + re.escape(w) + r'\b', s))
+
         for p in patterns:
             if isinstance(p, tuple):
-                if all(any(w in t for w in group) for group in p):
+                if all(any(match_token(w, t) for w in group) for group in p):
                     return True
             elif isinstance(p, str):
-                if p in t:
+                if match_token(p, t):
                     return True
         return False
 

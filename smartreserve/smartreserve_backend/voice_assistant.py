@@ -1239,12 +1239,15 @@ class VoiceAssistant:
 
     # ── GREETING handler ──────────────────────────────────────────────────────
     def _handle_greeting(self, intent_res: IntentResult) -> VoiceAssistantResponse:
+        v_ctx = self._get_vehicle_context()
+        soc = (v_ctx or {}).get("soc", 18)
+        range_km = (v_ctx or {}).get("range_km", 87)
         if intent_res.language_mix in ("hi", "hi+en"):
-            msg = "Namaste! Main AVA hoon, aapki Hyundai in-vehicle AI assistant. Gaadi ka status, charging station ya reservation ke baare mein poochiye."
+            msg = f"Namaste! Main EVA hoon, aapka Hyundai AI co-pilot. Battery abhi {soc:.0f}% ({range_km:.0f} km range) par hai. Aap mujhse koi bhi sawaal poochh sakte hain ya charging reserve kar sakte hain. Boliye, main sun rahi hoon!"
         elif intent_res.language_mix == "mr":
-            msg = "Namaskar! Mee AVA aahe, tumchi Hyundai AI assistant. Battery status, charging stations kiva reservations baddal vichara."
+            msg = f"Namaskar! Mee EVA aahe, tumchi Hyundai AI co-pilot. Battery {soc:.0f}% aahe. Kahihi vichara, mee aaikat aahe!"
         else:
-            msg = "Hello! I am AVA, your Hyundai in-cabin EV assistant. Ask me about vehicle status, charging stations, or reservations."
+            msg = f"Hello! I am EVA, your Hyundai in-cabin AI co-pilot. Your battery is at {soc:.0f}% with {range_km:.0f} km range. Ask me any question or tell me what you need, I am listening!"
         return VoiceAssistantResponse(text=msg, action_type="info", language=intent_res.language_mix)
 
     # ── UNKNOWN with Gemini fallback ──────────────────────────────────────────

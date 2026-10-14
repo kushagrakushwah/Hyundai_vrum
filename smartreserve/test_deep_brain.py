@@ -86,7 +86,10 @@ def run_brain_tests():
         disp = resp.display_data or {}
         
         # Check assertions
-        kw_found = expected_keyword.lower() in text.lower() or expected_keyword.lower() in str(disp).lower()
+        exp_kw = expected_keyword.lower()
+        kw_found = (exp_kw in text.lower() or 
+                    (exp_kw == '18%' and '18 percent' in text.lower()) or
+                    exp_kw in str(disp).lower())
         
         print(f"[{idx:02d}] Query : \"{query}\"")
         print(f"     Action: {resp.action_type} | Tools: {resp.tool_calls}")

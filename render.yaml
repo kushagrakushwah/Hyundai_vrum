@@ -13,5 +13,7 @@ services:
         value: placeholder
       - key: OCM_API_KEY
         value: 1f545914-8daa-4fa6-9d7b-4a6819f2f7cc
+      - key: GEMINI_API_KEY
+        sync: false
     healthCheckPath: /health
     autoDeploy: true

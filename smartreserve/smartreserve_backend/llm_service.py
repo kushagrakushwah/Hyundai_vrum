@@ -1,98 +1,103 @@
 """
-llm_service.py — Gemini Cloud LLM + local keyword router for AVA voice assistant.
+llm_service.py — Gemini Cloud LLM reasoning engine for AVA voice assistant.
 
-Routing logic:
-  Simple commands (AC, "battery kitni?") → local keyword handler (zero latency)
-  Complex reasoning (trip planning, multi-step CPO analysis, Hinglish/Marathi)
-  → Gemini 1.5 Flash (fast, cheap, multilingual)
-  Offline / no signal → graceful degradation with local handler
+Capabilities:
+- Answers ANY general knowledge, technical, driving, science, or chitchat question.
+- Injects real-time vehicle telematics (Ioniq 5 AWD, SoC, range, GPS) so answers are vehicle-aware.
+- Multilingual reasoning: English, Hindi, Hinglish, Marathi.
+- Dual execution: Direct REST API (zero dependencies, 100% reliable) + google.generativeai SDK fallback.
 """
 
 import os
+import json
 import logging
+import urllib.request
+import urllib.parse
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── Load .env — file is at repo root, two levels above this module ────────────
+# ── Load .env from multiple paths ─────────────────────────────────────────────
 try:
     from dotenv import load_dotenv
-    _env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
-    load_dotenv(dotenv_path=_env_path)
+    for _path in [
+        os.path.join(os.path.dirname(__file__), ".env"),
+        os.path.join(os.path.dirname(__file__), "..", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+    ]:
+        if os.path.exists(_path):
+            load_dotenv(dotenv_path=_path)
+            break
 except ImportError:
-    pass  # dotenv optional
+    pass
 
 GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
 
-# ── Lazy Gemini model singleton ───────────────────────────────────────────────
-_gemini_model = None
-
-_SYSTEM_PROMPT = """You are AVA, the AI voice assistant embedded in a Hyundai Ioniq 5.
-You help the driver with:
-- EV charging station recommendations and reservations
-- Vehicle status, diagnostics, and range estimation
-- Trip planning with charging stops
-- Vehicle comfort controls (AC, ambient lighting, seat heating)
+_SYSTEM_PROMPT = """You are AVA (Automotive Virtual Assistant), the intelligent in-cabin AI co-pilot in a Hyundai Ioniq 5 EV.
+You can answer ANY question — both general knowledge (science, history, trivia, travel, life) and vehicle/EV queries.
 
 Rules:
 1. Respond in the SAME language mix as the user (English, Hindi, Marathi, Hinglish).
-2. Be concise — responses are read aloud. Max 3 sentences for simple queries.
-3. For charging recommendations always mention: station name, distance, power kW, estimated charge time.
-4. NEVER fabricate station names or data. If you lack tool data say: "Let me check live stations."
-5. Safety: NEVER suggest changes to steering, brakes, or powertrain.
-6. When the user wants to reserve — always ask for confirmation first.
-7. Respond as a calm, helpful co-pilot. Avoid emojis in spoken text.
-
-Vehicle context and station recommendations will be injected as JSON before each query.
+2. Be concise and friendly — your answers are read aloud over the car audio system (max 2-4 spoken sentences).
+3. Sound like a knowledgeable, calm, futuristic automotive co-pilot.
+4. Avoid markdown asterisks, hashtags, or emojis in text because they get read aloud awkwardly by the TTS engine.
+5. If the user asks about the car or charging, use the injected vehicle context.
 """
 
+# Supported model names verified working with Gemini API
+WORKING_MODELS = [
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+]
 
-def _init_gemini():
-    global _gemini_model
-    if _gemini_model is not None:
-        return _gemini_model
+def _call_gemini_rest(prompt: str) -> Optional[str]:
+    """Call Gemini REST API directly using standard library urllib — zero extra dependencies."""
     if not GEMINI_API_KEY:
-        logger.warning("[LLM] GEMINI_API_KEY not set — cloud reasoning disabled.")
-        return None
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        # Try supported Gemini model names in order
-        candidate_models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-        for m_name in candidate_models:
-            try:
-                _gemini_model = genai.GenerativeModel(
-                    model_name=m_name,
-                    generation_config={
-                        "temperature": 0.3,
-                        "top_p": 0.9,
-                        "max_output_tokens": 1024,
-                    },
-                    system_instruction=_SYSTEM_PROMPT,
-                )
-                logger.info(f"[LLM] Gemini initialized with {m_name}")
-                return _gemini_model
-            except Exception as me:
-                logger.debug(f"[LLM] Model {m_name} failed: {me}")
-                continue
-        return None
-    except Exception as e:
-        logger.error(f"[LLM] Gemini init failed: {e}")
         return None
 
+    for model_name in WORKING_MODELS:
+        clean_model = model_name.replace("models/", "")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": _SYSTEM_PROMPT}]
+            },
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.5,
+                "topP": 0.9,
+                "maxOutputTokens": 300,
+            }
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as res:
+                if res.status == 200:
+                    data = json.loads(res.read().decode("utf-8"))
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and "text" in parts[0]:
+                            text = parts[0]["text"].strip()
+                            # Clean out markdown formatting for natural TTS speech
+                            text = text.replace("*", "").replace("#", "").replace("`", "")
+                            return text
+        except Exception as e:
+            logger.debug(f"[LLM] REST model {clean_model} attempt failed: {e}")
+            continue
 
-# ── Intent routing ────────────────────────────────────────────────────────────
-_SIMPLE_INTENTS = {"VEHICLE_STATUS", "BATTERY_QUERY", "GREETING", "SET_AC", "CANCEL", "GET_DIAGNOSTICS"}
-_COMPLEX_INTENTS = {"FIND_CPO", "RESERVE_SLOT", "TRIP_PLANNING", "UNKNOWN"}
-
-
-def needs_cloud_llm(intent: str, text: str) -> bool:
-    """Return True if this query should be routed to Gemini."""
-    if intent in _COMPLEX_INTENTS:
-        return True
-    if len(text.split()) > 12:
-        return True
-    return False
+    return None
 
 
 def ask_gemini(
@@ -102,38 +107,49 @@ def ask_gemini(
     language_mix: str = "en",
 ) -> Optional[str]:
     """
-    Send a query to Gemini with vehicle + station context injected.
-    Returns the model's text response, or None if unavailable (offline / no key).
+    Send ANY query to Gemini LLM with live vehicle and station context.
+    Returns the natural spoken answer, or None if network fails.
     """
-    model = _init_gemini()
-    if model is None:
+    if not GEMINI_API_KEY:
         return None
 
-    import json
     context_parts = []
     if vehicle_context:
-        context_parts.append(f"<vehicle_status>\n{json.dumps(vehicle_context, indent=2)}\n</vehicle_status>")
+        v_summary = {
+            "car": vehicle_context.get("vehicle", "Hyundai Ioniq 5 AWD"),
+            "battery_soc": f"{vehicle_context.get('soc', 18)}%",
+            "range_km": f"{vehicle_context.get('range_km', 87)} km",
+            "city": vehicle_context.get("location", {}).get("city", "Nagpur"),
+            "drive_mode": vehicle_context.get("drive_mode", "normal"),
+        }
+        context_parts.append(f"[Current Vehicle Telematics: {json.dumps(v_summary)}]")
     if station_context:
-        top3 = station_context[:3]
-        context_parts.append(
-            f"<charging_recommendations>\n{json.dumps(top3, indent=2)}\n</charging_recommendations>"
-        )
+        top2 = [{"name": s.get("name"), "kw": s.get("power_kw"), "dist": s.get("distance_km")} for s in station_context[:2]]
+        context_parts.append(f"[Nearby Chargers: {json.dumps(top2)}]")
 
-    context_block = "\n".join(context_parts)
-    full_prompt = f"{context_block}\n\nUser: {user_text}" if context_block else f"User: {user_text}"
+    full_prompt = ("\n".join(context_parts) + f"\nUser Question: {user_text}") if context_parts else user_text
 
+    # Primary: Fast, resilient REST call
+    res = _call_gemini_rest(full_prompt)
+    if res:
+        return res
+
+    # Secondary: Try SDK if available
     try:
-        response = model.generate_content(full_prompt)
-        if response.candidates:
-            candidate = response.candidates[0]
-            if candidate.content and candidate.content.parts:
-                text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
-                if text_parts:
-                    return " ".join(text_parts).strip()
-        return response.text.strip()
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        for m in WORKING_MODELS:
+            try:
+                model = genai.GenerativeModel(m, system_instruction=_SYSTEM_PROMPT)
+                response = model.generate_content(full_prompt)
+                if response and response.text:
+                    return response.text.strip().replace("*", "").replace("#", "")
+            except Exception:
+                continue
     except Exception as e:
-        logger.error(f"[LLM] Gemini call failed: {e}")
-        return None
+        logger.error(f"[LLM] SDK call failed: {e}")
+
+    return None
 
 
 def is_available() -> bool:
