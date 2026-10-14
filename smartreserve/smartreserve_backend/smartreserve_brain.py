@@ -207,7 +207,18 @@ class SmartReserveBrain:
             "statiq", "compat", "iot", "sensor", "buy", "purchase", "switch",
             "v2l", "precondition", "regen", "drive mode", "hospital", "cafe", "atm", "pharmacy"
         ])
-        if not is_explaining_query and not has_specialized_intent:
+        # Corridor/route queries look like "Nagpur se Hyderabad ke charging stations batao" — they
+        # contain "charging station" but are actually trip-planning queries; don't block them.
+        has_corridor_intent = any(k in q for k in [
+            "on the way", "on route", "en route", "going to", "drive to", "trip to", "highway",
+            "route to", "jaate waqt", "raste mein", "raste me", "jatanna", "rastyavar",
+            "se hyderabad", "se mumbai", "se pune", "se delhi", "se bhopal", "se indore",
+            "se nagpur", "se amravati", "to hyderabad", "to mumbai", "to pune", "to delhi",
+            "corridor", "via nh", "nh 44", "nh44", "highway charger", "charger on the way",
+            "if i go to", "going to hyderabad", "going to mumbai", "going to pune",
+            "nagpur to", "to hyderabad", "se ", "ke raste"
+        ])
+        if not is_explaining_query and not has_specialized_intent and not has_corridor_intent:
             if any(re.search(r'\b' + re.escape(k) + r'(?:s)?\b', q) for k in charger_action_kws):
                 return None
 
@@ -481,7 +492,12 @@ class SmartReserveBrain:
             return self._ans_compatibility_check(q, vehicle_status, language)
 
         # ── LIVE HYDERABAD & STATIQ REAL-TIME TELEMATICS ──────────────────────
-        if self._matches(q, [
+        # Guard: don't intercept corridor/route queries that happen to mention hyderabad
+        _is_corridor_q = any(k in q for k in [
+            "se hyderabad", "to hyderabad", "route", "on the way", "going to",
+            "jaate waqt", "raste mein", "highway", "if i go", "trip"
+        ])
+        if not _is_corridor_q and self._matches(q, [
             "statiq", "live chargers in hyderabad", "hyderabad live chargers",
             "statiq chargers", "real time charger hyderabad", "who is charging",
             "current vehicle charging", "current charging car", "is gun occupied",
@@ -502,6 +518,28 @@ class SmartReserveBrain:
             (["iot", "sensor", "hardware", "esp32"], ["device", "build", "charger", "socket", "hackathon", "blueprint", "cost"]),
         ]):
             return self._ans_iot_and_api_buying_guide(q, vehicle_status, language)
+
+        # ── HIGHWAY CORRIDOR TRIP PLANNER ──────────────────────────────────────
+        # Matches: "Nagpur se Hyderabad ke charging stations batao",
+        #          "on my way to Hyderabad", "route to Hyderabad", "if I go to Pune"
+        DEST_CITIES = {
+            "hyderabad": {"lat": 17.3850, "lng": 78.4867, "nh": "NH 44", "dist_km": 498, "hrs": 7.5},
+            "mumbai":    {"lat": 19.0760, "lng": 72.8777, "nh": "NH 44/48", "dist_km": 874, "hrs": 13.0},
+            "pune":      {"lat": 18.5204, "lng": 73.8567, "nh": "NH 65", "dist_km": 925, "hrs": 14.0},
+            "delhi":     {"lat": 28.6139, "lng": 77.2090, "nh": "NH 44", "dist_km": 1102, "hrs": 16.0},
+            "bhopal":    {"lat": 23.2599, "lng": 77.4126, "nh": "NH 46", "dist_km": 352, "hrs": 5.5},
+            "indore":    {"lat": 22.7196, "lng": 75.8577, "nh": "NH 52", "dist_km": 469, "hrs": 7.0},
+            "amravati":  {"lat": 20.9374, "lng": 77.7796, "nh": "NH 53",  "dist_km": 147, "hrs": 2.5},
+            "wardha":    {"lat": 20.7453, "lng": 78.6022, "nh": "NH 7",   "dist_km": 78,  "hrs": 1.3},
+            "akola":     {"lat": 20.7070, "lng": 77.0070, "nh": "NH 53",  "dist_km": 201, "hrs": 3.2},
+        }
+        matched_dest = None
+        for city_name, city_info in DEST_CITIES.items():
+            if city_name in q:
+                matched_dest = (city_name, city_info)
+                break
+        if matched_dest:
+            return self._ans_corridor_trip(q, matched_dest, vehicle_status, language)
 
         return None
 
@@ -1486,5 +1524,143 @@ class SmartReserveBrain:
             "guide": guide,
         })
 
+    def _ans_corridor_trip(self, query: str, matched_dest, vehicle_status, lang: str):
+        """
+        Highway corridor trip planner — works for ANY destination city in DEST_CITIES.
+        Calculates stops needed based on real SoC/range, selects milestone chargers,
+        and returns spoken + map display data.
+        """
+        dest_name, dest_info = matched_dest
+        dist_km   = dest_info["dist_km"]
+        hrs       = dest_info["hrs"]
+        nh        = dest_info["nh"]
+        dest_lat  = dest_info["lat"]
+        dest_lng  = dest_info["lng"]
+
+        v = vehicle_status or {}
+        soc       = v.get("soc", 18.0)
+        range_km  = v.get("range_km", soc * 4.8)
+        veh_name  = v.get("vehicle", "Hyundai Ioniq 5")
+
+        USABLE_RANGE_AT_80 = 340   # km after a full 80% DC charge (Ioniq 5 LR)
+
+        CORRIDOR_STOPS = {
+            "hyderabad": [
+                {"name": "BPCL Petrol Pump Butibori",      "dist_from_start": 39,  "kw": 30,  "operator": "BPCL",       "lat": 20.9833, "lng": 79.0667},
+                {"name": "Kazam EV Hub Adilabad",           "dist_from_start": 195, "kw": 60,  "operator": "Kazam",      "lat": 19.6600, "lng": 78.5300},
+                {"name": "ChargeZone Nizamabad NH44",       "dist_from_start": 355, "kw": 120, "operator": "ChargeZone", "lat": 18.6700, "lng": 78.0900},
+            ],
+            "mumbai": [
+                {"name": "EESL Wardha Fast Charger",        "dist_from_start": 78,  "kw": 50,  "operator": "EESL",       "lat": 20.7453, "lng": 78.6022},
+                {"name": "Tata Power Nashik Highway Hub",   "dist_from_start": 330, "kw": 120, "operator": "Tata Power", "lat": 19.9975, "lng": 73.7898},
+                {"name": "Kazam Igatpuri Ghat",             "dist_from_start": 560, "kw": 60,  "operator": "Kazam",      "lat": 19.6925, "lng": 73.5597},
+            ],
+            "pune": [
+                {"name": "EESL Wardha Fast Charger",        "dist_from_start": 78,  "kw": 50,  "operator": "EESL",       "lat": 20.7453, "lng": 78.6022},
+                {"name": "ChargeZone Ahmednagar NH65",      "dist_from_start": 390, "kw": 120, "operator": "ChargeZone", "lat": 19.0952, "lng": 74.7496},
+            ],
+            "delhi": [
+                {"name": "Tata Power Bhopal NH46",          "dist_from_start": 352, "kw": 120, "operator": "Tata Power", "lat": 23.2599, "lng": 77.4126},
+                {"name": "ChargeZone Jhansi NH44",          "dist_from_start": 620, "kw": 60,  "operator": "ChargeZone", "lat": 25.4484, "lng": 78.5685},
+                {"name": "Kazam Agra NH44",                 "dist_from_start": 870, "kw": 120, "operator": "Kazam",      "lat": 27.1767, "lng": 78.0081},
+            ],
+            "bhopal": [
+                {"name": "ChargeZone Betul NH46",           "dist_from_start": 210, "kw": 60,  "operator": "ChargeZone", "lat": 21.9064, "lng": 77.8972},
+            ],
+            "indore": [
+                {"name": "Tata Power Betul NH52",           "dist_from_start": 220, "kw": 60,  "operator": "Tata Power", "lat": 21.9064, "lng": 77.8972},
+                {"name": "ChargeZone Harda NH52",           "dist_from_start": 360, "kw": 50,  "operator": "ChargeZone", "lat": 22.3397, "lng": 77.0893},
+            ],
+            "amravati": [],
+            "wardha":   [],
+            "akola": [
+                {"name": "Kazam Washim Highway",            "dist_from_start": 130, "kw": 30,  "operator": "Kazam",      "lat": 20.1120, "lng": 77.1342},
+            ],
+        }
+
+        all_stops = CORRIDOR_STOPS.get(dest_name, [])
+
+        # Determine which stops are actually needed given current range
+        needed_stops = []
+        remaining_range = range_km
+        last_dist = 0
+        for stop in all_stops:
+            segment = stop["dist_from_start"] - last_dist
+            if remaining_range < segment + 40:   # 40 km safety buffer
+                needed_stops.append(stop)
+                remaining_range = USABLE_RANGE_AT_80
+                last_dist = stop["dist_from_start"]
+            else:
+                remaining_range -= segment
+                last_dist = stop["dist_from_start"]
+
+        stops_count = len(needed_stops)
+        dest_cap = dest_name.capitalize()
+
+        if stops_count == 0:
+            if lang in ("hi", "hi+en"):
+                txt = (
+                    f"Nagpur se {dest_cap} tak ({dist_km} km, {nh}) aap seedha ja sakte hain! "
+                    f"Aapki {soc:.0f}% battery ({range_km:.0f} km range) kaafi hai bina kisi charging stop ke. "
+                    f"Pura route aapke dashboard map par dikh raha hai."
+                )
+            else:
+                txt = (
+                    f"Great news! You can drive directly from Nagpur to {dest_cap} via {nh} "
+                    f"({dist_km} km, ~{hrs} hrs) on your current {soc:.0f}% battery ({range_km:.0f} km range) "
+                    f"with no charging stop needed. Full route is plotted on your dashboard map."
+                )
+        else:
+            if lang in ("hi", "hi+en"):
+                stop_lines = [
+                    f"Stop {i}: {s['name']} ({s['dist_from_start']} km par, {s['kw']} kW, {s['operator']})"
+                    for i, s in enumerate(needed_stops, 1)
+                ]
+                txt = (
+                    f"Nagpur se {dest_cap} ka highway trip plan ho gaya — {dist_km} km, {nh}, lagbhag {hrs} ghante. "
+                    f"Aapki {soc:.0f}% battery se {stops_count} charging {'stop' if stops_count == 1 else 'stops'} chahiye: "
+                    f"{'; '.join(stop_lines)}. "
+                    f"Corridor aur sabhi milestones aapke dashboard map par mapped hain."
+                )
+            else:
+                stop_lines = [
+                    f"Stop {i}: {s['name']} at {s['dist_from_start']} km ({s['kw']} kW, {s['operator']})"
+                    for i, s in enumerate(needed_stops, 1)
+                ]
+                txt = (
+                    f"Planning your highway trip from Nagpur to {dest_cap} via {nh} "
+                    f"({dist_km} km, ~{hrs} hrs). "
+                    f"With your current {soc:.0f}% battery ({range_km:.0f} km range), "
+                    f"you need {stops_count} charging {'stop' if stops_count == 1 else 'stops'}: "
+                    f"{'; '.join(stop_lines)}. "
+                    f"The full corridor and all charging milestones are mapped on your dashboard."
+                )
+
+        waypoints = [{"city": "Nagpur", "lat": 21.1255, "lng": 79.0524, "type": "origin"}]
+        for stop in needed_stops:
+            waypoints.append({
+                "name": stop["name"], "lat": stop["lat"], "lng": stop["lng"],
+                "kw": stop["kw"], "operator": stop["operator"], "type": "charging_stop",
+            })
+        waypoints.append({"city": dest_cap, "lat": dest_lat, "lng": dest_lng, "type": "destination"})
+
+        display = {
+            "action": "show_corridor_route",
+            "route_name": f"Nagpur to {dest_cap} ({nh})",
+            "total_distance_km": dist_km,
+            "drive_time_hours": hrs,
+            "highway": nh,
+            "charging_stops_needed": stops_count,
+            "origin": {"city": "Nagpur", "lat": 21.1255, "lng": 79.0524},
+            "destination": {"city": dest_cap, "lat": dest_lat, "lng": dest_lng},
+            "waypoints": waypoints,
+            "vehicle_soc": soc,
+            "vehicle_range_km": range_km,
+            "can_reach_direct": stops_count == 0,
+        }
+        return (txt, "CORRIDOR_TRIP", display)
+
+
 # Global brain singleton
 brain = SmartReserveBrain()
+

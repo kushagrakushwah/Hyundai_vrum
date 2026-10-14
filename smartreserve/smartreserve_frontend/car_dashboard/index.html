@@ -3261,6 +3261,35 @@
         let handsFreeActive = true;
         let isSpeakingTTS = false;
         let restartTimer = null;
+        // Wake-word gate — in hands-free mode, only respond after "hello eva" / "hey eva"
+        let wakeWordActivated = false;
+        let wakeWordResetTimer = null;
+        const WAKE_WORDS = ["hello eva", "hey eva", "hello ava", "hey ava", "ok eva", "ava", "eva"];
+        const STOP_WORDS = ["eva stop", "ava stop", "stop eva", "stop ava", "stop speaking", "band kar", "ruk ja", "chup"];
+
+        function resetWakeWord() {
+            wakeWordActivated = false;
+            clearTimeout(wakeWordResetTimer);
+            const hfBadge = document.getElementById('handsfree-status-badge');
+            if (hfBadge && handsFreeActive) {
+                hfBadge.innerText = '👂 SAY "HELLO EVA"';
+                hfBadge.style.color = '#aaa';
+                hfBadge.style.borderColor = '#aaa';
+            }
+        }
+
+        function activateWakeWord() {
+            wakeWordActivated = true;
+            clearTimeout(wakeWordResetTimer);
+            wakeWordResetTimer = setTimeout(resetWakeWord, 30000); // 30s idle reset
+            const hfBadge = document.getElementById('handsfree-status-badge');
+            if (hfBadge) {
+                hfBadge.innerText = '🎙️ LISTENING…';
+                hfBadge.style.color = '#22c55e';
+                hfBadge.style.borderColor = '#22c55e';
+            }
+            showToast('🎙️ EVA activated — speak your command', 'info');
+        }
 
         function toggleHandsFree() {
             handsFreeActive = !handsFreeActive;
@@ -3294,9 +3323,9 @@
                 if (hfLabel) hfLabel.innerText = '🎙️ Hands-Free: ON';
                 if (hfBadge) {
                     hfBadge.style.display = 'inline-block';
-                    hfBadge.innerText = '⚡ ALWAYS LISTENING';
-                    hfBadge.style.borderColor = '#22c55e';
-                    hfBadge.style.color = '#22c55e';
+                    hfBadge.innerText = '👂 SAY "HELLO EVA"';
+                    hfBadge.style.borderColor = '#aaa';
+                    hfBadge.style.color = '#aaa';
                 }
                 if (hfModalBtn) {
                     hfModalBtn.innerText = 'Hands-Free: ON';
@@ -3357,7 +3386,30 @@
                 };
                 
                 recognition.onresult = (event) => {
-                    if (isSpeakingTTS) return; // Prevent hearing self
+                    if (isSpeakingTTS) {
+                        // Even while speaking, watch for "eva stop" / "ava stop"
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const t = event.results[i][0].transcript.toLowerCase().trim();
+                            if (STOP_WORDS.some(sw => t.includes(sw))) {
+                                // Immediately cancel all TTS
+                                window.speechSynthesis.cancel();
+                                if (currentAudioPlayer) {
+                                    try { currentAudioPlayer.pause(); currentAudioPlayer = null; } catch(e) {}
+                                }
+                                isSpeakingTTS = false;
+                                resetWakeWord();
+                                showToast('🔇 EVA stopped', 'info');
+                                if (voiceResponse) voiceResponse.innerHTML = '<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);font-size:13px;">Stopped. Say "Hello EVA" to continue.</div>';
+                                if (handsFreeActive) {
+                                    clearTimeout(restartTimer);
+                                    restartTimer = setTimeout(startListening, 400);
+                                }
+                                return;
+                            }
+                        }
+                        return; // Still speaking and no stop word — ignore input
+                    }
+
                     let interimTranscript = '';
                     let finalTranscript = '';
                     for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -3373,10 +3425,54 @@
                         voiceInterim.innerText = interimTranscript;
                     }
                     if (finalTranscript && finalTranscript.trim()) {
-                        voiceTranscript.style.display = 'block';
-                        if (voiceInterim) voiceInterim.innerText = '';
-                        voiceFinal.innerText = finalTranscript;
-                        processVoiceCommand(finalTranscript.trim());
+                        const lowerFinal = finalTranscript.toLowerCase().trim();
+
+                        // STOP command check (when not speaking)
+                        if (STOP_WORDS.some(sw => lowerFinal.includes(sw))) {
+                            window.speechSynthesis.cancel();
+                            if (currentAudioPlayer) { try { currentAudioPlayer.pause(); currentAudioPlayer = null; } catch(e) {} }
+                            isSpeakingTTS = false;
+                            resetWakeWord();
+                            showToast('🔇 EVA stopped', 'info');
+                            return;
+                        }
+
+                        if (handsFreeActive) {
+                            // In hands-free mode: gate on wake word
+                            const hasWakeWord = WAKE_WORDS.some(ww => lowerFinal.includes(ww));
+                            if (!wakeWordActivated) {
+                                if (hasWakeWord) {
+                                    activateWakeWord();
+                                    // Strip wake word from transcript, process remaining command if any
+                                    let cmd = lowerFinal;
+                                    for (const ww of WAKE_WORDS) { cmd = cmd.replace(ww, '').trim(); }
+                                    if (cmd.length > 3) {
+                                        // Command followed wake word on same breath — process it
+                                        voiceTranscript.style.display = 'block';
+                                        if (voiceInterim) voiceInterim.innerText = '';
+                                        voiceFinal.innerText = cmd;
+                                        resetWakeWord(); // reset after dispatching
+                                        processVoiceCommand(cmd);
+                                    }
+                                    // else: just acknowledged wake word, wait for next utterance
+                                }
+                                // else: ignore — background noise, no wake word
+                                return;
+                            } else {
+                                // Wake word already activated — process as command
+                                voiceTranscript.style.display = 'block';
+                                if (voiceInterim) voiceInterim.innerText = '';
+                                voiceFinal.innerText = finalTranscript;
+                                resetWakeWord(); // reset so next query needs wake word again
+                                processVoiceCommand(finalTranscript.trim());
+                            }
+                        } else {
+                            // Manual (non-hands-free) mode — process everything as before
+                            voiceTranscript.style.display = 'block';
+                            if (voiceInterim) voiceInterim.innerText = '';
+                            voiceFinal.innerText = finalTranscript;
+                            processVoiceCommand(finalTranscript.trim());
+                        }
                     }
                 };
                 
@@ -4043,59 +4139,244 @@ if (data.display_data && data.display_data.action === 'show_compatibility_guide'
             }
         }
         
-        // Offline fallback for basic commands
+        // Offline fallback — mirrors ALL brain intents when backend is offline
         function handleOfflineCommand(text) {
             const lower = text.toLowerCase();
             let response = { text: '', display_data: {}, action_type: 'info', needs_confirmation: false };
-            
+
+            // HIGHWAY CORRIDOR ROUTE QUERIES
+            const DEST_MAP = {
+                hyderabad: { dist: 498, hrs: 7.5, nh: 'NH 44', stops: 'BPCL Butibori (39 km, 30 kW) > Kazam Adilabad (195 km, 60 kW) > ChargeZone Nizamabad (355 km, 120 kW)' },
+                mumbai:    { dist: 874, hrs: 13,  nh: 'NH 44/48', stops: 'EESL Wardha (78 km, 50 kW) > Tata Power Nashik (330 km, 120 kW) > Kazam Igatpuri (560 km, 60 kW)' },
+                pune:      { dist: 925, hrs: 14,  nh: 'NH 65', stops: 'EESL Wardha (78 km, 50 kW) > ChargeZone Ahmednagar (390 km, 120 kW)' },
+                delhi:     { dist: 1102, hrs: 16, nh: 'NH 44', stops: 'Tata Power Bhopal (352 km, 120 kW) > ChargeZone Jhansi (620 km, 60 kW) > Kazam Agra (870 km, 120 kW)' },
+                bhopal:    { dist: 352, hrs: 5.5, nh: 'NH 46', stops: 'ChargeZone Betul (210 km, 60 kW)' },
+                indore:    { dist: 469, hrs: 7,   nh: 'NH 52', stops: 'Tata Power Betul (220 km, 60 kW) > ChargeZone Harda (360 km, 50 kW)' },
+                amravati:  { dist: 147, hrs: 2.5, nh: 'NH 53', stops: 'No stop needed on 80% charge' },
+                wardha:    { dist: 78,  hrs: 1.3, nh: 'NH 7',  stops: 'No stop needed for 78 km' },
+            };
+            let routeMatch = null;
+            for (const [city, info] of Object.entries(DEST_MAP)) {
+                if (lower.includes(city)) { routeMatch = { city, info }; break; }
+            }
+            const isRouteQuery = routeMatch && (
+                lower.includes('on the way') || lower.includes('route') || lower.includes('going to') ||
+                lower.includes('jaate') || lower.includes('raste') || lower.includes('highway') ||
+                lower.includes('if i go') || lower.includes('trip') || lower.includes('charging') ||
+                lower.includes('charger') || lower.includes('station') || lower.includes(' se ')
+            );
+            if (isRouteQuery) {
+                const { city, info } = routeMatch;
+                const cname = city.charAt(0).toUpperCase() + city.slice(1);
+                response.text = `Highway trip Nagpur to ${cname} via ${info.nh}: ${info.dist} km, ~${info.hrs} hrs. Charging stops: ${info.stops}. Full route mapped on your dashboard.`;
+                response.display_data = { action: 'show_corridor_route', route_name: `Nagpur to ${cname} (${info.nh})` };
+                displayVoiceResponse(response);
+                speakResponse(response.text);
+                return;
+            }
+
+            // COMPATIBILITY CHECK
+            if (lower.includes('compat') || lower.includes('compatible') || lower.includes('will this charger work') || lower.includes('chalega') || (lower.includes('plug') && lower.includes('charger'))) {
+                response.text = 'Your Hyundai Ioniq 5 uses CCS2 at up to 220 kW. COMPATIBLE with: CCS2 DC fast chargers (EESL, Tata Power, ChargeZone, Kazam), Type 2 AC, Bharat AC-001. NOT compatible with: CHAdeMO, GB/T, or Bharat DC-001 connectors.';
+                response.display_data = { action: 'show_compatibility_guide', active_vehicle: 'Ioniq 5' };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // VEHICLE SWITCH
+            if ((lower.includes('switch') || lower.includes('change') || lower.includes('badlo') || lower.includes('select')) && (lower.includes('car') || lower.includes('vehicle') || lower.includes('ioniq') || lower.includes('nexon') || lower.includes('creta') || lower.includes('kona') || lower.includes('xuv') || lower.includes('mg'))) {
+                let detected = null;
+                if (lower.includes('ioniq 6') || lower.includes('ioniq6')) detected = 'ioniq6';
+                else if (lower.includes('ioniq 5') || lower.includes('ioniq5')) detected = 'ioniq5';
+                else if (lower.includes('kona')) detected = 'konaev';
+                else if (lower.includes('creta')) detected = 'cretaev';
+                else if (lower.includes('inster')) detected = 'insterev';
+                else if (lower.includes('nexon')) detected = 'nexonev';
+                else if (lower.includes('xuv')) detected = 'xuv400';
+                else if (lower.includes('mg') || lower.includes('zs')) detected = 'mgzsev';
+                const NAMES = { ioniq5: 'Ioniq 5 (220 kW)', ioniq6: 'Ioniq 6 (240 kW)', konaev: 'Kona EV (48 kW)', cretaev: 'Creta EV (58 kW)', insterev: 'Inster EV (33 kW)', nexonev: 'Nexon EV (30 kW)', xuv400: 'XUV400 (50 kW)', mgzsev: 'MG ZS EV (50 kW)' };
+                if (detected) {
+                    response.text = `Switching to ${NAMES[detected]}. Telematics and compatibility updated for this vehicle.`;
+                    response.display_data = { action: 'switch_vehicle', model_id: detected };
+                    if (typeof switchVehicleModel === 'function') switchVehicleModel(detected);
+                } else {
+                    response.text = 'Available vehicles: Ioniq 5, Ioniq 6, Kona EV, Creta EV, Inster EV, Nexon EV, XUV400, MG ZS EV. Say switch to Nexon EV to change.';
+                }
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // V2L (VEHICLE-TO-LOAD)
+            if (lower.includes('v2l') || lower.includes('vehicle to load') || lower.includes('gaadi se bijli') || lower.includes('power outlet') || lower.includes('generator')) {
+                response.text = 'V2L on the Ioniq 5 outputs 3.6 kW from the charging port via V2L adapter. Run a laptop, TV, fan or microwave! At full 3.6 kW, the 72.6 kWh battery lasts about 3 hours. Keep SoC above 20% while using V2L.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // BATTERY PRECONDITIONING
+            if (lower.includes('precondition') || lower.includes('warm up battery') || lower.includes('battery garam') || lower.includes('pre-condition')) {
+                response.text = 'Battery preconditioning brings the battery to optimal 30-35 degrees before DC fast charging. Activates automatically when navigating to a DC charger via Hyundai Maps. Saves up to 10 minutes: 10-80% in 18 minutes instead of 28 minutes.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // REGENERATIVE BRAKING
+            if (lower.includes('regen') || lower.includes('regenerative') || lower.includes('i-pedal') || lower.includes('one pedal') || lower.includes('paddle')) {
+                response.text = 'Ioniq 5 has 4 regen levels via steering wheel paddles: Level 0 free coast, Level 1 light, Level 2 medium, Level 3 strong. i-Pedal mode stops the car completely without brakes. Regen improves range by 10-15%.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // DRIVE MODES
+            if (((lower.includes('eco') || lower.includes('sport') || lower.includes('normal')) && lower.includes('mode')) || lower.includes('drive mode')) {
+                response.text = 'Ioniq 5 Drive Modes: ECO maximizes range, limits acceleration and AC, top speed 120 km/h. NORMAL is balanced everyday driving. SPORT unlocks full 325 HP, 0-100 in 5.1 seconds. Switch via DRIVE MODE button on console.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // NEARBY AMENITIES
+            if (lower.includes('hospital') || lower.includes('medical')) {
+                response.text = 'Nearest hospitals: AIIMS Nagpur (5.2 km, Civil Lines), Government Medical College (3.1 km). Both have parking.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+            if (lower.includes('cafe') || lower.includes('restaurant') || lower.includes('food') || lower.includes('khana')) {
+                response.text = 'Nearby food: Cafe Coffee Day Sitabuldi (0.5 km), McDonalds Sadar (1.1 km), Hotel Centre Point (1.3 km). Perfect while charging!';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+            if (lower.includes('atm') || lower.includes('bank')) {
+                response.text = 'Nearest ATMs: SBI ATM Sitabuldi (0.3 km), HDFC ATM Congress Nagar (0.8 km), Axis Bank Dharampeth (1.0 km).';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+            if (lower.includes('tyre shop') || lower.includes('tire shop') || lower.includes('puncture')) {
+                response.text = 'Nearest tyre shops: Sai Tyre House Civil Lines (0.7 km), MRF Tyre Service Dharampeth (1.3 km). Both handle low-profile EV tyres.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+            if (lower.includes('parking')) {
+                response.text = 'Nearby parking: Civil Lines Multilevel (0.4 km, Rs 20 per hour, has 2 EV bays), Kasturchand Park (1.2 km, Free).';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+            if (lower.includes('pharmacy') || lower.includes('medicine') || lower.includes('medical store')) {
+                response.text = 'Nearest pharmacy: Apollo Pharmacy Sitabuldi (0.3 km), MedPlus Dharampeth (0.9 km).';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // NETWORK / CPO COMPARISON
+            if (lower.includes('best network') || lower.includes('fastest charger') || (lower.includes('compare') && lower.includes('charger')) || lower.includes('which network') || lower.includes('tata power vs')) {
+                response.text = 'In Nagpur: ChargeZone Wardha Road 150 kW fastest. EESL Metro Stations 142 kW, 8 locations most widespread. Tata Power Sitabuldi 120 kW. Kazam 50 kW cheapest at Rs 12 per kWh. Best for speed: EESL. Best for budget: Kazam.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // RANGE CHECK
+            if (lower.includes('can i reach') || lower.includes('will i make it') || lower.includes('enough range') || lower.includes('pohochta') || lower.includes('pahunch') || lower.includes('range enough')) {
+                const dest = routeMatch ? routeMatch.city.charAt(0).toUpperCase() + routeMatch.city.slice(1) : 'your destination';
+                const dist = routeMatch ? routeMatch.info.dist : 100;
+                response.text = (87 >= dist + 30)
+                    ? `Yes, you can reach ${dest} on your current 18% battery (87 km range).`
+                    : `No. ${dest} is ${dist} km but your range is only 87 km. Charge at EESL Congress Nagar (1.3 km, 142 kW) first. Shall I reserve a slot?`;
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // AC / CABIN CONTROL
+            if (lower.includes('set ac') || lower.includes('ac on') || lower.includes('ac off') || lower.includes('thanda') || lower.includes('garam karo') || (lower.includes('temperature') && lower.includes('set'))) {
+                const tMatch = lower.match(/(\d+)/);
+                const temp = tMatch ? parseInt(tMatch[1]) : 22;
+                response.text = lower.includes('ac off') ? 'AC turned off. Battery efficiency improved.' : `Climate set to ${temp} degrees Celsius. Cabin pre-cooling activated.`;
+                response.display_data = { action: 'cabin_control', temperature: temp, message: response.text };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // BATTERY HEALTH
+            if (lower.includes('battery health') || lower.includes('state of health') || lower.includes('soh') || lower.includes('degradation')) {
+                response.text = 'Battery State of Health: 98.5% excellent. Odometer 24,500 km. Warranty 8 years or 160,000 km. Full replacement not needed until 300,000 km.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // SERVICE / MAINTENANCE
+            if (lower.includes('service') || lower.includes('maintenance') || lower.includes('next service')) {
+                response.text = 'Next service due at 30,000 km (current 24,500 km, 5,500 km away). Items due: cabin air filter, wiper blades, brake fluid check. Brakes at 75% life, no urgency.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // TPMS / TYRE PRESSURE
+            if (lower.includes('tpms') || lower.includes('tyre pressure') || lower.includes('tire pressure') || lower.includes('psi') || lower.includes('tyre') || lower.includes('tire')) {
+                response.text = 'TPMS Alert: Front-left is LOW at 28 PSI, recommended 36 PSI. Please inflate before highway driving. Other three tyres: 35-36 PSI, normal.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // BATTERY / SOC STATUS
+            if (lower.includes('battery') || lower.includes('soc') || lower.includes('range') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
+                response.text = 'Vehicle at 18% SoC, 87 km range remaining. Battery temperature 25 degrees Celsius, optimal. Efficiency 6.6 km per kWh. Nearest charger: EESL Congress Nagar, 1.3 km, 142 kW.';
+                response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6 } };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // BOOK / RESERVE
             if (lower.includes('book') || lower.includes('reserve') || lower.includes('lock')) {
                 const target = stations.find(s => s.status === 'AVAILABLE') || stations[0];
                 if (target) {
-                    selectStation(target.id);
-                    reserveStation(target.id);
-                    response.text = `Locked exclusive 30-minute slot at ${target.name}. Your PIN will appear on screen.`;
+                    selectStation(target.id); reserveStation(target.id);
+                    response.text = `Locking 30-minute slot at ${target.name}. Your 6-digit PIN will appear on screen.`;
                     response.display_data = { action: 'reserve', station_id: target.id, station_name: target.name };
-                    response.action_type = 'action_complete';
                 } else {
-                    response.text = 'Could not find an available charger right now. Please select one on screen.';
+                    response.text = 'No available charger found. Please select one on screen and tap Reserve.';
                 }
-            } else if (lower.includes('pin') || lower.includes('otp')) {
-                const activeRes = currentReservation || {};
-                const pin = activeRes.pin || '482910';
-                const spoken = pin.split('').join(', ');
-                response.text = `Your active reservation PIN is ${spoken}. Valid for 30 minutes.`;
-                response.display_data = { action: 'show_pin', pin: pin };
-            } else if (lower.includes('petrol') || lower.includes('fuel') || lower.includes('gas station') || lower.includes('diesel')) {
-                response.text = 'The nearest petrol pump is IOCL Indian Oil Retail Outlet at Civil Lines / Sitabuldi, Nagpur, approximately 0.8 km away. Note that your Hyundai Ioniq 5 is fully electric, but this station provides tyre air inflation, nitrogen, and basic amenities.';
-                response.display_data = { action: 'show_petrol_pump', pump_name: 'IOCL Civil Lines / Sitabuldi', distance_km: 0.8, lat: 21.1526, lng: 79.0882 };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // PIN / OTP
+            if (lower.includes('pin') || lower.includes('otp')) {
+                const pin = (currentReservation || {}).pin || '482910';
+                response.text = `Active PIN: ${pin.split('').join(', ')}. Enter at the kiosk touchscreen to unlock your charger. Valid 30 minutes.`;
+                response.display_data = { action: 'show_pin', pin };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // PETROL PUMP
+            if (lower.includes('petrol') || lower.includes('fuel') || lower.includes('diesel')) {
+                response.text = 'Nearest petrol pump: IOCL Indian Oil Civil Lines (0.8 km). Your Ioniq 5 is fully electric so no petrol needed. This station has tyre inflation and a convenience store.';
+                response.display_data = { action: 'show_petrol_pump', pump_name: 'IOCL Civil Lines', distance_km: 0.8, lat: 21.1526, lng: 79.0882 };
                 locateUserCar(true);
-            } else if (lower.includes('cost') || lower.includes('tariff') || lower.includes('rate') || lower.includes('price') || lower.includes('kharcha')) {
-                response.text = 'Tata Power EZ Charge superfast DC charging tariff is ₹22.50 per kWh. To charge your Hyundai Ioniq 5 from 18% to 80% (approx 45.0 kWh), the estimated cost is ₹1,012. Ultra-fast 120 kW charging takes around 20 minutes.';
-                response.display_data = { action: 'show_cost_breakdown', cpo: 'Tata Power', estimated_cost_rs: 1012, estimated_time_mins: 20 };
-            } else if (lower.includes('station') || lower.includes('charging') || lower.includes('nearest charger') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe')) {
-                const target = stations[0] || {};
-                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick is ${target.name || 'Sitabuldi Fast Hub'} (${target.power_kw || 120} kW, 0.2 km away). Shall I reserve it for you?`;
-                const filterBtn = document.querySelector('[data-filter="available"]');
-                if (filterBtn) filterBtn.click();
-            } else if (lower.includes('city') || lower.includes('where am i') || lower.includes('location') || lower.includes('gps')) {
-                response.text = `Your vehicle is currently centered in ${currentCity.toUpperCase()}, Maharashtra (GPS coordinates: ${currentLat.toFixed(4)}° N, ${currentLng.toFixed(4)}° E, near Sitabuldi Interchange). There are 137 verified EV charging hubs within range.`;
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // COST / TARIFF
+            if (lower.includes('cost') || lower.includes('tariff') || lower.includes('rate') || lower.includes('price') || lower.includes('kharcha')) {
+                response.text = 'Charging rates: Kazam Rs 12 per kWh cheapest, EESL Rs 18, ChargeZone Rs 20, Tata Power Rs 22.50. To charge 18% to 80% about 45 kWh: Rs 540 at Kazam, Rs 810 at EESL, Rs 1012 at Tata Power. Fast charge takes 18-25 minutes.';
+                response.display_data = { action: 'show_cost_breakdown', estimated_cost_rs: 810 };
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // LOCATION
+            if (lower.includes('city') || lower.includes('where am i') || lower.includes('location') || lower.includes('gps') || lower.includes('kahan hoon')) {
+                response.text = `Vehicle in ${currentCity.toUpperCase()}, GPS: ${currentLat.toFixed(4)}N, ${currentLng.toFixed(4)}E. 137 verified EV charging stations within range. Nearest: EESL Congress Nagar Metro, 1.3 km.`;
                 response.display_data = { action: 'show_car_location' };
                 locateUserCar(true);
-            } else if (lower.includes('project') || lower.includes('smartreserve') || lower.includes('work') || lower.includes('overview')) {
-                response.text = 'Hyundai SmartReserve is an AI-powered in-cabin EV charging co-pilot for Hyundai Ideathon 2026. It features multi-criteria priority ranking across 29,260+ stations, OCPP 1.6J hardware locking, and secure kiosk PIN verification.';
-            } else if (lower.includes('ocpp')) {
-                response.text = 'OCPP 1.6J is the Open Charge Point Protocol standard used by SmartReserve to send ReserveNow, UnlockConnector, and RemoteStartTransaction commands to charging kiosks.';
-            } else if (lower.includes('tyre') || lower.includes('tire') || lower.includes('tpms') || lower.includes('pressure')) {
-                response.text = 'Tyre Pressure Alert: Front-left tyre is low at 28 PSI. Recommended is 36 PSI. Other three tyres are normal at 35 to 36 PSI.';
-            } else if (lower.includes('battery') || lower.includes('status') || lower.includes('kitni') || lower.includes('kiti')) {
-                response.text = 'Vehicle is at 18% state of charge with approximately 87 km range. Average efficiency is 6.6 km/kWh. I recommend charging soon.';
-                response.display_data = { vehicle_status: { soc: 18, range_km: 87, efficiency: 6.6, hours_remaining: 1.9 } };
-            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava')) {
-                response.text = 'Namaste! Main AVA hoon, aapka Hyundai SmartReserve in-cabin assistant. Battery status, charging stations, ya slot reservations ke baare mein poochiye.';
-            } else {
-                response.text = 'I can help with: "Nearest charging station", "Nearest petrol pump", "Charging cost", "Which city am I in", or "Reserve a charging slot".';
+                displayVoiceResponse(response); speakResponse(response.text); return;
             }
-            
+
+            // PROJECT OVERVIEW
+            if (lower.includes('project') || lower.includes('smartreserve') || lower.includes('overview') || lower.includes('what is this')) {
+                response.text = 'Hyundai SmartReserve is an AI EV charging co-pilot for Hyundai Ideathon 2026. Features: 29,260+ Indian stations, multi-criteria priority engine, OCPP 1.6J hardware locking, Razorpay escrow, and highway corridor trip planning.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // OCPP
+            if (lower.includes('ocpp')) {
+                response.text = 'OCPP 1.6J is the global EV charger protocol. SmartReserve uses it to send ReserveNow hardware lock, UnlockConnector, and RemoteStartTransaction commands to kiosks.';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // NEAREST CHARGING STATION (generic)
+            if (lower.includes('station') || lower.includes('charging') || lower.includes('charger') || lower.includes('kahan') || lower.includes('kuthe') || lower.includes('nearest')) {
+                const target = stations[0] || {};
+                response.text = `Found ${stations.length} charging stations in ${currentCity.toUpperCase()}. Top pick: ${target.name || 'EESL Congress Nagar Metro'} (${target.power_kw || 142} kW, ${target.distance_km ? target.distance_km.toFixed(1) : '1.3'} km). Shall I reserve it?`;
+                const filterBtn = document.querySelector('[data-filter="available"]');
+                if (filterBtn) filterBtn.click();
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // GREETING
+            if (lower.includes('hello') || lower.includes('namaste') || lower.includes('hey') || lower.includes('ava') || lower.includes('eva')) {
+                response.text = 'Namaste! Main EVA hoon, aapka Hyundai SmartReserve in-cabin EV co-pilot. Charging station, route plan, battery status, compatibility check, ya koi bhi EV sawaal poochh sakte hain!';
+                displayVoiceResponse(response); speakResponse(response.text); return;
+            }
+
+            // GENERIC FALLBACK
+            response.text = 'I can help with: highway route planning (say if I go to Hyderabad), nearest charging station, charger compatibility, battery status, tyre pressure, charging cost, V2L, drive modes, preconditioning, service status, or nearby amenities like hospital, ATM, or cafe. What would you like to know?';
             displayVoiceResponse(response);
             speakResponse(response.text);
         }
