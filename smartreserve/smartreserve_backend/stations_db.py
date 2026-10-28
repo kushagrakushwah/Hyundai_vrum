@@ -97,6 +97,29 @@ INDIAN_CITIES = {
     "jaipur": (26.9124, 75.7873),
     "lucknow": (26.8467, 80.9462),
     "chandigarh": (30.7333, 76.7794),
+    # Key Highway Corridor Centers & Cities
+    "wardha": (20.7453, 78.6022),
+    "amravati": (20.9374, 77.7796),
+    "aurangabad": (19.8762, 75.3433),
+    "chhatrapati sambhajinagar": (19.8762, 75.3433),
+    "sambhajinagar": (19.8762, 75.3433),
+    "jalna": (19.8347, 75.8816),
+    "nashik": (19.9975, 73.7898),
+    "ahmednagar": (19.0948, 74.7480),
+    "shirur": (18.8267, 74.3789),
+    "solapur": (17.6599, 75.9064),
+    "kolhapur": (16.7050, 74.2433),
+    "thane": (19.2183, 72.9781),
+    "navi mumbai": (19.0330, 73.0297),
+    "nizamabad": (18.6725, 78.0941),
+    "adilabad": (19.6640, 78.5320),
+    "nirmal": (19.0963, 78.3440),
+    "karimnagar": (18.4386, 79.1288),
+    "warangal": (17.9689, 79.5941),
+    "khammam": (17.2473, 80.1514),
+    "nanded": (19.1383, 77.3210),
+    "surat": (21.1702, 72.8311),
+    "vadodara": (22.3072, 73.1812),
 }
 
 
@@ -364,6 +387,191 @@ class StationsDB:
             self.live_ocm_stations[s["station_id"]] = s
         return live_list
 
+    def get_stations_in_radius(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 30.0,
+        source: str = "all",
+        limit: int = 500
+    ) -> List[dict]:
+        """
+        Fast spatial query returning all charging stations within exact radius_km (default 30km)
+        of the specified GPS coordinate. Uses spherical Haversine formula with bounding box pre-filter.
+        """
+        import math
+        r = float(radius_km)
+        lat = float(latitude)
+        lng = float(longitude)
+
+        cos_lat = math.cos(math.radians(lat))
+        deg_lat = r / 110.57
+        deg_lng = r / (111.32 * max(0.2, cos_lat))
+
+        if source == "live":
+            if not self.live_ocm_stations:
+                self.get_live_ocm_stations(latitude=lat, longitude=lng, distance_km=r, max_results=50)
+            candidates_pool = list(self.live_ocm_stations.values())
+        elif source == "bee":
+            candidates_pool = list(self.stations.values())
+        else:
+            candidates_pool = list(self.live_ocm_stations.values()) + list(self.stations.values())
+
+        seen_ids = set()
+        in_radius = []
+        for s in candidates_pool:
+            sid = s.get("station_id") or s.get("id")
+            if not sid or sid in seen_ids:
+                continue
+            s_lat = s.get("lat") or 0.0
+            s_lng = s.get("lng") or 0.0
+            if abs(s_lat - lat) <= deg_lat and abs(s_lng - lng) <= deg_lng:
+                dLat = math.radians(s_lat - lat)
+                dLon = math.radians(s_lng - lng)
+                a = (math.sin(dLat / 2) ** 2 +
+                     math.sin(dLon / 2) ** 2 *
+                     math.cos(math.radians(lat)) * math.cos(math.radians(s_lat)))
+                d = 6371.0 * 2.0 * math.asin(math.sqrt(max(0.0, min(1.0, a))))
+                if d <= r:
+                    seen_ids.add(sid)
+                    s_copy = dict(s)
+                    s_copy["distance_km"] = round(d, 2)
+                    in_radius.append(s_copy)
+
+        in_radius.sort(key=lambda x: (x["distance_km"], -x.get("power_kw", 0)))
+        return in_radius[:limit]
+
+    def resolve_location(self, query: str) -> Optional[dict]:
+        """
+        Geocode / resolve a place or location search query across:
+        1. Indian Cities & known aliases (Nagpur, Pune, Hyderabad, Bhopal, Mumbai, Delhi, etc.)
+        2. Known landmark / tech hubs (Sitabuldi, VNIT, Hinjewadi, Gachibowli, Bandra, Connaught Place, etc.)
+        3. OpenStreetMap Nominatim lightweight HTTP geocoding fallback
+        4. Real Station DB cluster centroids (fuzzy match across 29,260 station addresses/names)
+        Returns dict with: { 'name': str, 'lat': float, 'lng': float, 'city': str }
+        """
+        if not query or len(query.strip()) < 2:
+            return None
+
+        q_clean = query.strip().lower()
+
+        # Ignore CPO brand / connector type searches from geocoding (they should filter locally)
+        NON_LOCATION_KEYWORDS = {
+            "tata power", "tata", "statiq", "chargezone", "zeon", "bpcl", "hpcl", "iocl",
+            "jio-bp", "jio bp", "fortum", "kazam", "relux", "ather", "glida", "magenta",
+            "ccs2", "ccs", "chademo", "type 2", "type2", "fast charger", "charger", "chargers",
+            "dc fast", "ac slow", "available", "reserved"
+        }
+        if q_clean in NON_LOCATION_KEYWORDS:
+            return None
+
+        # Known city aliases
+        city_aliases = {
+            "hydrabad": "hyderabad", "hydradabad": "hyderabad", "hyderbad": "hyderabad", "hyd": "hyderabad",
+            "bombay": "mumbai", "bangalore": "bengaluru", "calcutta": "kolkata",
+            "madras": "chennai", "dilli": "delhi", "nagpore": "nagpur",
+            "poona": "pune", "gurugram": "gurgaon", "secunderabad": "hyderabad"
+        }
+        mapped_city = city_aliases.get(q_clean, q_clean)
+
+        # 1. Direct Indian City match
+        if mapped_city in INDIAN_CITIES:
+            coords = INDIAN_CITIES[mapped_city]
+            return {
+                "name": f"{mapped_city.capitalize()}, India",
+                "lat": coords[0],
+                "lng": coords[1],
+                "city": mapped_city
+            }
+
+        # 2. Prominent Major Indian Landmarks and Localities
+        LANDMARKS = {
+            "sitabuldi": (21.1458, 79.0882, "Sitabuldi, Nagpur", "nagpur"),
+            "vnit": (21.1255, 79.0524, "VNIT Campus, Nagpur", "nagpur"),
+            "vnit nagpur": (21.1255, 79.0524, "VNIT Campus Bajaj Nagar, Nagpur", "nagpur"),
+            "bajaj nagar": (21.1255, 79.0524, "Bajaj Nagar, Nagpur", "nagpur"),
+            "dharampeth": (21.1420, 79.0650, "Dharampeth, Nagpur", "nagpur"),
+            "sadar": (21.1610, 79.0820, "Sadar, Nagpur", "nagpur"),
+            "zero mile": (21.1458, 79.0882, "Zero Mile Monument, Nagpur", "nagpur"),
+            "hinjewadi": (18.5913, 73.7389, "Hinjewadi IT Hub, Pune", "pune"),
+            "hinjawadi": (18.5913, 73.7389, "Hinjawadi, Pune", "pune"),
+            "kothrud": (18.5074, 73.8077, "Kothrud, Pune", "pune"),
+            "viman nagar": (18.5679, 73.9143, "Viman Nagar, Pune", "pune"),
+            "baner": (18.5590, 73.7868, "Baner, Pune", "pune"),
+            "wakad": (18.5987, 73.7688, "Wakad, Pune", "pune"),
+            "hadapsar": (18.5089, 73.9259, "Hadapsar Magarpatta, Pune", "pune"),
+            "kharadi": (18.5529, 73.9312, "Kharadi IT Park, Pune", "pune"),
+            "shaniwar wada": (18.5196, 73.8553, "Shaniwar Wada, Pune", "pune"),
+            "gachibowli": (17.4401, 78.3489, "Gachibowli, Hyderabad", "hyderabad"),
+            "hitec city": (17.4435, 78.3772, "Hitec City, Hyderabad", "hyderabad"),
+            "madhapur": (17.4483, 78.3915, "Madhapur Cyber Towers, Hyderabad", "hyderabad"),
+            "banjara hills": (17.4156, 78.4350, "Banjara Hills, Hyderabad", "hyderabad"),
+            "jubilee hills": (17.4319, 78.4073, "Jubilee Hills, Hyderabad", "hyderabad"),
+            "tank bund": (17.4239, 78.4738, "Tank Bund Hussain Sagar, Hyderabad", "hyderabad"),
+            "basheerbagh": (17.4018, 78.4777, "Basheerbagh, Hyderabad", "hyderabad"),
+            "bandra": (19.0596, 72.8295, "Bandra West, Mumbai", "mumbai"),
+            "bkc": (19.0657, 72.8687, "Bandra Kurla Complex (BKC), Mumbai", "mumbai"),
+            "andheri": (19.1136, 72.8697, "Andheri, Mumbai", "mumbai"),
+            "nariman point": (18.9260, 72.8230, "Nariman Point, Mumbai", "mumbai"),
+            "connaught place": (28.6315, 77.2167, "Connaught Place, New Delhi", "delhi"),
+            "cp": (28.6315, 77.2167, "Connaught Place, New Delhi", "delhi"),
+            "gurgaon": (28.4595, 77.0266, "Cyber Hub, Gurugram, Haryana", "delhi"),
+            "cyber hub": (28.4595, 77.0266, "Cyber Hub, Gurugram, Haryana", "delhi"),
+            "noida": (28.5355, 77.3910, "Sector 18, Noida, Uttar Pradesh", "delhi"),
+            "koramangala": (12.9352, 77.6245, "Koramangala, Bengaluru", "bengaluru"),
+            "indiranagar": (12.9784, 77.6408, "Indiranagar 100ft Road, Bengaluru", "bengaluru"),
+            "whitefield": (12.9698, 77.7499, "Whitefield ITPL, Bengaluru", "bengaluru"),
+            "electronic city": (12.8452, 77.6602, "Electronic City Phase 1, Bengaluru", "bengaluru"),
+            "mp nagar": (23.2332, 77.4334, "MP Nagar Zone 1, Bhopal", "bhopal"),
+            "db city": (23.2332, 77.4334, "DB City Mall, Bhopal", "bhopal"),
+            "vijay nagar": (22.7533, 75.8937, "Vijay Nagar, Indore", "indore")
+        }
+
+        for lm_key, (l_lat, l_lng, l_name, l_city) in LANDMARKS.items():
+            if lm_key in q_clean or q_clean in lm_key:
+                return {
+                    "name": l_name,
+                    "lat": l_lat,
+                    "lng": l_lng,
+                    "city": l_city
+                }
+
+        # 3. Fallback to OpenStreetMap Nominatim for any arbitrary Indian place/locality
+        try:
+            import urllib.request
+            import urllib.parse
+            import json
+            encoded_q = urllib.parse.quote(query + ", India")
+            url = f"https://nominatim.openstreetmap.org/search?q={encoded_q}&countrycodes=in&format=json&limit=1"
+            req = urllib.request.Request(url, headers={"User-Agent": "HyundaiSmartReserve/2.0 (EV In-Cabin Search)"})
+            with urllib.request.urlopen(req, timeout=1.4) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if data and len(data) > 0:
+                        item = data[0]
+                        return {
+                            "name": item.get("display_name", query)[:60],
+                            "lat": float(item["lat"]),
+                            "lng": float(item["lon"]),
+                            "city": "india"
+                        }
+        except Exception:
+            pass
+
+        # 4. Check station matches in database
+        fuzzy_matches = self.fuzzy_station_search(q_clean, limit=3)
+        if fuzzy_matches:
+            top = fuzzy_matches[0]
+            if top.get("lat") and top.get("lng"):
+                return {
+                    "name": top.get("name") or top.get("address"),
+                    "lat": top.get("lat"),
+                    "lng": top.get("lng"),
+                    "city": (top.get("city") or top.get("district") or "nagpur").lower()
+                }
+
+        return None
+
     def get_stations(
         self,
         city: Optional[str] = None,
@@ -371,6 +579,7 @@ class StationsDB:
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         source: str = "all",
+        radius_km: Optional[float] = None,
         limit: int = 1000,
     ) -> List[dict]:
         """
@@ -378,7 +587,7 @@ class StationsDB:
         - 'bee': only base network stations
         - 'live': only live Open Charge Map stations
         - 'all': live OCM stations prioritized, followed by base network
-        Supports city / GPS proximity sorting across the full 29,260 station database.
+        Supports exact radius_km spatial query or city / GPS proximity sorting across the full 29,260 station database.
         """
         # Resolve target coordinates if city or lat/lng given
         target_lat = latitude
@@ -386,6 +595,16 @@ class StationsDB:
         c_norm = (city or "").lower().strip()
         if (target_lat is None or target_lng is None) and c_norm in INDIAN_CITIES:
             target_lat, target_lng = INDIAN_CITIES[c_norm]
+
+        # If strict radius_km specified, dispatch to spatial radius query
+        if radius_km is not None and target_lat is not None and target_lng is not None:
+            return self.get_stations_in_radius(
+                latitude=target_lat,
+                longitude=target_lng,
+                radius_km=radius_km,
+                source=source,
+                limit=limit
+            )
 
         if source == "live":
             if not self.live_ocm_stations:

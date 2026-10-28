@@ -204,6 +204,7 @@ def plan_corridor_trip(
 
                 charging_stops.append({
                     "stop_number": idx,
+                    "id": best_stop["station_id"],
                     "station_id": best_stop["station_id"],
                     "name": best_stop["name"],
                     "operator": best_stop["operator"],

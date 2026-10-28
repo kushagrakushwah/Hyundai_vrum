@@ -1282,7 +1282,11 @@
                 <button class="compat-pill" onclick="setCompatFilter('fast_dc', this)" title="Fast DC ≥50 kW">⚡ Fast DC</button>
                 <button class="compat-pill" onclick="setCompatFilter('ccs2', this)" title="CCS2 Connector Only">🔌 CCS2</button>
             </div>
-            <input type="text" class="search-box" id="search-input" placeholder="Search city (Hyderabad, Bhopal, Nagpur, etc.)..." autocomplete="off">
+            <input type="text" class="search-box" id="search-input" placeholder="🔍 Search place or location (e.g. Hinjewadi, Sitabuldi, Gachibowli, Bandra, Pune)..." autocomplete="off">
+            <div id="radius-indicator-badge" class="radius-indicator-badge" style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; font-size:11px; padding:5px 10px; border-radius:6px; background:rgba(0,170,212,0.12); border:1px solid rgba(0,170,212,0.3); color:#00AAD4;">
+                <span id="radius-status-text">🎯 30 km Range Radius Active</span>
+                <span id="radius-count-text" style="color:#FFD100; font-weight:700;">Scanning stations...</span>
+            </div>
             
             <div class="station-list" id="station-list">
                 <!-- Stations injected here -->
@@ -1303,6 +1307,9 @@
                     </button>
                     <button class="map-car-btn" onclick="locateUserCar(true)" title="Recenter to Exact Vehicle Coordinates">
                         <span>🎯</span> Recenter
+                    </button>
+                    <button class="map-car-btn" id="btn-travel-mode" onclick="toggleTravelSimulation()" style="background:rgba(0,255,102,0.15); border-color:#00FF66; color:#00FF66;" title="Simulate Traveling / Driving with Live 30km Horizon">
+                        <span>🚗</span> <span id="travel-btn-text">Travel Mode</span>
                     </button>
                     <div class="map-coord-pill" id="map-coord-pill">
                         📍 VNIT Nagpur Campus
@@ -1856,6 +1863,30 @@
         let currentLat = 21.1458;
         let currentLng = 79.0882;
         let userCarMarker = null;
+        let userCarRadiusCircle = null;
+        let searchRadiusCircle = null;
+        let searchLocationMarker = null;
+
+        function renderUserCarRadiusCircle(lat, lng) {
+            if (!map || typeof L === 'undefined') return;
+            try {
+                if (userCarRadiusCircle) {
+                    userCarRadiusCircle.setLatLng([lat, lng]);
+                } else {
+                    userCarRadiusCircle = L.circle([lat, lng], {
+                        radius: 30000,
+                        color: '#00AAD4',
+                        weight: 2,
+                        dashArray: '6, 8',
+                        fillColor: '#00AAD4',
+                        fillOpacity: 0.06
+                    }).addTo(map);
+                    userCarRadiusCircle.bindTooltip("🚗 Vehicle 30 km Coverage Radius Horizon", { permanent: false });
+                }
+            } catch(e) {
+                console.warn('renderUserCarRadiusCircle error:', e);
+            }
+        }
 
         function renderUserCarMarker(lat, lng) {
             if (!map || typeof L === 'undefined') return;
@@ -1903,6 +1934,7 @@
                 if (coordPill) {
                     coordPill.innerHTML = `📍 ${placeName}`;
                 }
+                renderUserCarRadiusCircle(lat, lng);
             } catch(e) {
                 console.warn('renderUserCarMarker error:', e);
             }
@@ -2174,7 +2206,7 @@
                 if (source === 'hyderabad_statiq') {
                     url = `${API}/api/stations/live-hyderabad?vehicle_model=${encodeURIComponent(activeVehicleModel)}&compatibility_filter=${encodeURIComponent(currentCompatFilter)}`;
                 } else {
-                    url = `${API}/api/stations?source=${source}&city=${encodeURIComponent(currentCity)}&latitude=${currentLat}&longitude=${currentLng}&limit=300&vehicle_model=${encodeURIComponent(activeVehicleModel)}&compatibility_filter=${encodeURIComponent(currentCompatFilter)}`;
+                    url = `${API}/api/stations?source=${source}&city=${encodeURIComponent(currentCity)}&latitude=${currentLat}&longitude=${currentLng}&radius_km=30&limit=300&vehicle_model=${encodeURIComponent(activeVehicleModel)}&compatibility_filter=${encodeURIComponent(currentCompatFilter)}`;
                 }
 
                 const res = await fetch(url);
@@ -2214,6 +2246,9 @@
             
             applyFilters();
             updateStats();
+            if (typeof updateRadiusBadge === 'function') {
+                updateRadiusBadge('🎯 30 km Range Radius Active', stations.length);
+            }
             
             if (stations.length > 0) {
                 if (!selectedStationId || !stations.some(s => s.id === selectedStationId)) {
@@ -2300,14 +2335,16 @@
                 filtered = filtered.filter(s => (s.connector_type || '').toUpperCase().includes('CCS'));
             }
 
-            if (currentSearch) {
+            if (currentSearch && !searchedLocationData) {
                 filtered = filtered.filter(s => matchQuery(s, currentSearch));
             }
 
-            // Sort by proximity to current city/location (Nagpur by default)
+            // Sort by proximity to searched place or vehicle position
+            const refLat = (typeof searchedLocationData !== 'undefined' && searchedLocationData) ? searchedLocationData.lat : currentLat;
+            const refLng = (typeof searchedLocationData !== 'undefined' && searchedLocationData) ? searchedLocationData.lng : currentLng;
             filtered = [...filtered].sort((a, b) => {
-                const distA = Math.hypot((a.lat || 0) - currentLat, (a.lng || 0) - currentLng);
-                const distB = Math.hypot((b.lat || 0) - currentLat, (b.lng || 0) - currentLng);
+                const distA = (a.distance_km !== null && a.distance_km !== undefined) ? a.distance_km : Math.hypot((a.lat || 0) - refLat, (a.lng || 0) - refLng);
+                const distB = (b.distance_km !== null && b.distance_km !== undefined) ? b.distance_km : Math.hypot((b.lat || 0) - refLat, (b.lng || 0) - refLng);
                 return distA - distB;
             });
 
@@ -2544,30 +2581,42 @@
                 if (corridorData.charging_stops && corridorData.charging_stops.length > 0) {
                     corridorData.charging_stops.forEach(st => {
                         if (!st.lat || !st.lng) return;
+                        const isReserved = Boolean(st.is_reserved || (st.stop_number === 1 && corridorData.is_booked));
+                        const pin = st.reservation_pin || (st.stop_number === 1 ? corridorData.reservation_pin : null);
+
                         const stopIcon = L.divIcon({
                             className: 'corridor-stop-icon',
                             html: `
-                                <div style="background:#0F1B2B; border:2px solid #FFD100; border-radius:50%; width:40px; height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(255,209,0,0.7); color:#FFD100; font-family:'Rajdhani',sans-serif; font-weight:800; font-size:13px; line-height:1; cursor:pointer;">
-                                    <span>⚡${st.stop_number}</span>
+                                <div style="background:${isReserved ? '#002B16' : '#0F1B2B'}; border:2px solid ${isReserved ? '#00FF66' : '#FFD100'}; border-radius:50%; width:42px; height:42px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 0 18px ${isReserved ? 'rgba(0,255,102,0.85)' : 'rgba(255,209,0,0.7)'}; color:${isReserved ? '#00FF66' : '#FFD100'}; font-family:'Rajdhani',sans-serif; font-weight:800; font-size:13px; line-height:1; cursor:pointer;">
+                                    <span>${isReserved ? '🔒' : '⚡'}${st.stop_number}</span>
                                     <span style="font-size:9px; color:#fff;">${Math.round(st.power_kw)}kW</span>
                                 </div>
                             `,
-                            iconSize: [40, 40],
-                            iconAnchor: [20, 20]
+                            iconSize: [42, 42],
+                            iconAnchor: [21, 21]
                         });
                         const stopM = L.marker([st.lat, st.lng], { icon: stopIcon }).addTo(map);
                         stopM.bindPopup(`
-                            <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:12px 16px; border-radius:10px; border:1px solid #FFD100; min-width:250px; box-shadow:0 8px 24px rgba(0,0,0,0.85);">
-                                <div style="color:#FFD100; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px;">⚡ CHARGING STOP #${st.stop_number} (${st.action || 'Highway Fast Charge'})</div>
+                            <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:12px 16px; border-radius:10px; border:1px solid ${isReserved ? '#00FF66' : '#FFD100'}; min-width:250px; box-shadow:0 8px 24px rgba(0,0,0,0.85);">
+                                <div style="color:${isReserved ? '#00FF66' : '#FFD100'}; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px;">⚡ CHARGING STOP #${st.stop_number} (${st.action || 'Highway Fast Charge'})</div>
                                 <div style="font-size:14px; font-weight:700; margin-top:4px; color:#fff;">${st.name}</div>
                                 <div style="font-size:12px; color:#8E9AA8; margin-top:4px;">📍 Milestone: <b style="color:#fff;">${Math.round(st.milestone_km)} km</b> from start</div>
                                 <div style="font-size:12px; color:#00FF66; margin-top:2px;">⚡ Rated Power: <b>${st.power_kw} kW DC Fast</b></div>
                                 <div style="font-size:12px; color:#00AAD4; margin-top:2px;">⏱️ Est. Session: <b>~${st.est_charge_min || 25} mins</b> to 80%</div>
-                                <button onclick="voiceReserveStation('${st.id}', ${st.stop_number - 1})" style="margin-top:10px; width:100%; padding:8px; background:linear-gradient(135deg, #FFD100, #FFA500); color:#000; font-weight:700; border:none; border-radius:6px; cursor:pointer; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">🔒 RESERVE THIS STOP</button>
+                                ${isReserved ? `
+                                    <div style="margin-top:10px; width:100%; padding:8px 10px; background:linear-gradient(135deg, rgba(0,255,102,0.18), rgba(0,170,68,0.25)); border:1px solid #00FF66; border-radius:6px; text-align:center;">
+                                        <div style="font-size:11px; color:#00FF66; font-weight:800; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">✅ PRE-BOOKED BY AVA</div>
+                                        <div style="font-size:15px; color:#FFD100; font-weight:900; letter-spacing:2px; margin-top:2px;">PIN: ${pin || 'CONFIRMED'}</div>
+                                        <div style="font-size:10px; color:#8E9AA8; margin-top:2px;">Slot held for 30 minutes</div>
+                                    </div>
+                                ` : `
+                                    <button onclick="voiceReserveStation('${st.station_id || st.id}', ${st.stop_number - 1})" style="margin-top:10px; width:100%; padding:8px; background:linear-gradient(135deg, #FFD100, #FFA500); color:#000; font-weight:700; border:none; border-radius:6px; cursor:pointer; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;">🔒 RESERVE THIS STOP</button>
+                                `}
                             </div>
                         `);
                         stopM.on('click', () => {
-                            if (st.id) selectStation(st.id);
+                            const stopSid = st.station_id || st.id;
+                            if (stopSid) selectStation(stopSid);
                         });
                         corridorMarkers.push(stopM);
                     });
@@ -3176,10 +3225,246 @@
             };
         });
 
-        document.getElementById('search-input').oninput = (e) => {
-            currentSearch = e.target.value;
+        let searchedLocationData = null;
+        let searchDebounceTimer = null;
+
+        function updateRadiusBadge(statusText, count) {
+            const statusEl = document.getElementById('radius-status-text');
+            const countEl = document.getElementById('radius-count-text');
+            if (statusEl && statusText) statusEl.textContent = statusText;
+            if (countEl && count !== undefined) {
+                countEl.textContent = `${count} Hubs in 30 km`;
+            }
+        }
+
+        async function handlePlaceSearch(query) {
+            const q = (query || '').trim();
+            if (!q) {
+                currentSearch = '';
+                searchedLocationData = null;
+                if (searchRadiusCircle && map) {
+                    try { map.removeLayer(searchRadiusCircle); } catch(e){}
+                    searchRadiusCircle = null;
+                }
+                if (searchLocationMarker && map) {
+                    try { map.removeLayer(searchLocationMarker); } catch(e){}
+                    searchLocationMarker = null;
+                }
+                fetchStations();
+                return;
+            }
+
+            currentSearch = q;
+
+            if (q.length >= 3) {
+                try {
+                    const res = await fetch(`${API}/api/locations/search?query=${encodeURIComponent(q)}&radius_km=30&limit=150`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success' && data.location && data.stations) {
+                            const loc = data.location;
+                            searchedLocationData = { name: loc.name, lat: loc.latitude, lng: loc.longitude };
+
+                            if (map && typeof L !== 'undefined') {
+                                if (searchRadiusCircle) {
+                                    searchRadiusCircle.setLatLng([loc.latitude, loc.longitude]);
+                                } else {
+                                    searchRadiusCircle = L.circle([loc.latitude, loc.longitude], {
+                                        radius: 30000,
+                                        color: '#FFD100',
+                                        weight: 2,
+                                        dashArray: '6, 6',
+                                        fillColor: '#FFD100',
+                                        fillOpacity: 0.08
+                                    }).addTo(map);
+                                }
+                                searchRadiusCircle.bindTooltip(`🎯 30 km Search Horizon: ${loc.name}`, { permanent: false });
+
+                                if (searchLocationMarker) {
+                                    searchLocationMarker.setLatLng([loc.latitude, loc.longitude]);
+                                } else {
+                                    const searchIcon = L.divIcon({
+                                        className: 'searched-place-pin',
+                                        html: `<div style="background:#0F1B2B; border:2px solid #FFD100; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 15px rgba(255,209,0,0.8); font-size:16px;">📍</div>`,
+                                        iconSize: [34, 34],
+                                        iconAnchor: [17, 17]
+                                    });
+                                    searchLocationMarker = L.marker([loc.latitude, loc.longitude], { icon: searchIcon, zIndexOffset: 2400 }).addTo(map);
+                                }
+                                searchLocationMarker.bindPopup(`
+                                    <div style="font-family:'Inter',sans-serif; color:#fff; background:#0B132B; padding:10px 14px; border-radius:8px; border:1px solid #FFD100; min-width:210px;">
+                                        <div style="color:#FFD100; font-weight:800; font-size:13px;">📍 ${loc.name}</div>
+                                        <div style="color:#00FF66; font-size:11px; margin-top:3px;">⚡ ${data.count} Stations within 30 km radius</div>
+                                    </div>
+                                `);
+                                map.flyTo([loc.latitude, loc.longitude], 12, { duration: 1.2 });
+                            }
+
+                            stations = (data.stations || []).map(s => ({
+                                ...s,
+                                id: s.station_id || s.id,
+                                name: s.name || 'EV Fast Charger',
+                                city: s.city || loc.name,
+                                district: s.district || loc.name,
+                                address: s.address || (loc.name + ', India'),
+                                power_kw: parseFloat(s.power_kw) || 60,
+                                status: s.status || 'AVAILABLE',
+                                connector_type: s.connector_type || 'CCS2',
+                                operator: s.operator || 'EV Operator',
+                                is_live_ocm: Boolean(s.is_live_ocm),
+                                lat: parseFloat(s.lat) || loc.latitude,
+                                lng: parseFloat(s.lng) || loc.longitude,
+                                distance_km: s.distance_km !== undefined ? s.distance_km : null,
+                                compatibility: s.compatibility || null,
+                                ports: s.ports || [],
+                                available_ports_count: s.available_ports_count,
+                                total_ports_count: s.total_ports_count
+                            }));
+
+                            applyFilters();
+                            updateStats();
+                            updateRadiusBadge(`🎯 30 km Radius: ${loc.name}`, stations.length);
+                            return;
+                        }
+                    }
+                } catch(err) {
+                    console.warn('Place search API error, falling back to local filter:', err);
+                }
+            }
+
             applyFilters();
-        };
+        }
+
+        const searchInputEl = document.getElementById('search-input');
+        if (searchInputEl) {
+            searchInputEl.oninput = (e) => {
+                clearTimeout(searchDebounceTimer);
+                const val = e.target.value;
+                searchDebounceTimer = setTimeout(() => {
+                    handlePlaceSearch(val);
+                }, 350);
+            };
+            searchInputEl.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchDebounceTimer);
+                    handlePlaceSearch(e.target.value);
+                }
+            };
+        }
+
+        // ── Highway Corridor Travel Mode Simulation (Dynamic 30 km Radius Horizon) ──
+        let travelModeActive = false;
+        let travelStepIndex = 0;
+        let travelTimer = null;
+
+        const TRAVEL_WAYPOINTS = [
+            { name: 'Nagpur Zero Mile', lat: 21.1458, lng: 79.0882, soc: 85 },
+            { name: 'VNIT Nagpur Campus', lat: 21.1255, lng: 79.0524, soc: 84 },
+            { name: 'Butibori Industrial Hub', lat: 20.9167, lng: 78.9667, soc: 80 },
+            { name: 'Wardha Samruddhi Junction', lat: 20.7453, lng: 78.6022, soc: 75 },
+            { name: 'Pulgaon Corridor Post', lat: 20.6500, lng: 78.1400, soc: 69 },
+            { name: 'Karanja Lad Highway Hub', lat: 20.4833, lng: 77.4833, soc: 62 },
+            { name: 'Mehkar Fast Corridor Oasis', lat: 20.1542, lng: 76.5708, soc: 53 },
+            { name: 'Jalna Expressway Toll Hub', lat: 19.8347, lng: 75.8816, soc: 44 },
+            { name: 'Chhatrapati Sambhajinagar Bypass', lat: 19.8762, lng: 75.3433, soc: 37 },
+            { name: 'Ahmednagar Highway Rest Stop', lat: 19.0948, lng: 74.7480, soc: 28 },
+            { name: 'Shirur DC Fast Hub', lat: 18.8267, lng: 74.3789, soc: 22 },
+            { name: 'Pune Kharadi Gateway', lat: 18.5529, lng: 73.9312, soc: 18 }
+        ];
+
+        function toggleTravelSimulation() {
+            travelModeActive = !travelModeActive;
+            const btn = document.getElementById('btn-travel-mode');
+            const txt = document.getElementById('travel-btn-text');
+            
+            if (travelModeActive) {
+                currentSearch = '';
+                searchedLocationData = null;
+                const searchInputEl = document.getElementById('search-input');
+                if (searchInputEl) searchInputEl.value = '';
+                if (searchRadiusCircle && map) {
+                    try { map.removeLayer(searchRadiusCircle); } catch(e){}
+                    searchRadiusCircle = null;
+                }
+                if (searchLocationMarker && map) {
+                    try { map.removeLayer(searchLocationMarker); } catch(e){}
+                    searchLocationMarker = null;
+                }
+
+                if (btn) {
+                    btn.style.background = '#00FF66';
+                    btn.style.color = '#050A18';
+                }
+                if (txt) txt.textContent = 'Stop Travel';
+                showToast('🚗 Travel Simulation Active: Moving along highway with real-time 30 km horizon', 'success');
+                stepTravelSimulation();
+                travelTimer = setInterval(stepTravelSimulation, 3000);
+            } else {
+                if (btn) {
+                    btn.style.background = 'rgba(0,255,102,0.15)';
+                    btn.style.color = '#00FF66';
+                }
+                if (txt) txt.textContent = 'Travel Mode';
+                if (travelTimer) clearInterval(travelTimer);
+                travelTimer = null;
+                showToast('🚗 Travel Simulation Paused', 'info');
+            }
+        }
+
+        async function stepTravelSimulation() {
+            if (!travelModeActive) return;
+            const wp = TRAVEL_WAYPOINTS[travelStepIndex % TRAVEL_WAYPOINTS.length];
+            travelStepIndex++;
+
+            currentLat = wp.lat;
+            currentLng = wp.lng;
+
+            renderUserCarMarker(currentLat, currentLng);
+            renderUserCarRadiusCircle(currentLat, currentLng);
+            if (map) map.panTo([currentLat, currentLng]);
+
+            const coordPill = document.getElementById('map-coord-pill');
+            if (coordPill) coordPill.innerHTML = `🚗 Moving: ${wp.name}`;
+
+            const socEl = document.getElementById('tele-soc');
+            if (socEl) socEl.textContent = `${wp.soc}%`;
+            const rangeEl = document.getElementById('tele-range');
+            if (rangeEl) rangeEl.textContent = `${Math.round(wp.soc * 4.8)} km`;
+
+            try {
+                const url = `${API}/api/stations?latitude=${currentLat}&longitude=${currentLng}&radius_km=30&limit=150&vehicle_model=${encodeURIComponent(activeVehicleModel)}&compatibility_filter=${encodeURIComponent(currentCompatFilter)}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    const rawList = Array.isArray(data) ? data : (data.stations || []);
+                    stations = rawList.map(s => ({
+                        ...s,
+                        id: s.station_id || s.id,
+                        name: s.name || 'EV Fast Charger',
+                        city: s.city || wp.name,
+                        district: s.district || wp.name,
+                        address: s.address || (wp.name + ', India'),
+                        power_kw: parseFloat(s.power_kw) || 60,
+                        status: s.status || 'AVAILABLE',
+                        connector_type: s.connector_type || 'CCS2',
+                        operator: s.operator || 'EV Operator',
+                        is_live_ocm: Boolean(s.is_live_ocm),
+                        lat: parseFloat(s.lat) || currentLat,
+                        lng: parseFloat(s.lng) || currentLng,
+                        distance_km: s.distance_km !== undefined ? s.distance_km : null,
+                        compatibility: s.compatibility || null,
+                        ports: s.ports || [],
+                        available_ports_count: s.available_ports_count,
+                        total_ports_count: s.total_ports_count
+                    }));
+                    applyFilters();
+                    updateStats();
+                    updateRadiusBadge(`🚗 Dynamic 30 km Horizon: ${wp.name}`, stations.length);
+                }
+            } catch(e) {
+                console.warn('Travel fetch error:', e);
+            }
+        }
 
         function updateStats() {
             document.getElementById('stat-total').innerText = stations.length;

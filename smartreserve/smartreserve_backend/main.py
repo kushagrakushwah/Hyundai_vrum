@@ -243,6 +243,7 @@ async def get_stations(
     user_lat: Optional[float] = None,
     user_lon: Optional[float] = None,
     source: str = "all",
+    radius_km: Optional[float] = None,
     connector_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
     compatibility_filter: Optional[str] = None,
@@ -265,6 +266,7 @@ async def get_stations(
         latitude=target_lat,
         longitude=target_lon,
         source=source,
+        radius_km=radius_km,
         limit=limit,
     )
     active_res = await database.get_all_active_reservations()
@@ -314,8 +316,8 @@ async def get_stations(
             elif cf == "type2" and compat.get("matched_connector") != "AC Type 2":
                 continue
 
-        dist_km = None
-        if target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
+        dist_km = s.get("distance_km")
+        if dist_km is None and target_lat is not None and target_lon is not None and s.get("lat") and s.get("lng"):
             crow = haversine(target_lat, target_lon, s["lat"], s["lng"])
             if crow < 0.04:
                 dist_km = 0.1
@@ -325,6 +327,11 @@ async def get_stations(
                 dist_km = round(crow * 1.25, 1)
             else:
                 dist_km = round(crow * 1.18, 1)
+
+        # Strict radius check if requested
+        if radius_km is not None and dist_km is not None:
+            if dist_km > radius_km:
+                continue
 
         result.append({
             **s,
@@ -345,8 +352,86 @@ async def get_stations(
         "stations": result,
         "total": len(result),
         "source": source,
+        "radius_km": radius_km,
+        "center": {"lat": target_lat, "lng": target_lon} if target_lat is not None else None,
         "active_vehicle": vehicle_intel.profile.catalog_data["short_name"] if vehicle_intel else "Ioniq 5 AWD",
         "timestamp": datetime.utcnow().isoformat(),
+    }
+
+@app.get("/api/stations/radius")
+async def get_stations_in_radius_endpoint(
+    latitude: float = Query(...),
+    longitude: float = Query(...),
+    radius_km: float = Query(30.0, description="Search radius in kilometers"),
+    source: str = "all",
+    connector_type: Optional[str] = None,
+    min_power_kw: Optional[float] = None,
+    compatibility_filter: Optional[str] = None,
+    limit: int = 500,
+):
+    """Deliver all EV charging stations strictly within a specified radius (default: 30 km)."""
+    return await get_stations(
+        latitude=latitude,
+        longitude=longitude,
+        radius_km=radius_km,
+        source=source,
+        connector_type=connector_type,
+        min_power_kw=min_power_kw,
+        compatibility_filter=compatibility_filter,
+        limit=limit,
+    )
+
+@app.get("/api/locations/search")
+async def search_location_and_stations(
+    query: str = Query(..., description="Place, locality, landmark, or city to search"),
+    radius_km: float = Query(30.0, description="Radius in km for nearby charging stations"),
+    source: str = "all",
+    compatibility_filter: Optional[str] = None,
+    limit: int = 500,
+):
+    """
+    Search any place or location in India, resolve its coordinates,
+    and deliver all charging stations within a 30 km radius.
+    """
+    loc = db.resolve_location(query)
+    if not loc:
+        return {
+            "success": False,
+            "query": query,
+            "message": f"Could not find coordinates for '{query}'",
+            "location": None,
+            "radius_km": radius_km,
+            "stations": [],
+            "total": 0,
+        }
+
+    stations_data = await get_stations(
+        latitude=loc["lat"],
+        longitude=loc["lng"],
+        radius_km=radius_km,
+        source=source,
+        compatibility_filter=compatibility_filter,
+        limit=limit,
+    )
+
+    loc_dict = {
+        "name": loc.get("name", query.title()),
+        "lat": loc.get("lat"),
+        "lng": loc.get("lng"),
+        "latitude": loc.get("lat"),
+        "longitude": loc.get("lng"),
+        "source": loc.get("source", "centroid"),
+    }
+    return {
+        "success": True,
+        "status": "success",
+        "query": query,
+        "location": loc_dict,
+        "radius_km": radius_km,
+        "count": stations_data["total"],
+        "total": stations_data["total"],
+        "stations": stations_data["stations"],
+        "active_vehicle": stations_data.get("active_vehicle", "Ioniq 5 AWD"),
     }
 
 @app.get("/api/route")

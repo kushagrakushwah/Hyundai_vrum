@@ -11,6 +11,8 @@ import logging
 import os
 import time
 import sqlite3
+import random
+import string
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 import re
@@ -237,12 +239,64 @@ class VoiceAssistant:
                 entities['station_name_hint'] = full_name
                 break
 
-        # 4. Browsing vs Reservation check
+        # 4. Check if query is a Highway Corridor Trip / Route Booking inquiry
+        corridor_markers = [
+            "on the way", "on my way", "on route", "en route", "on the route", "along the way", "along the route",
+            "if i go to", "when i go to", "going to", "drive to", "driving to", "trip to", "traveling to", "travelling to",
+            "route to", "highway chargers", "highway stations", "highway charger", "highway station", "corridor", "interstate",
+            "jaate waqt", "raste mein", "raste me", "ke raste", "highway par", "highway pe", "jatanna", "rastyavar", "rastyat",
+            "in the route", "on route from", "route from", "between"
+        ]
+        has_corridor_marker = any(m in cleaned_text for m in corridor_markers)
+
+        # Detect route city pairs: "from X to Y", "X to Y", "X se Y", "X te Y"
+        is_route_pair = False
+        for m in re.finditer(r'(?:from\s+)?([a-z]+)\s+(?:to|se|te|towards)\s+([a-z]+)', cleaned_text):
+            c1_cand = city_aliases.get(m.group(1), m.group(1))
+            c2_cand = city_aliases.get(m.group(2), m.group(2))
+            if c1_cand in INDIAN_CITIES and c2_cand in INDIAN_CITIES:
+                is_route_pair = True
+                entities["route_origin"] = c1_cand
+                entities["route_destination"] = c2_cand
+                entities["city"] = c2_cand
+                break
+            elif c2_cand in INDIAN_CITIES and (has_corridor_marker or "route" in cleaned_text or "highway" in cleaned_text):
+                is_route_pair = True
+                entities["route_destination"] = c2_cand
+                entities["city"] = c2_cand
+                break
+
+        if not is_route_pair:
+            words_in_text = [city_aliases.get(w, w) for w in re.findall(r'\b[a-z]+\b', cleaned_text)]
+            cities_found = [w for w in words_in_text if w in INDIAN_CITIES]
+            if len(cities_found) >= 2:
+                is_route_pair = True
+                entities["route_origin"] = cities_found[0]
+                entities["route_destination"] = cities_found[1]
+                entities["city"] = cities_found[1]
+            elif len(cities_found) == 1 and (has_corridor_marker or "route" in cleaned_text or "highway" in cleaned_text):
+                is_route_pair = True
+                entities["route_destination"] = cities_found[0]
+                entities["city"] = cities_found[0]
+
+        has_reserve_verb = bool(re.search(r'\b(reserve|book|lock|rok do|booking)\b', cleaned_text))
+        is_corridor_trip = has_corridor_marker or is_route_pair
+
+        if is_corridor_trip:
+            entities["is_booking"] = has_reserve_verb
+            return IntentResult(
+                intent="CORRIDOR_TRIP",
+                confidence=0.98,
+                entities=entities,
+                language_mix=self._detect_language(text),
+                raw_text=text,
+            )
+
+        # 5. Browsing vs Single Station Reservation check
         is_question = cleaned_text.startswith(("what", "how", "why", "explain", "about", "who")) or any(
             cleaned_text.startswith(p) for p in ["can you explain", "tell me about", "what is", "how does", "why do"]
         )
 
-        has_reserve_verb = bool(re.search(r'\b(reserve|book|lock|rok do|booking)\b', cleaned_text))
         is_reserve = has_reserve_verb and not is_question
 
         # Check if user refers to currently selected station
@@ -782,7 +836,16 @@ class VoiceAssistant:
         from corridor_planner import plan_corridor_trip
         from vehicle_intelligence import vehicle
 
-        # 1. Resolve Origin
+        # 1. Resolve Origin and Destination
+        q_low = (intent_res.raw_text or "").lower()
+        city_aliases = {
+            "hydradabad": "hyderabad", "hydrabad": "hyderabad", "hyderbad": "hyderabad", "hyd": "hyderabad",
+            "bombay": "mumbai", "bangalore": "bengaluru", "calcutta": "kolkata",
+            "madras": "chennai", "dilli": "delhi", "nagpore": "nagpur", "poona": "pune"
+        }
+        for alias, target in city_aliases.items():
+            q_low = re.sub(r'\b' + re.escape(alias) + r'\b', target, q_low)
+
         orig_city = (current_city or "Nagpur").capitalize()
         orig_lat = float(user_lat) if user_lat is not None else 21.1255
         orig_lon = float(user_lon) if user_lon is not None else 79.0524
@@ -791,29 +854,37 @@ class VoiceAssistant:
             orig_lat = getattr(vehicle.state, 'gps_lat', orig_lat)
             orig_lon = getattr(vehicle.state, 'gps_lng', orig_lon)
 
-        # 2. Resolve Destination City & Route Pairs (e.g. "Delhi to Jaipur" or "Nagpur se Hyderabad")
         dest_city = (intent_res.entities.get("city") or "Hyderabad").capitalize()
         dest_coords = INDIAN_CITIES.get(dest_city.lower(), (17.3850, 78.4867))
         dest_lat, dest_lon = dest_coords
 
-        q_low = (intent_res.raw_text or "").lower()
-        city_aliases = {
-            "hydradabad": "hyderabad", "hydrabad": "hyderabad", "hyderbad": "hyderabad",
-            "bombay": "mumbai", "bangalore": "bengaluru", "calcutta": "kolkata",
-            "madras": "chennai", "dilli": "delhi", "nagpore": "nagpur"
-        }
-        route_pair_match = re.search(r'\b([a-z]+)\s+(?:se|to|te|from)\s+([a-z]+)\b', q_low)
-        if route_pair_match:
-            c1 = city_aliases.get(route_pair_match.group(1), route_pair_match.group(1))
-            c2 = city_aliases.get(route_pair_match.group(2), route_pair_match.group(2))
-            if c1 in INDIAN_CITIES and c2 in INDIAN_CITIES:
-                orig_city = c1.capitalize()
-                orig_lat, orig_lon = INDIAN_CITIES[c1]
-                dest_city = c2.capitalize()
-                dest_lat, dest_lon = INDIAN_CITIES[c2]
-            elif c2 in INDIAN_CITIES:
-                dest_city = c2.capitalize()
-                dest_lat, dest_lon = INDIAN_CITIES[c2]
+        # Check entity-based route origin / destination first
+        if intent_res.entities.get("route_origin"):
+            c1_ent = intent_res.entities["route_origin"].lower()
+            if c1_ent in INDIAN_CITIES:
+                orig_city = c1_ent.capitalize()
+                orig_lat, orig_lon = INDIAN_CITIES[c1_ent]
+        if intent_res.entities.get("route_destination"):
+            c2_ent = intent_res.entities["route_destination"].lower()
+            if c2_ent in INDIAN_CITIES:
+                dest_city = c2_ent.capitalize()
+                dest_lat, dest_lon = INDIAN_CITIES[c2_ent]
+
+        # Check regex across all matches on normalized text if origin or destination not yet resolved
+        if not intent_res.entities.get("route_origin") or not intent_res.entities.get("route_destination"):
+            for m in re.finditer(r'(?:from\s+)?([a-z]+)\s+(?:to|se|te|towards)\s+([a-z]+)', q_low):
+                c1 = m.group(1)
+                c2 = m.group(2)
+                if c1 in INDIAN_CITIES and c2 in INDIAN_CITIES:
+                    orig_city = c1.capitalize()
+                    orig_lat, orig_lon = INDIAN_CITIES[c1]
+                    dest_city = c2.capitalize()
+                    dest_lat, dest_lon = INDIAN_CITIES[c2]
+                    break
+                elif c2 in INDIAN_CITIES and not intent_res.entities.get("route_destination"):
+                    dest_city = c2.capitalize()
+                    dest_lat, dest_lon = INDIAN_CITIES[c2]
+                    break
 
         # 3. Resolve Current Battery SoC
         current_soc = 18.0
@@ -844,7 +915,12 @@ class VoiceAssistant:
         n_stops = len(stops)
         cur_range = plan["current_range_km"]
 
-        # 5. Build Spoken Voice Text
+        # Check if booking was requested
+        is_booking = intent_res.entities.get("is_booking", False) or any(
+            w in q_low for w in ["book", "reserve", "lock", "booking", "slot", "slots", "kardo", "karo"]
+        ) and any(w in q_low for w in ["book", "reserve", "lock", "booking"])
+
+        # 5. Build Spoken Voice Text and Handle Stop 1 Reservation
         s1 = stops[0] if stops else None
         s1_name = s1["name"] if s1 else "highway hub"
         s1_km = s1["milestone_km"] if s1 else 50
@@ -854,6 +930,45 @@ class VoiceAssistant:
         s2_text = f", and Stop 2 at {s2['name']} ({s2['milestone_km']:.0f} km mark, {s2['power_kw']:.0f} kW)" if s2 else ""
         s2_text_hi = f", aur Stop 2 {s2['name']} ({s2['milestone_km']:.0f} km, {s2['power_kw']:.0f} kW)" if s2 else ""
         s2_text_mr = f", ani Stop 2 {s2['name']} ({s2['milestone_km']:.0f} km)" if s2 else ""
+
+        pin_str = None
+        spoken_pin = ""
+        if is_booking and s1:
+            pin_str = "".join(random.choices(string.digits, k=6))
+            spoken_pin = format_spoken_pin(pin_str)
+            s1["is_reserved"] = True
+            s1["reservation_pin"] = pin_str
+            plan["is_booked"] = True
+            plan["reservation_pin"] = pin_str
+            plan["reserved_stop"] = s1
+
+            # Store reservation record in database
+            try:
+                import sqlite3
+                import database
+                conn = sqlite3.connect(database.DB_PATH)
+                cur = conn.cursor()
+                cur.execute("""
+                    INSERT OR REPLACE INTO reservations 
+                    (station_id, reservation_id, user_id, user_name, pin, duration_minutes, created_at, expires_at, vehicle_soc, payment_order_id, payment_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    s1["station_id"],
+                    f"resv_{int(time.time())}",
+                    user_id,
+                    "Hyundai Driver",
+                    pin_str,
+                    30,
+                    time.time(),
+                    time.time() + 1800,
+                    current_soc,
+                    "corridor_escrow",
+                    "CONFIRMED"
+                ))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                logger.warning(f"[Corridor] DB reservation save error: {e}")
 
         if plan["direct_reachable"]:
             if intent_res.language_mix in ("hi", "hi+en"):
@@ -873,6 +988,24 @@ class VoiceAssistant:
                     f"Planning your route from {orig_city} to {dest_city} ({total_km:.0f} km, ~{hours:.1f} hours). "
                     f"With your current {current_soc:.0f}% battery ({cur_range:.0f} km range), you can reach directly without charging on the way. "
                     f"I've displayed the full route on your dashboard screen!"
+                )
+        elif is_booking and s1:
+            if intent_res.language_mix in ("hi", "hi+en"):
+                spoken = (
+                    f"{orig_city} se {dest_city} tak {total_km:.0f} km ka highway route plan kar diya hai (~{hours:.1f} ghante). "
+                    f"Aapke route ke liye Stop 1 {s1_name} ({s1_km:.0f} km, {s1_kw:.0f} kW) par charging slot PIN {spoken_pin} ke saath book kar diya hai. "
+                    f"Poore route ke sabhi {n_stops} charging stops dashboard map par plot kar diye hain!"
+                )
+            elif intent_res.language_mix == "mr":
+                spoken = (
+                    f"{orig_city} te {dest_city} highway route ({total_km:.0f} km) plan kela aahe. "
+                    f"Stop 1 {s1_name} ({s1_km:.0f} km) var PIN {spoken_pin} sobat slot book kela aahe!"
+                )
+            else:
+                spoken = (
+                    f"I have planned your road trip from {orig_city} to {dest_city} via highway corridor ({total_km:.0f} km, ~{hours:.1f} hours) "
+                    f"and locked your Stop 1 charging slot at {s1_name} ({s1_km:.0f} km mark, {s1_kw:.0f} kW) with PIN {spoken_pin}. "
+                    f"All {n_stops} highway milestone stops are displayed on your map!"
                 )
         else:
             if intent_res.language_mix in ("hi", "hi+en"):
@@ -905,7 +1038,7 @@ class VoiceAssistant:
             display_data=plan,
             action_type="corridor_route",
             language=intent_res.language_mix,
-            tool_calls=["corridor_planner.plan_corridor_trip"]
+            tool_calls=["corridor_planner.plan_corridor_trip"] + (["charging.reserve_slot"] if is_booking else [])
         )
 
     def _ask_gemini_for_cpo(self, intent_res: IntentResult) -> str:
@@ -992,7 +1125,7 @@ class VoiceAssistant:
 
         return VoiceAssistantResponse(
             text=spoken,
-            display_data={"vehicle_status": status, "soc": soc, "range_km": range_km},
+            display_data={"vehicle_status": status, "soc": soc, "battery_percentage": f"{int(soc)}%", "range_km": range_km},
             action_type="info",
             language=intent_res.language_mix,
             tool_calls=["vehicle.get_vehicle_status"],
