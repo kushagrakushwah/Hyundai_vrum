@@ -231,7 +231,8 @@ class SmartReserveBrain:
             return self._ans_low_battery_emergency(vehicle_status, language)
 
         # ── 1. EXACT CITY & PINPOINT LOCATION / WHERE AM I ────────────────────
-        if self._matches(q, [
+        charger_intent_kws = ["charg", "station", "plug", "nearest", "paas", "javal", "hub", "kiosk", "point", "slot", "one", "cpo", "fast", "ev"]
+        if not any(k in q for k in charger_intent_kws) and self._matches(q, [
             "which city", "in which city", "what city", "current city", "city am i in",
             "where am i", "what is my location", "current location", "where is the car",
             "my location", "kahan hoon main", "location kya hai", "kuthe aaho mee",

@@ -128,6 +128,7 @@ class VoiceInputRequest(BaseModel):
     city: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 class LocationUpdateRequest(BaseModel):
     city: Optional[str] = None
@@ -807,7 +808,8 @@ async def process_voice_input(req: VoiceInputRequest):
         city=req.city,
         user_lat=req.latitude,
         user_lon=req.longitude,
-        language=req.language
+        language=req.language,
+        history=req.history
     )
     
     # If the assistant wants to reserve, wire it to the actual reserve API
@@ -832,6 +834,7 @@ async def process_voice_input(req: VoiceInputRequest):
             except Exception as e:
                 response.display_data['reserve_error'] = str(e)
     
+    session_ctx = voice_assistant._session_memory.get(req.user_id, {})
     return {
         "text": response.text,
         "display_data": response.display_data,
@@ -839,6 +842,11 @@ async def process_voice_input(req: VoiceInputRequest):
         "tool_calls": response.tool_calls,
         "language": response.language,
         "needs_confirmation": response.needs_confirmation,
+        "session_context": {
+            "last_station_id": session_ctx.get("last_station", {}).get("station_id") or session_ctx.get("last_station", {}).get("id"),
+            "last_station_name": session_ctx.get("last_station", {}).get("station_name") or session_ctx.get("last_station", {}).get("name"),
+            "city": session_ctx.get("city")
+        }
     }
 
 @app.post("/api/voice/tts")
