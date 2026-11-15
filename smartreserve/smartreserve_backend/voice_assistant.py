@@ -103,6 +103,7 @@ class VoiceAssistantResponse:
 class VoiceAssistant:
     def __init__(self):
         self._pending_confirmations: Dict[str, dict] = {}
+        self._session_memory: Dict[str, dict] = {}
 
     # ── Language detection ────────────────────────────────────────────────────
     def _detect_language(self, text: str) -> str:
@@ -129,8 +130,13 @@ class VoiceAssistant:
 
     # ── Intent parsing ────────────────────────────────────────────────────────
     # ── Intent parsing ────────────────────────────────────────────────────────
-    def _parse_intent(self, text: str, selected_station_id: Optional[str] = None) -> IntentResult:
+    def _parse_intent(self, text: str, selected_station_id: Optional[str] = None, user_id: str = "hyundai_driver_001") -> IntentResult:
         text_lower = text.lower().strip()
+
+        # Follow-up session fallback: if no station selected, check session memory
+        last_st = self._session_memory.get(user_id, {}).get("last_station")
+        if not selected_station_id and last_st:
+            selected_station_id = last_st.get("station_id")
 
         # Strip common wake words
         wake_words = ["hey ava", "ok ava", "ava", "hey hyundai", "ok hyundai", "hello ava", "hi ava"]
@@ -188,6 +194,25 @@ class VoiceAssistant:
                 entities=entities,
                 raw_text=text,
                 language_mix=self._detect_language(text),
+            )
+
+        # 2b. Direct follow-up reservation intent ("book this", "reserve this", "lock this", "yeh wala book karo")
+        direct_reserve_phrases = [
+            "book this", "reserve this", "lock this", "book it", "reserve it", "lock it",
+            "book this one", "reserve this one", "haan book karo", "haan book kar do",
+            "yeh wala book karo", "book karo", "reserve karo", "book kara", "lock kar do",
+            "reserve kar do", "book this station", "reserve this station", "lock this station"
+        ]
+        if cleaned_text in direct_reserve_phrases or (any(cleaned_text.startswith(p) for p in direct_reserve_phrases) and len(cleaned_text.split()) <= 4):
+            entities["use_selected"] = True
+            entities["selected_station_id"] = selected_station_id
+            entities["rank"] = 1
+            return IntentResult(
+                intent="RESERVE_SLOT",
+                confidence=0.98,
+                entities=entities,
+                language_mix=self._detect_language(text),
+                raw_text=text,
             )
 
         # 3. Extract city if mentioned in text (with phonetic/typo tolerance)
@@ -379,10 +404,16 @@ class VoiceAssistant:
                 "which charger is best", "vs", "which network is better", "best charging network", "compare charger", "fastest"
             ],
             "FIND_CPO": [
-                "nearest", "charging station", "charger", "find station", "see", "show", "view",
+                "nearest", "charging station", "charging stations", "charger", "chargers",
+                "charges station", "charges stations", "charging point", "charging points",
+                "charger point", "charger points", "nearest one", "the nearest one", "closest one",
+                "nearest charger", "nearest station", "closest charger", "closest station",
+                "charges near me", "charging near me", "nearest charges station", "charges station to my location",
+                "find station", "see", "show", "view",
                 "slot", "slots", "kahan", "kuthe", "javal", "paas", "charge karna", "charger dhundo",
-                "stations nearby", "ev station", "stations", "dikhao", "dekho", "dekhna",
-                "look for", "look", "search", "inside", "dhundo", "khoj"
+                "stations nearby", "ev station", "ev stations", "stations", "dikhao", "dekho", "dekhna",
+                "look for", "look", "search", "inside", "dhundo", "khoj", "sabse paas", "paas ka charger",
+                "javalcha charger", "paas ka station", "javalcha station", "charge point", "charge points"
             ],
             "VEHICLE_STATUS": [
                 "status", "kitni battery", "kiti battery", "range", "fuel left",
@@ -435,9 +466,15 @@ class VoiceAssistant:
             "GREETING": ["hello", "hi", "hey", "namaste", "namaskar", "ava", "hey ava"],
         }
 
+        charger_words = ["charg", "station", "plug", "nearest", "paas", "javal", "hub", "kiosk", "point", "slot", "cpo", "fast", "ev", "one"]
+        has_charger_ref = any(cw in cleaned_text for cw in charger_words)
+
         best_intent = "UNKNOWN"
         best_score = 0
         for intent, keywords in intents.items():
+            # Never let LOCATION_QUERY steal a query asking for a charger/station/point
+            if intent == "LOCATION_QUERY" and has_charger_ref:
+                continue
             score = 0
             for kw in keywords:
                 if " " in kw:
@@ -482,7 +519,8 @@ class VoiceAssistant:
         city: Optional[str] = None,
         user_lat: Optional[float] = None,
         user_lon: Optional[float] = None,
-        language: Optional[str] = None
+        language: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
     ) -> VoiceAssistantResponse:
         # Check pending confirmation first using whole-word tokens to avoid false matches (e.g. 'sure' in 'pressure')
         if user_id in self._pending_confirmations:
@@ -499,7 +537,7 @@ class VoiceAssistant:
                 # User asked a different query or gave a new specific command — cancel pending confirmation
                 self._pending_confirmations.pop(user_id, None)
 
-        intent_res = self._parse_intent(text, selected_station_id=selected_station_id)
+        intent_res = self._parse_intent(text, selected_station_id=selected_station_id, user_id=user_id)
 
         # Explicit language override from frontend language toggle (e.g. 'hi-IN', 'mr-IN', 'en-IN')
         if language and language not in ("auto", ""):
@@ -529,7 +567,7 @@ class VoiceAssistant:
         if intent_res.entities.get("station_landmark") and intent_res.intent in ("FIND_CPO", "RESERVE_SLOT"):
             intent_res.entities["target_query"] = intent_res.entities["station_name_hint"]
 
-        # 1. Primary Action Handlers: Repeat PIN, Cancel, Direct Reservation, AC
+        # 1. Primary Action Handlers: Repeat PIN, Cancel, Direct Reservation, AC, Corridor, Find CPO
         if intent_res.intent == "REPEAT_PIN":
             return self._handle_repeat_pin(intent_res, user_id)
         elif intent_res.intent == "CANCEL":
@@ -540,6 +578,8 @@ class VoiceAssistant:
             return self._handle_set_ac(intent_res)
         elif intent_res.intent == "CORRIDOR_TRIP":
             return self._handle_corridor_trip(intent_res, user_id, current_city=city, user_lat=user_lat, user_lon=user_lon)
+        elif intent_res.intent == "FIND_CPO":
+            return self._handle_find_cpo(intent_res, user_id)
 
         # 2. Deep Cognitive Brain (Architecture, Priority Engine, Battery Health, Location, Tariffs, Specs)
         v_ctx = self._get_vehicle_context(intent_res.entities.get("user_lat"), intent_res.entities.get("user_lon"), intent_res.entities.get("city"))
@@ -805,7 +845,16 @@ class VoiceAssistant:
                 f"(~{s1_time:.0f} min to 80%). Shall I reserve Station 1 for you?"
             )
 
-        # Store pending reservation for confirmation flow
+        # Store pending reservation for confirmation flow & session memory
+        self._session_memory[user_id] = {
+            "last_station": s1,
+            "last_stations": stations,
+            "city": city,
+            "query": intent_res.raw_text,
+        }
+        recs_data["selected_station_id"] = s1.get("station_id") or s1.get("id", "")
+        recs_data["last_station_name"] = s1_name
+
         self._pending_confirmations[user_id] = {
             "action": "reserve",
             "station_id": s1.get("station_id") or s1.get("id", ""),
@@ -1298,6 +1347,14 @@ class VoiceAssistant:
                         else:
                             st_dist = 0.5
                         st_kw = float(top_sobj.get('power_kw', 60.0))
+
+                # 4c. Match by session memory if driver said "book this"
+                if not st_name and self._session_memory.get(user_id, {}).get("last_station"):
+                    last_st = self._session_memory[user_id]["last_station"]
+                    st_name = last_st.get("station_name") or last_st.get("name")
+                    st_id = last_st.get("station_id") or last_st.get("id", "")
+                    st_dist = float(last_st.get("distance_km", 0.5))
+                    st_kw = float(last_st.get("effective_power_kw") or last_st.get("power_kw", 60.0))
 
                 # 5. Match by rank / nearest
                 if not st_name and recs:

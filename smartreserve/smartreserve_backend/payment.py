@@ -68,9 +68,9 @@ class PaymentEngine:
         
     def full_refund(self, payment_id: str) -> dict:
         if self.mock_mode:
-            return {"refunded": False, "mock": True, "reason": "No real payment in demo mode"}
+            return {"refunded": True, "mock": True, "status": "refunded", "success": True, "reason": "Mock refund processed"}
         # Real implementation would refund via self.client.payment.refund(...)
-        return {"refunded": True, "mock": False, "status": "refunded"}
+        return {"refunded": True, "mock": False, "status": "refunded", "success": True}
         
     def verify_payment_signature(self, order_id: str, payment_id: str, signature: str) -> bool:
         if self.mock_mode:

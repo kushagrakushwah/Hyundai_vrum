@@ -1,0 +1,8 @@
+# Wokwi Library Dependencies
+Adafruit GFX Library
+Adafruit SSD1306
+Adafruit ILI9341
+MFRC522
+Keypad
+PubSubClient
+ArduinoJson

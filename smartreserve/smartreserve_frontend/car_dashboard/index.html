@@ -3550,7 +3550,30 @@
         let wakeWordActivated = false;
         let wakeWordResetTimer = null;
         const WAKE_WORDS = ["hello", "hi", "hey", "eva", "ava", "hello eva", "hey eva", "hello ava", "hey ava", "ok eva", "ok ava", "namaste", "sun", "suno", "listen"];
-        const STOP_WORDS = ["eva stop", "ava stop", "stop eva", "stop ava", "stop speaking", "band kar", "ruk ja", "chup"];
+        const STOP_WORDS = [
+            // English
+            "stop", "eva stop", "ava stop", "stop eva", "stop ava", "stop speaking", "pause", "wait", "hold on", "quiet", "shut up", "cancel", "cut off",
+            // Hindi
+            "ruko", "ruk ja", "ruk jao", "ruk", "bas", "bas karo", "chup", "chup raho", "band karo", "mat bolo", "rukona",
+            // Marathi
+            "thamb", "thamba", "thambava", "paha", "pure", "bas kara", "bolu naka", "shant basa"
+        ];
+        const BARGE_IN_PREFIXES = [
+            "so tell me", "by the way", "tell me", "what about", "achha suno", "ek baat",
+            "suno", "ek sanga", "aik", "mala sanga", "and tell me", "also tell me", "wait tell me", "wait what", "listen"
+        ];
+        let conversationHistory = [];
+
+        function interruptAndStopTTS() {
+            if ('speechSynthesis' in window) {
+                try { window.speechSynthesis.cancel(); } catch(e) {}
+            }
+            if (currentAudioPlayer) {
+                try { currentAudioPlayer.pause(); } catch(e) {}
+                currentAudioPlayer = null;
+            }
+            isSpeakingTTS = false;
+        }
 
         function resetWakeWord() {
             wakeWordActivated = false;
@@ -3671,30 +3694,6 @@
                 };
                 
                 recognition.onresult = (event) => {
-                    if (isSpeakingTTS) {
-                        // Even while speaking, watch for "eva stop" / "ava stop"
-                        for (let i = event.resultIndex; i < event.results.length; i++) {
-                            const t = event.results[i][0].transcript.toLowerCase().trim();
-                            if (STOP_WORDS.some(sw => t.includes(sw))) {
-                                // Immediately cancel all TTS
-                                window.speechSynthesis.cancel();
-                                if (currentAudioPlayer) {
-                                    try { currentAudioPlayer.pause(); currentAudioPlayer = null; } catch(e) {}
-                                }
-                                isSpeakingTTS = false;
-                                resetWakeWord();
-                                showToast('🔇 EVA stopped', 'info');
-                                if (voiceResponse) voiceResponse.innerHTML = '<div class="assistant-label">🤖 AVA</div><div style="color:var(--text-muted);font-size:13px;">Stopped. Say "Hello EVA" to continue.</div>';
-                                if (handsFreeActive) {
-                                    clearTimeout(restartTimer);
-                                    restartTimer = setTimeout(startListening, 400);
-                                }
-                                return;
-                            }
-                        }
-                        return; // Still speaking and no stop word — ignore input
-                    }
-
                     let interimTranscript = '';
                     let finalTranscript = '';
                     for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -3709,21 +3708,76 @@
                         voiceTranscript.style.display = 'block';
                         voiceInterim.innerText = interimTranscript;
                     }
+
+                    const activeTranscript = (finalTranscript || interimTranscript).toLowerCase().trim();
+                    if (!activeTranscript) return;
+
+                    // Match whole-word stop commands in English, Hindi, and Marathi
+                    const isStopRequested = STOP_WORDS.some(sw => {
+                        const escaped = sw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        return new RegExp('(?:^|\\s|,|\\.)' + escaped + '(?:$|\\s|,|\\.)', 'i').test(activeTranscript);
+                    });
+
+                    // ── A. Interruption while AVA is speaking (Barge-in / Stop) ──
+                    if (isSpeakingTTS) {
+                        if (isStopRequested) {
+                            // Driver commanded STOP in English, Hindi, or Marathi
+                            interruptAndStopTTS();
+                            activateWakeWord(); // DO NOT LOCK OUT! Stay listening for next command!
+                            showToast('🔇 Stopped speaking — listening for command', 'info');
+                            if (voiceResponse) {
+                                voiceResponse.innerHTML = '<div class="assistant-label">🤖 AVA</div><div style="color:var(--accent-cyan);font-size:13px;">🎙️ Stopped. Listening for your command…</div>';
+                            }
+                            if (voiceInterim) voiceInterim.innerText = '';
+                            return;
+                        }
+
+                        // Driver started with conversational barge-in prefix (e.g. "so tell me...", "by the way...") or substantive command
+                        const matchedPrefix = BARGE_IN_PREFIXES.find(bp => activeTranscript.startsWith(bp) || activeTranscript.includes(bp));
+                        const meaningfulWords = activeTranscript.split(/\s+/).filter(w => w.length >= 3);
+
+                        if (matchedPrefix || (finalTranscript && meaningfulWords.length >= 2)) {
+                            // Immediately cut off AVA speech!
+                            interruptAndStopTTS();
+                            activateWakeWord();
+
+                            let cleanCommand = activeTranscript;
+                            if (matchedPrefix) {
+                                const idx = cleanCommand.indexOf(matchedPrefix);
+                                cleanCommand = cleanCommand.slice(idx + matchedPrefix.length).trim().replace(/^[,. ]+/, '');
+                            }
+                            if (!cleanCommand || cleanCommand.length < 2) {
+                                cleanCommand = activeTranscript;
+                            }
+
+                            showToast('🎙️ Interrupted: Listening to your command…', 'info');
+                            voiceTranscript.style.display = 'block';
+                            if (voiceInterim) voiceInterim.innerText = '';
+                            voiceFinal.innerText = cleanCommand;
+                            processVoiceCommand(cleanCommand);
+                            return;
+                        }
+
+                        return; // Ignore low-confidence ambient noise while speaking
+                    }
+
+                    // ── B. Processing when AVA is NOT speaking ──
                     if (finalTranscript && finalTranscript.trim()) {
                         const lowerFinal = finalTranscript.toLowerCase().trim();
 
-                        // STOP command check (when not speaking)
-                        if (STOP_WORDS.some(sw => lowerFinal.includes(sw))) {
-                            window.speechSynthesis.cancel();
-                            if (currentAudioPlayer) { try { currentAudioPlayer.pause(); currentAudioPlayer = null; } catch(e) {} }
-                            isSpeakingTTS = false;
-                            resetWakeWord();
-                            showToast('🔇 EVA stopped', 'info');
+                        // STOP command when not speaking
+                        if (isStopRequested) {
+                            interruptAndStopTTS();
+                            activateWakeWord();
+                            showToast('🔇 Stopped — listening', 'info');
+                            if (voiceResponse) {
+                                voiceResponse.innerHTML = '<div class="assistant-label">🤖 AVA</div><div style="color:var(--accent-cyan);font-size:13px;">🎙️ Listening…</div>';
+                            }
                             return;
                         }
 
                         if (handsFreeActive) {
-                            // In hands-free mode: gate on wake word
+                            // In hands-free mode: gate on wake word if not already activated
                             const hasWakeWord = WAKE_WORDS.some(ww => lowerFinal.includes(ww));
                             if (!wakeWordActivated) {
                                 if (hasWakeWord) {
@@ -3732,33 +3786,28 @@
                                     let cmd = lowerFinal;
                                     for (const ww of WAKE_WORDS) { cmd = cmd.replace(ww, '').trim(); }
                                     if (cmd.length > 2) {
-                                        // Command followed wake word on same breath — process it
                                         voiceTranscript.style.display = 'block';
                                         if (voiceInterim) voiceInterim.innerText = '';
                                         voiceFinal.innerText = cmd;
-                                        resetWakeWord(); // reset after dispatching
                                         processVoiceCommand(cmd);
                                     } else {
-                                        // User said ONLY the wake-word (e.g. "hello", "hi", "eva")!
-                                        // Respond warmly right away and keep listening active!
                                         voiceTranscript.style.display = 'block';
                                         if (voiceInterim) voiceInterim.innerText = '';
                                         voiceFinal.innerText = finalTranscript;
                                         processVoiceCommand('hello');
                                     }
                                 }
-                                // else: ignore — background noise, no wake word
                                 return;
                             } else {
-                                // Wake word already activated — process as command
+                                // Wake word already activated — process command and refresh listening timer
                                 voiceTranscript.style.display = 'block';
                                 if (voiceInterim) voiceInterim.innerText = '';
                                 voiceFinal.innerText = finalTranscript;
-                                resetWakeWord(); // reset so next query needs wake word again
+                                activateWakeWord();
                                 processVoiceCommand(finalTranscript.trim());
                             }
                         } else {
-                            // Manual (non-hands-free) mode — process everything as before
+                            // Manual mode
                             voiceTranscript.style.display = 'block';
                             if (voiceInterim) voiceInterim.innerText = '';
                             voiceFinal.innerText = finalTranscript;
@@ -3915,7 +3964,8 @@
                         selected_station_id: detectedLandmark || selectedStationId,
                         city: currentCity,
                         latitude: currentLat,
-                        longitude: currentLng
+                        longitude: currentLng,
+                        history: conversationHistory
                     })
                 });
                 
@@ -3923,6 +3973,21 @@
                     const data = await res.json();
                     displayVoiceResponse(data);
                     speakResponse(data.text);
+
+                    // Track multi-turn conversation history
+                    conversationHistory.push({ role: 'user', content: text });
+                    conversationHistory.push({ role: 'assistant', content: data.text });
+                    if (conversationHistory.length > 8) conversationHistory = conversationHistory.slice(-8);
+
+                    // Track session context and recommended station
+                    if (data.session_context && data.session_context.last_station_id) {
+                        selectedStationId = data.session_context.last_station_id;
+                    } else if (data.display_data && data.display_data.selected_station_id) {
+                        selectedStationId = data.display_data.selected_station_id;
+                    } else if (data.display_data && data.display_data.recommendations && data.display_data.recommendations.length > 0) {
+                        const rec0 = data.display_data.recommendations[0];
+                        selectedStationId = rec0.station_id || rec0.id;
+                    }
                     
                     // If action was executed directly
                     if (data.display_data && data.display_data.action === 'reserve') {
@@ -4348,8 +4413,9 @@ if (data.display_data && data.display_data.action === 'show_compatibility_guide'
                     currentAudioPlayer = null;
                 }
                 isSpeakingTTS = true;
-                if (recognition && isListening) {
-                    try { recognition.abort(); } catch(e) {}
+                // Keep hands-free listening active so driver can barge in or say stop anytime
+                if (handsFreeActive && (!recognition || !isListening)) {
+                    startListening();
                 }
 
                 // Clean text for speech: convert PINs to digit sequence
