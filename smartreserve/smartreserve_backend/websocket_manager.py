@@ -95,3 +95,7 @@ class WebSocketManager:
             "kiosk_connections": len(self.kiosk_connections),
             "dashboard_connections": len(self.dashboard_connections),
         }
+
+
+ws_manager = WebSocketManager()
+

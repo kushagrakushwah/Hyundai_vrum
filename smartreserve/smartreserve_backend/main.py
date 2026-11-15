@@ -12,7 +12,7 @@ import string
 import sys
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict, Any, Union
 
 if sys.platform == "win32":
     try:
@@ -39,7 +39,8 @@ from pydantic import BaseModel
 import database
 from ocpp_engine import OCPPEngine
 from payment import PaymentEngine
-from websocket_manager import WebSocketManager
+from websocket_manager import WebSocketManager, ws_manager
+from mqtt_service import mqtt_service
 from stations_db import StationsDB
 from voice_assistant import VoiceAssistant, format_spoken_pin, INDIAN_CITIES
 from priority_engine import PriorityEngine, haversine
@@ -70,7 +71,7 @@ if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 # ── Global Instances ──────────────────────────────────────────────────────────
-ws_manager = WebSocketManager()
+# ws_manager is shared singleton imported from websocket_manager
 db = StationsDB()
 ocpp_engine = OCPPEngine()
 payment_engine = PaymentEngine()
@@ -104,13 +105,17 @@ OCM_API_KEY = os.getenv("OCM_API_KEY") or "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 # ── Pydantic Models ───────────────────────────────────────────────────────────
 class ReserveRequest(BaseModel):
     station_id: str
+    connector_id: Optional[str] = "1"
     duration_minutes: int = 30
     user_id: str = "hyundai_driver_001"
     user_name: str = "Hyundai Driver"
     vehicle_soc: float = 18.0
+    rfid_uid: Optional[str] = None
+    pin: Optional[str] = None
 
 class VerifyOTPRequest(BaseModel):
     station_id: str
+    connector_id: Optional[str] = "1"
     pin: str
     kiosk_id: Optional[str] = None
 
@@ -579,17 +584,31 @@ async def get_iot_device_specs():
 # ── Reservation Routes ─────────────────────────────────────────────────────────
 @app.post("/api/reserve")
 async def reserve_station(req: ReserveRequest):
-    """Lock a charger slot for 30 minutes with OCPP ReserveNow + Razorpay escrow."""
+    """Lock a charger slot for 30 minutes with OCPP ReserveNow + Razorpay escrow + MQTT /reserve."""
     station = db.get_station(req.station_id)
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
 
-    existing = await database.get_reservation(req.station_id)
+    connector_id = str(req.connector_id or "1")
+
+    # Check if connector is in FAULTED state
+    status_entry = await database.get_connector_status(req.station_id, connector_id)
+    if status_entry and status_entry.get("state") == "FAULTED":
+        raise HTTPException(status_code=503, detail=f"Connector {connector_id} is FAULTED and unavailable.")
+
+    # Check if connector is currently charging another vehicle
+    active_session = await database.get_session(req.station_id, connector_id)
+    if active_session:
+        raise HTTPException(status_code=409, detail=f"Connector {connector_id} is currently charging another vehicle.")
+
+    existing = await database.get_reservation(req.station_id, connector_id)
     if existing and existing["expires_at"] > time.time():
         if existing.get("user_id") == req.user_id:
             return {
                 "success": True,
                 "reservation_id": existing["reservation_id"],
+                "station_id": req.station_id,
+                "connector_id": connector_id,
                 "pin": existing["pin"],
                 "expires_at": existing["expires_at"],
                 "station": station,
@@ -598,22 +617,24 @@ async def reserve_station(req: ReserveRequest):
                 "payment": {"order_id": existing.get("payment_order_id"), "mock": True, "status": "active"},
             }
         else:
-            await database.delete_reservation(req.station_id)
+            raise HTTPException(status_code=409, detail=f"Connector {connector_id} is already reserved by another user.")
 
-    pin = generate_pin()
+    pin = req.pin if req.pin else generate_pin()
     created_at = time.time()
     expires_at = created_at + (req.duration_minutes * 60)
-    reservation_id = f"RES_{req.station_id}_{int(created_at)}"
+    reservation_id = f"RES_{req.station_id}_{connector_id}_{int(created_at)}"
 
     # Create Razorpay escrow order
     payment_info = payment_engine.create_escrow_order(reservation_id, req.user_id)
 
     res_data = {
         "station_id": req.station_id,
+        "connector_id": connector_id,
         "reservation_id": reservation_id,
         "user_id": req.user_id,
         "user_name": req.user_name,
         "pin": pin,
+        "rfid_uid": req.rfid_uid,
         "duration_minutes": req.duration_minutes,
         "created_at": created_at,
         "expires_at": expires_at,
@@ -623,13 +644,27 @@ async def reserve_station(req: ReserveRequest):
     }
     await database.save_reservation(res_data)
 
+    # Publish MQTT reservation command to hardware
+    await mqtt_service.publish_reserve(
+        station_id=req.station_id,
+        connector_id=connector_id,
+        action="CREATE",
+        reservation_id=reservation_id,
+        pin=pin,
+        duration_seconds=60,
+        expires_at=int(expires_at),
+        rfid_uid=req.rfid_uid or ""
+    )
+
     # OCPP 1.6J — ReserveNow
-    ocpp_resp = await ocpp_engine.reserve_now(req.station_id, reservation_id, expires_at)
+    conn_num = int(connector_id) if connector_id.isdigit() else 1
+    ocpp_resp = await ocpp_engine.reserve_now(req.station_id, reservation_id, expires_at, connector_id=conn_num)
 
     # WebSocket push to kiosk
     await ws_manager.broadcast_to_kiosk(req.station_id, {
         "type": "OCPP_RESERVE_NOW",
         "station_id": req.station_id,
+        "connector_id": connector_id,
         "reservation_id": reservation_id,
         "expiry": expires_at,
         "pin_hash": pin,
@@ -640,6 +675,7 @@ async def reserve_station(req: ReserveRequest):
     await ws_manager.broadcast_to_car(req.user_id, {
         "type": "RESERVATION_CONFIRMED",
         "station_id": req.station_id,
+        "connector_id": connector_id,
         "reservation_id": reservation_id,
         "pin": pin,
         "expires_at": expires_at,
@@ -649,9 +685,18 @@ async def reserve_station(req: ReserveRequest):
         "eta_minutes": 18,
     })
 
+    await ws_manager.broadcast_to_all({
+        "type": "RESERVATION_CREATED",
+        "station_id": req.station_id,
+        "connector_id": connector_id,
+        "reservation_id": reservation_id,
+    })
+
     return {
         "success": True,
         "reservation_id": reservation_id,
+        "station_id": req.station_id,
+        "connector_id": connector_id,
         "pin": pin,
         "expires_at": expires_at,
         "station": station,
@@ -663,22 +708,24 @@ async def reserve_station(req: ReserveRequest):
 @app.post("/api/verify-otp")
 async def verify_otp(req: VerifyOTPRequest):
     """Verify PIN, trigger OCPP UnlockConnector, and start charging session."""
-    reservation = await database.get_reservation(req.station_id)
+    connector_id = str(req.connector_id or "1")
+    reservation = await database.get_reservation(req.station_id, connector_id)
     if not reservation:
-        raise HTTPException(status_code=404, detail="No active reservation for this station")
+        raise HTTPException(status_code=404, detail="No active reservation for this connector")
 
     if reservation["expires_at"] < time.time():
-        await database.delete_reservation(req.station_id)
+        await database.delete_reservation(req.station_id, connector_id)
         await ocpp_engine.cancel_reservation(req.station_id, reservation["reservation_id"])
         await database.save_booking_history({
             **reservation, "outcome": "EXPIRED", "total_kwh": 0, "amount_charged_rs": 0
         })
         raise HTTPException(status_code=410, detail="Reservation expired. No-show fee applied.")
 
-    if str(reservation["pin"]) != str(req.pin):
+    if str(reservation["pin"]).strip() != str(req.pin).strip():
         await ws_manager.broadcast_to_kiosk(req.station_id, {
             "type": "ACCESS_DENIED",
             "station_id": req.station_id,
+            "connector_id": connector_id,
             "reason": "Wrong PIN",
         })
         raise HTTPException(status_code=401, detail="Wrong PIN. Connector stays locked.")
@@ -687,9 +734,10 @@ async def verify_otp(req: VerifyOTPRequest):
     station = db.get_station(req.station_id) or {}
     power_kw = float(station.get("power_kw") or 60.0)
 
-    session_id = f"CHG_{req.station_id}_{int(time.time())}"
+    session_id = f"CHG_{req.station_id}_{connector_id}_{int(time.time())}"
     session_data = {
         "station_id": req.station_id,
+        "connector_id": connector_id,
         "session_id": session_id,
         "user_id": reservation["user_id"],
         "start_soc": reservation["vehicle_soc"],
@@ -700,47 +748,73 @@ async def verify_otp(req: VerifyOTPRequest):
     }
     await database.save_session(session_data)
 
-    await ocpp_engine.unlock_connector(req.station_id)
-    await ocpp_engine.remote_start_transaction(req.station_id, reservation["user_id"])
+    conn_num = int(connector_id) if connector_id.isdigit() else 1
+    await ocpp_engine.unlock_connector(req.station_id, connector_id=conn_num)
+    await ocpp_engine.remote_start_transaction(req.station_id, reservation["user_id"], connector_id=conn_num)
 
     await ws_manager.broadcast_to_kiosk(req.station_id, {
         "type": "OCPP_UNLOCK_RELAY",
         "station_id": req.station_id,
+        "connector_id": connector_id,
         "session_id": session_id,
         "power_kw": power_kw,
         "timestamp": datetime.utcnow().isoformat(),
     })
 
     # Start live meter value streaming
-    asyncio.create_task(stream_meter_values(req.station_id, session_id, reservation["user_id"]))
+    asyncio.create_task(stream_meter_values(req.station_id, session_id, reservation["user_id"], connector_id=connector_id))
 
-    await database.delete_reservation(req.station_id)
+    await database.delete_reservation(req.station_id, connector_id)
     return {
         "success": True,
         "session_id": session_id,
+        "connector_id": connector_id,
         "power_kw": power_kw,
         "message": f"Identity verified. Relay closed. {power_kw:.0f} kW charging started.",
     }
 
 @app.post("/api/cancel-reservation/{station_id}")
-async def cancel_reservation(station_id: str, user_id: str = "hyundai_driver_001"):
-    reservation = await database.get_reservation(station_id)
+async def cancel_reservation(
+    station_id: str,
+    connector_id: Optional[str] = Query("1"),
+    user_id: str = "hyundai_driver_001"
+):
+    conn_id = str(connector_id or "1")
+    reservation = await database.get_reservation(station_id, conn_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="No active reservation")
     if reservation["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not your reservation")
 
-    await database.delete_reservation(station_id)
+    await database.delete_reservation(station_id, conn_id)
     await ocpp_engine.cancel_reservation(station_id, reservation["reservation_id"])
     payment_engine.full_refund(reservation.get("payment_order_id", ""))
 
-    await database.save_booking_history({**reservation, "outcome": "CANCELLED_BY_USER", "total_kwh": 0, "amount_charged_rs": 0})
+    await database.save_booking_history({
+        **reservation,
+        "outcome": "CANCELLED_BY_USER",
+        "total_kwh": 0,
+        "amount_charged_rs": 0
+    })
+
+    # Publish cancellation to MQTT
+    await mqtt_service.publish_reserve(
+        station_id=station_id,
+        connector_id=conn_id,
+        action="CANCEL",
+        reservation_id=reservation["reservation_id"],
+        pin=reservation.get("pin", ""),
+        duration_seconds=0,
+        expires_at=int(time.time()),
+        rfid_uid=reservation.get("rfid_uid") or ""
+    )
 
     await ws_manager.broadcast_to_kiosk(station_id, {
         "type": "OCPP_CANCEL_RESERVATION",
         "station_id": station_id,
+        "connector_id": conn_id,
     })
-    return {"success": True, "message": "Reservation cancelled. Full refund processed."}
+    return {"success": True, "connector_id": conn_id, "message": "Reservation cancelled. Full refund processed."}
 
 @app.get("/api/reservations")
 async def list_reservations():
@@ -748,8 +822,9 @@ async def list_reservations():
     return {"active_reservations": active, "count": len(active)}
 
 @app.get("/api/session/{station_id}")
-async def get_session(station_id: str):
-    session = await database.get_session(station_id)
+async def get_session(station_id: str, connector_id: Optional[str] = Query("1")):
+    conn_id = str(connector_id or "1")
+    session = await database.get_session(station_id, conn_id)
     if not session:
         raise HTTPException(status_code=404, detail="No active charging session")
     return session
@@ -1051,9 +1126,9 @@ async def dashboard_ws(websocket: WebSocket):
 
 
 # ── Background Tasks ───────────────────────────────────────────────────────────
-async def stream_meter_values(station_id: str, session_id: str, user_id: str):
+async def stream_meter_values(station_id: str, session_id: str, user_id: str, connector_id: str = "1"):
     """Stream live charging meter values to car dashboard via WebSocket."""
-    session = await database.get_session(station_id)
+    session = await database.get_session(station_id, connector_id)
     if not session:
         return
 
@@ -1078,7 +1153,7 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
     tick = 0
 
     while True:
-        current_session = await database.get_session(station_id)
+        current_session = await database.get_session(station_id, connector_id)
         if not current_session or soc >= 100.0:
             break
         await asyncio.sleep(2)
@@ -1113,6 +1188,7 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
         meter_msg = {
             "type": "METER_VALUES",
             "station_id": station_id,
+            "connector_id": connector_id,
             "session_id": session_id,
             "station_name": station_name,
             "operator": operator,
@@ -1131,10 +1207,11 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
         await ws_manager.broadcast_to_kiosk(station_id, meter_msg)
 
     # Session complete
-    await database.delete_session(station_id)
+    await database.delete_session(station_id, connector_id)
     await database.save_booking_history({
         "reservation_id": session_id,
         "station_id": station_id,
+        "connector_id": connector_id,
         "user_id": user_id,
         "user_name": "Hyundai Driver",
         "created_at": time.time(),
@@ -1147,6 +1224,7 @@ async def stream_meter_values(station_id: str, session_id: str, user_id: str):
     await ws_manager.broadcast_to_car(user_id, {
         "type": "CHARGING_COMPLETE",
         "station_id": station_id,
+        "connector_id": connector_id,
         "final_soc": round(soc, 1),
         "total_kwh": round(kwh, 2),
         "cost_rs": round(kwh * tariff, 2),
@@ -1161,12 +1239,30 @@ async def cleanup_expired_reservations():
         now = time.time()
         for r in active:
             if r["expires_at"] < now:
-                await database.delete_reservation(r["station_id"])
+                conn_id = r.get("connector_id", "1")
+                await database.delete_reservation(r["station_id"], conn_id)
                 await ocpp_engine.cancel_reservation(r["station_id"], r["reservation_id"])
-                await database.save_booking_history({**r, "outcome": "EXPIRED_NO_SHOW", "total_kwh": 0, "amount_charged_rs": 0})
+                await database.save_booking_history({
+                    **r,
+                    "outcome": "EXPIRED_NO_SHOW",
+                    "total_kwh": 0,
+                    "amount_charged_rs": 0
+                })
+                # Publish cancellation to MQTT
+                await mqtt_service.publish_reserve(
+                    station_id=r["station_id"],
+                    connector_id=conn_id,
+                    action="CANCEL",
+                    reservation_id=r["reservation_id"],
+                    pin=r.get("pin", ""),
+                    duration_seconds=0,
+                    expires_at=int(now),
+                    rfid_uid=r.get("rfid_uid") or ""
+                )
                 await ws_manager.broadcast_to_kiosk(r["station_id"], {
                     "type": "OCPP_RESERVATION_EXPIRED",
                     "station_id": r["station_id"],
+                    "connector_id": conn_id,
                     "reason": "30-min window expired. No-show fee applied.",
                 })
 
@@ -1174,6 +1270,7 @@ async def cleanup_expired_reservations():
 @app.on_event("startup")
 async def startup():
     await database.init_db()
+    await mqtt_service.start()
     asyncio.create_task(cleanup_expired_reservations())
     print("=" * 60)
     print("🚀 HYUNDAI SMARTRESERVE API v2.0 — STARTED")
@@ -1181,12 +1278,20 @@ async def startup():
     print(f"   📍 Stations loaded    : {len(db.stations)} BEE base nodes")
     print(f"   🗄️  Database           : SQLite (persistent)")
     print(f"   ⚡ OCPP Engine         : 1.6J Mock (ReserveNow, Unlock, StartTx)")
+    print(f"   📡 MQTT Service        : Started (broker: {mqtt_service.broker_host}:{mqtt_service.broker_port})")
     print(f"   🎙️  Voice Assistant    : {'AVA Active' if voice_assistant else 'Unavailable'}")
     print(f"   🏆 Priority Engine    : {'Active' if priority_eng else 'Unavailable'}")
     print(f"   💳 Payment             : {'Razorpay Mock (demo mode)' if payment_engine.mock_mode else 'Razorpay LIVE'}")
     print(f"   🌐 OCM API Key         : {'Configured' if OCM_API_KEY else 'None (mock/fallback)'}")
     print(f"   📡 WebSockets          : /ws/car/{{user}} | /ws/kiosk/{{station}}")
     print("=" * 60)
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await mqtt_service.stop()
+    print("🛑 HYUNDAI SMARTRESERVE API — STOPPED")
+
 
 
 if __name__ == "__main__":
