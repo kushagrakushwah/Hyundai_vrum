@@ -9,8 +9,20 @@
 #include <SD.h>
 #include <Wire.h>
 #include <WiFi.h>
+
+#if __has_include(<PubSubClient.h>)
 #include <PubSubClient.h>
+#define HAS_PUBSUBCLIENT 1
+#else
+#define HAS_PUBSUBCLIENT 0
+#endif
+
+#if __has_include(<ArduinoJson.h>)
 #include <ArduinoJson.h>
+#define HAS_ARDUINOJSON 1
+#else
+#define HAS_ARDUINOJSON 0
+#endif
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -130,7 +142,9 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, KEYPAD_ROWS, KEYPAD_C
 
 // Network Clients
 WiFiClient wifiClient;
+#if HAS_PUBSUBCLIENT
 PubSubClient mqttClient(wifiClient);
+#endif
 
 // ==============================================================================
 // 4. GLOBAL STATE VARIABLES
@@ -723,6 +737,7 @@ bool logTelemetryToSd(const char* isoTimestamp, uint32_t uptimeMillis, const Sen
 // 10. NETWORKING & MQTT INTEGRATION
 // ==============================================================================
 
+#if HAS_PUBSUBCLIENT && HAS_ARDUINOJSON
 void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
     Serial.printf("[MQTT] Message arrived on: %s\n", topic);
 
@@ -866,6 +881,17 @@ bool mqttPublishAuth(const char* authType, const char* pin, const char* rfidUid,
     size_t len = serializeJson(doc, buffer);
     return mqttClient.publish(topicAuth.c_str(), (const uint8_t*)buffer, len, false);
 }
+#else
+// Safe Fallback Stubs when PubSubClient or ArduinoJson is missing in libraries.txt
+void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {}
+void initMqtt() {
+    Serial.println("[MQTT] Simulation offline mode active. (Add PubSubClient & ArduinoJson to libraries.txt for live cloud MQTT)");
+}
+void serviceMqtt() {}
+bool mqttPublishState(ConnectorState state, bool relayEnergized, const char* reason, uint32_t uptimeMillis) { return false; }
+bool mqttPublishTelemetry(const SensorReadings& readings, float energyKWh, uint32_t uptimeMillis) { return false; }
+bool mqttPublishAuth(const char* authType, const char* pin, const char* rfidUid, ConnectorState currentState) { return false; }
+#endif
 
 // ==============================================================================
 // 11. SETUP
