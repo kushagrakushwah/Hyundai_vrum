@@ -28,3 +28,4 @@ smartreserve.db
 node_modules/
 .venv/
 venv/
+.agents/
