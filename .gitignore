@@ -1,6 +1,9 @@
 # Ignore archives and binaries
 *.zip
 *.tar.gz
+*.exe
+*.o
+*.bin
 
 # Python & Jupyter cache
 __pycache__/
