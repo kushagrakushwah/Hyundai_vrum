@@ -649,6 +649,19 @@
           <a href="https://wokwi.com/projects/480737603461683201" target="_blank" style="color:#60a5fa; text-decoration:none; font-size:10px;">Open in Tab ↗</a>
         </div>
       </div>
+      <!-- Interactive Quick Control Helper -->
+      <div style="background:#0b1d38; padding:8px 14px; border-bottom:1px solid #1e3a5f; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; font-size:11px; gap:8px;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px;">EXAMINER TIP</span>
+          <span style="color:#94a3b8;">Inside Wokwi circuit / terminal:</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span style="background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px;">Press <b>'R'</b> = Reserve</span>
+          <span style="background:rgba(34,197,94,0.18); border:1px solid rgba(34,197,94,0.4); color:#4ade80; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px;">Keypad <b>2-5-8-0-#</b> = Verify PIN</span>
+          <span style="background:rgba(6,182,212,0.18); border:1px solid rgba(6,182,212,0.4); color:#22d3ee; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px;">Turn Knob = Plug In</span>
+          <span style="background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px;">Press <b>'F'</b> = Safety Trip</span>
+        </div>
+      </div>
       <iframe class="wokwi-iframe" id="wokwi-iframe" src="https://wokwi.com/projects/480737603461683201" title="EV Sarthi Hardware Simulator"></iframe>
     </div>
   </div>
@@ -1012,10 +1025,13 @@ async function triggerExaminerAction(action) {
         document.getElementById('tb-pin').textContent = storedPin;
         if (data.power_kw) updateDynamicPower(data.power_kw);
         setState('reserved');
+        logOcpp('rx', `⚡ Wokwi Hardware: Click Wokwi terminal & press 'R' to lock ESP32!`);
       } else if (action === 'auth') {
         handleAuthGrant(30);
+        logOcpp('rx', `⚡ Wokwi Hardware: On Wokwi 4x4 keypad, click 2-5-8-0-# to unlock!`);
       } else if (action === 'plugin') {
         startChargingSession();
+        logOcpp('rx', `⚡ Wokwi Hardware: Slide Current knob clockwise to simulate cable insertion!`);
       } else if (action === 'trip') {
         if (chargingInterval) clearInterval(chargingInterval);
         setState('denied');
@@ -1024,9 +1040,11 @@ async function triggerExaminerAction(action) {
         document.getElementById('tb-relay').textContent = 'DE-ENERGIZED (TRIPPED)';
         document.getElementById('tb-relay').className = 'tele-pill red';
         document.getElementById('tb-meter').textContent = '245.0 V · 32.5 A (OVERCURRENT)';
+        logOcpp('warn', `⚡ Wokwi Hardware: Press 'F' or slide Voltage knob to >230V for <50ms Fast-Trip!`);
       } else if (action === 'reset') {
         if (chargingInterval) clearInterval(chargingInterval);
         setState('available');
+        logOcpp('rx', `⚡ Wokwi Hardware: Press 'A' in Wokwi terminal to reset ESP32 to Available!`);
       }
     } else {
       const err = await res.json().catch(() => ({}));
