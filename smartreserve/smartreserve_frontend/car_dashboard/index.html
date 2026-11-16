@@ -1323,8 +1323,16 @@
                         <div id="chg-station-name" style="font-family:var(--font-head); font-size:16px; font-weight:700; color:#fff;">⚡ EV Charging Station</div>
                         <div id="chg-station-sub" style="font-size:11px; color:var(--text-muted);">Operator · City</div>
                     </div>
-                    <div id="chg-power-badge" style="background:rgba(0,170,212,0.15); border:1px solid var(--hyundai-blue); color:var(--hyundai-blue); font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; font-family:monospace; letter-spacing:0.5px;">
-                        60 kW DC
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div id="chg-power-badge" style="background:rgba(0,170,212,0.15); border:1px solid var(--hyundai-blue); color:var(--hyundai-blue); font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; font-family:monospace; letter-spacing:0.5px;">
+                            60 kW DC
+                        </div>
+                        <button onclick="hideChargingPanel()" class="telematics-pill" style="border-color:rgba(255,255,255,0.25); color:#cbd5e1; font-size:11px; font-weight:600; padding:4px 10px; cursor:pointer;" title="Minimize charging panel to inspect selected station on map">
+                            👁️ View Station
+                        </button>
+                        <button onclick="stopChargingSessionUser()" class="telematics-pill" style="border-color:#ef4444; background:rgba(239,68,68,0.2); color:#ef4444; font-size:11px; font-weight:700; padding:4px 12px; cursor:pointer;" title="End charging session and disconnect">
+                            🛑 Stop Session
+                        </button>
                     </div>
                 </div>
 
@@ -1362,6 +1370,18 @@
             </div>
 
             <div id="hero-panel" class="glass charging-panel">
+                <!-- Floating Active Charging Session Indicator Banner -->
+                <div id="active-session-banner" class="hidden" style="background:linear-gradient(90deg, rgba(34,197,94,0.18), rgba(0,170,212,0.18)); border:1px solid #22c55e; border-radius:8px; padding:6px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; font-size:11px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px #22c55e;"></span>
+                        <span style="color:#fff; font-weight:600;">Vehicle Charging at <span id="banner-station-name" style="color:#22c55e;">VNIT Campus</span> (<span id="banner-soc" style="color:var(--electric-yellow);">83.5%</span>)</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="showChargingPanel()" style="background:#00aad4; border:none; color:#fff; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer;" title="View Live Charging Dial">⚡ Live Dial</button>
+                        <button onclick="stopChargingSessionUser()" style="background:#ef4444; border:none; color:#fff; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer;" title="Stop session and disconnect">🛑 Stop</button>
+                    </div>
+                </div>
+
                 <div id="hero-unselected" class="hero-welcome">
                     <svg class="hero-car" viewBox="0 0 100 50" fill="none" stroke="var(--hyundai-blue)" stroke-width="2">
                         <path d="M10,40 L10,30 L30,15 L70,15 L90,30 L90,40 Z"/>
@@ -2753,6 +2773,21 @@
             }
 
             // 1. Update Center Panel (Hero Selected Cockpit View)
+            document.getElementById('hero-panel').classList.remove('hidden');
+            document.getElementById('charging-panel').classList.add('hidden');
+            const banner = document.getElementById('active-session-banner');
+            if (activeSession && banner) {
+                banner.classList.remove('hidden');
+                banner.style.display = 'flex';
+                const curStName = currentChargingData ? (currentChargingData.station_name || currentChargingData.name || 'VNIT Campus') : 'VNIT Campus';
+                const socEl = document.getElementById('soc-val');
+                const curSoc = socEl ? socEl.innerText : '83.5%';
+                const bName = document.getElementById('banner-station-name');
+                if (bName) bName.innerText = curStName;
+                const bSoc = document.getElementById('banner-soc');
+                if (bSoc) bSoc.innerText = curSoc;
+            }
+
             const heroUnselected = document.getElementById('hero-unselected');
             const heroSelected = document.getElementById('hero-selected');
             if (heroUnselected) heroUnselected.style.display = 'none';
@@ -3260,6 +3295,8 @@
             
             const socEl = document.getElementById('soc-val');
             if (socEl) socEl.innerText = `${soc}%`;
+            const bannerSoc = document.getElementById('banner-soc');
+            if (bannerSoc) bannerSoc.innerText = `${typeof soc === 'number' ? soc.toFixed(1) : soc}%`;
             
             const kwEl = document.getElementById('kw-val');
             if (kwEl) {
@@ -3302,10 +3339,19 @@
         }
 
         let localFallbackTimer = null;
+        let currentChargingData = null;
+
         function showChargingPanel(initialData) {
             activeSession = true;
+            if (initialData) currentChargingData = initialData;
             document.getElementById('hero-panel').classList.add('hidden');
             document.getElementById('charging-panel').classList.remove('hidden');
+
+            const banner = document.getElementById('active-session-banner');
+            if (banner) {
+                banner.classList.add('hidden');
+                banner.style.display = 'none';
+            }
 
             if (initialData) {
                 const nameEl = document.getElementById('chg-station-name');
@@ -3329,10 +3375,50 @@
         }
 
         function hideChargingPanel() {
-            activeSession = false;
-            clearInterval(localFallbackTimer);
             document.getElementById('charging-panel').classList.add('hidden');
             document.getElementById('hero-panel').classList.remove('hidden');
+            const banner = document.getElementById('active-session-banner');
+            if (activeSession && banner) {
+                banner.classList.remove('hidden');
+                banner.style.display = 'flex';
+                const curStName = currentChargingData ? (currentChargingData.station_name || currentChargingData.name || 'VNIT Campus') : 'VNIT Campus';
+                const socEl = document.getElementById('soc-val');
+                const curSoc = socEl ? socEl.innerText : '83.5%';
+                const bName = document.getElementById('banner-station-name');
+                if (bName) bName.innerText = curStName;
+                const bSoc = document.getElementById('banner-soc');
+                if (bSoc) bSoc.innerText = curSoc;
+            }
+        }
+
+        async function stopChargingSessionUser() {
+            const curStation = currentChargingData ? (currentChargingData.station_name || currentChargingData.name || 'VNIT Campus') : 'VNIT Campus';
+            const curCost = document.getElementById('cost-val') ? document.getElementById('cost-val').innerText : '₹ 0.00';
+            const curKwh = document.getElementById('kwh-val') ? document.getElementById('kwh-val').innerText : '0.0 kWh';
+            
+            showToast(`🛑 Charging stopped at ${curStation}! Delivered: ${curKwh} | Total: ${curCost}`, 'info');
+            updateOcppLog(`> StopTransaction.req [Reason: UserStop]\n< StopTransaction.conf [Stopped]`);
+            
+            activeSession = false;
+            currentChargingData = null;
+            clearInterval(localFallbackTimer);
+            
+            document.getElementById('charging-panel').classList.add('hidden');
+            document.getElementById('hero-panel').classList.remove('hidden');
+            const banner = document.getElementById('active-session-banner');
+            if (banner) {
+                banner.classList.add('hidden');
+                banner.style.display = 'none';
+            }
+            
+            // Notify backend to reset hardware & station status
+            try {
+                fetch(`${API}/api/hardware/examiner-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reset', station_id: selectedStationId || 'TG0001' })
+                }).catch(() => {});
+            } catch(e) {}
         }
 
         function updateOcppLog(msg) {
