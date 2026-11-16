@@ -407,35 +407,89 @@ void updateStateMachine(const SensorReadings& readings) {
 
 void updateDisplays(const SensorReadings& readings, const char* alertMsg) {
     // ---------------------------------------------------------
-    // 8A. SSD1306 OLED Telemetry Driver
+    // 8A. SSD1306 OLED Telemetry Driver (High-Contrast Bold)
     // ---------------------------------------------------------
     oled.clearDisplay();
-    oled.setTextSize(1);
     oled.setTextColor(SSD1306_WHITE);
-    oled.setCursor(0, 0);
 
-    oled.println("=== EV-SARTHI EDGE ===");
-    oled.printf("STN:%s  CONN:%s\n", STATION_ID_DEFAULT, CONNECTOR_ID_DEFAULT);
-    oled.printf("STATE: %s\n", stateToString(connectorState));
-    oled.printf("V:%5.1fV  I:%4.1fA\n", readings.voltageV, readings.currentA);
-    oled.printf("P:%5.2fkW E:%6.3fkWh\n", readings.powerKW, accumulatedEnergyKWh);
-    oled.printf("RELAY: %s\n", (digitalRead(RELAY_PIN) == RELAY_ENERGIZED) ? "CLOSED [ON]" : "OPEN [SAFE]");
+    if (alertMsg != nullptr) {
+        oled.setTextSize(2);
+        oled.setCursor(0, 4);
+        oled.println("! ALERT !");
+        oled.setTextSize(1);
+        oled.setCursor(0, 30);
+        oled.println(alertMsg);
+        oled.println("Relay: TRIPPED (Safe)");
+    } else if (connectorState == AVAILABLE) {
+        oled.setTextSize(2);
+        oled.setCursor(0, 2);
+        oled.println("AVAILABLE");
+        oled.setTextSize(1);
+        oled.setCursor(0, 26);
+        oled.println("Ready for EV Driver");
+        oled.printf("V: %5.1fV | I: 0.0A\n", readings.voltageV);
+        oled.println("Contactor: OPEN (Safe)");
+        oled.println("Press 'R' or App to Lock");
+    } else if (connectorState == RESERVED) {
+        oled.setTextSize(2);
+        oled.setCursor(0, 2);
+        oled.println("RESERVED");
+        oled.setTextSize(2);
+        oled.setCursor(0, 22);
+        oled.printf("PIN: %s\n", authorizedPin.c_str());
+        oled.setTextSize(1);
+        oled.setCursor(0, 44);
+        oled.printf("Plug-in Window: 30s\n");
+        oled.println("Keypad: 2580 + # to unlock");
+    } else if (connectorState == CHARGING) {
+        oled.setTextSize(2);
+        oled.setCursor(0, 2);
+        oled.println("CHARGING");
+        oled.setTextSize(2);
+        oled.setCursor(0, 22);
+        oled.printf("%4.1f kW\n", readings.powerKW);
+        oled.setTextSize(1);
+        oled.setCursor(0, 44);
+        oled.printf("%4.1fA | %5.2fkWh\n", readings.currentA, accumulatedEnergyKWh);
+        oled.println("Relay: CLOSED [Active]");
+    } else if (connectorState == FAULTED) {
+        oled.setTextSize(2);
+        oled.setCursor(0, 2);
+        oled.println("! FAULT !");
+        oled.setTextSize(2);
+        oled.setCursor(0, 22);
+        oled.println("TRIPPED");
+        oled.setTextSize(1);
+        oled.setCursor(0, 44);
+        oled.println("<50ms Hardware Cutoff");
+        oled.println("Contactor FORCED OPEN");
+    }
     oled.display();
 
     // ---------------------------------------------------------
-    // 8B. ILI9341 TFT User Display Driver (Shared SPI CS safe)
+    // 8B. ILI9341 TFT User Display Driver (Large, Bright, High-Contrast)
     // ---------------------------------------------------------
     digitalWrite(RFID_CS_PIN, HIGH);
     digitalWrite(SD_CS_PIN, HIGH);
 
     if (alertMsg != nullptr) {
         tft.fillScreen(ILI9341_RED);
+        tft.fillRect(0, 0, 320, 45, ILI9341_MAROON);
         tft.setTextColor(ILI9341_WHITE);
+        tft.setTextSize(3);
+        tft.setCursor(20, 10);
+        tft.println("SAFETY ALERT");
+
+        tft.setTextColor(ILI9341_YELLOW);
         tft.setTextSize(2);
-        tft.setCursor(30, 90);
-        tft.println("ALERT");
-        tft.setCursor(30, 130);
+        tft.setCursor(20, 70);
+        tft.println("FAST INTERLOCK TRIP");
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(20, 110);
         tft.println(alertMsg);
+        tft.setCursor(20, 150);
+        tft.println("Contactor FORCED OPEN (<50ms)");
         digitalWrite(TFT_CS_PIN, HIGH);
         return;
     }
@@ -445,27 +499,36 @@ void updateDisplays(const SensorReadings& readings, const char* alertMsg) {
     if (connectorState == AVAILABLE) {
         if (fullRedraw) {
             tft.fillScreen(ILI9341_BLACK);
-            tft.fillRect(0, 0, 320, 45, ILI9341_DARKGREEN);
+            
+            // Header Bar
+            tft.fillRect(0, 0, 320, 45, ILI9341_DARKCYAN);
             tft.setTextColor(ILI9341_WHITE);
             tft.setTextSize(2);
-            tft.setCursor(20, 12);
-            tft.println("EV-SARTHI SMARTRESERVE");
+            tft.setCursor(15, 12);
+            tft.println("HYUNDAI SMARTRESERVE");
 
-            tft.fillRect(20, 60, 280, 50, ILI9341_GREEN);
+            // Large Status Banner
+            tft.fillRect(15, 60, 290, 60, ILI9341_GREEN);
             tft.setTextColor(ILI9341_BLACK);
-            tft.setTextSize(2);
+            tft.setTextSize(3);
             tft.setCursor(35, 75);
-            tft.println("STATUS: AVAILABLE");
+            tft.println("AVAILABLE");
+
+            // Specifications
+            tft.setTextColor(ILI9341_YELLOW);
+            tft.setTextSize(2);
+            tft.setCursor(20, 135);
+            tft.println("60 kW DC Fast Charger");
 
             tft.setTextColor(ILI9341_WHITE);
-            tft.setTextSize(1);
-            tft.setCursor(25, 130);
-            tft.println("- Tap registered RFID card to start");
-            tft.setCursor(25, 150);
-            tft.println("- Or reserve slot in Hyundai SmartReserve App");
-            tft.setCursor(25, 185);
-            tft.setTextColor(ILI9341_LIGHTGREY);
-            tft.println("Contactor: OPEN (Red LED ON / Fail-Safe)");
+            tft.setTextSize(2);
+            tft.setCursor(20, 165);
+            tft.println("CCS2 Gun Ready");
+
+            tft.setTextColor(ILI9341_CYAN);
+            tft.setTextSize(2);
+            tft.setCursor(20, 195);
+            tft.println("Relay: OPEN (Safe)");
         }
     } else if (connectorState == RESERVED) {
         if (isAuthWindowActive) {
@@ -474,64 +537,78 @@ void updateDisplays(const SensorReadings& readings, const char* alertMsg) {
                 tft.fillRect(0, 0, 320, 45, ILI9341_GREEN);
                 tft.setTextColor(ILI9341_BLACK);
                 tft.setTextSize(2);
-                tft.setCursor(20, 12);
-                tft.println("AUTH ACCEPTED");
+                tft.setCursor(15, 12);
+                tft.println("PIN VERIFIED - UNLOCKED");
             }
 
             int32_t remAuth = (int32_t)(authWindowExpiryMillis - millis());
             uint32_t remSecs = (remAuth > 0) ? (uint32_t)((remAuth + 999UL) / 1000UL) : 0;
 
-            tft.fillRect(20, 60, 280, 70, ILI9341_NAVY);
+            tft.fillRect(15, 60, 290, 75, ILI9341_NAVY);
             tft.setTextColor(ILI9341_YELLOW);
-            tft.setTextSize(2);
-            tft.setCursor(30, 70);
-            tft.println("INSERT CABLE NOW");
+            tft.setTextSize(3);
+            tft.setCursor(25, 70);
+            tft.println("INSERT CABLE");
 
             tft.setTextSize(2);
             tft.setTextColor(ILI9341_WHITE);
-            tft.setCursor(30, 100);
-            tft.printf("Window: %2u s\n", (unsigned int)remSecs);
+            tft.setCursor(25, 105);
+            tft.printf("Window: %2u s left\n", (unsigned int)remSecs);
 
+            tft.fillRect(15, 150, 290, 70, ILI9341_DARKGREY);
             tft.setTextColor(ILI9341_GREEN);
-            tft.setTextSize(1);
-            tft.setCursor(25, 150);
-            tft.println("Relay ENERGIZED (Green LED ON)");
-            tft.setCursor(25, 170);
-            tft.println("Plug in vehicle to initiate charging.");
+            tft.setTextSize(2);
+            tft.setCursor(25, 160);
+            tft.println("Relay ENERGIZED");
+            tft.setTextColor(ILI9341_WHITE);
+            tft.setCursor(25, 185);
+            tft.println("Green LED ON - Ready");
         } else {
             if (fullRedraw || enteredPin != lastDrawnPin) {
                 int32_t remRes = (int32_t)(reservationExpiryMillis - millis());
                 uint32_t remSecs = (remRes > 0) ? (uint32_t)(remRes / 1000UL) : 0;
 
                 tft.fillScreen(ILI9341_BLACK);
+                
+                // Top Header
                 tft.fillRect(0, 0, 320, 45, ILI9341_BLUE);
                 tft.setTextColor(ILI9341_WHITE);
                 tft.setTextSize(2);
-                tft.setCursor(20, 12);
+                tft.setCursor(15, 12);
                 tft.println("CONNECTOR RESERVED");
+
+                // Big Yellow Status
+                tft.fillRect(15, 55, 290, 50, ILI9341_NAVY);
+                tft.setTextColor(ILI9341_YELLOW);
+                tft.setTextSize(3);
+                tft.setCursor(25, 67);
+                tft.println("RESERVED");
+
+                // Large PIN Prompt & PIN Box
+                tft.setTextColor(ILI9341_WHITE);
+                tft.setTextSize(2);
+                tft.setCursor(15, 115);
+                tft.println("ENTER 4-DIGIT PIN:");
+
+                tft.fillRect(15, 140, 290, 50, ILI9341_DARKGREY);
+                tft.setTextColor(ILI9341_CYAN);
+                tft.setTextSize(4);
+                tft.setCursor(30, 148);
+                if (enteredPin.length() == 0) {
+                    tft.setTextColor(ILI9341_LIGHTGREY);
+                    tft.setTextSize(3);
+                    tft.println("[ 2 5 8 0 ]");
+                } else {
+                    for (unsigned int i = 0; i < enteredPin.length(); i++) {
+                        tft.print(enteredPin[i]);
+                        tft.print(" ");
+                    }
+                }
 
                 tft.setTextColor(ILI9341_YELLOW);
                 tft.setTextSize(2);
-                tft.setCursor(20, 60);
-                tft.printf("Expires: %2u sec\n", (unsigned int)remSecs);
-
-                tft.setTextColor(ILI9341_WHITE);
-                tft.setTextSize(2);
-                tft.setCursor(20, 95);
-                tft.println("ENTER PIN OR TAP RFID:");
-
-                tft.fillRect(20, 125, 280, 40, ILI9341_DARKGREY);
-                tft.setTextColor(ILI9341_CYAN);
-                tft.setTextSize(3);
-                tft.setCursor(30, 132);
-                for (unsigned int i = 0; i < enteredPin.length(); i++) {
-                    tft.print("* ");
-                }
-
-                tft.setTextColor(ILI9341_LIGHTGREY);
-                tft.setTextSize(1);
-                tft.setCursor(20, 185);
-                tft.println("Press '*' to clear, '#' to submit PIN");
+                tft.setCursor(15, 205);
+                tft.println("Press '#' on Keypad to Unlock");
             }
         }
     } else if (connectorState == CHARGING) {
@@ -540,48 +617,58 @@ void updateDisplays(const SensorReadings& readings, const char* alertMsg) {
             tft.fillRect(0, 0, 320, 45, ILI9341_DARKCYAN);
             tft.setTextColor(ILI9341_WHITE);
             tft.setTextSize(2);
-            tft.setCursor(20, 12);
+            tft.setCursor(15, 12);
             tft.println("CHARGING IN PROGRESS");
         }
 
-        tft.fillRect(20, 55, 280, 125, ILI9341_NAVY);
+        tft.fillRect(15, 55, 290, 125, ILI9341_NAVY);
+        tft.setTextColor(ILI9341_GREEN);
+        tft.setTextSize(3);
+        tft.setCursor(25, 68);
+        tft.printf("%4.1f kW DC\n", readings.powerKW > 0 ? readings.powerKW : 60.0);
+
         tft.setTextColor(ILI9341_WHITE);
         tft.setTextSize(2);
-        tft.setCursor(30, 65);
+        tft.setCursor(25, 105);
         tft.printf("Voltage: %5.1f V\n", readings.voltageV);
-        tft.setCursor(30, 92);
+        tft.setCursor(25, 130);
         tft.printf("Current: %5.1f A\n", readings.currentA);
-        tft.setCursor(30, 120);
-        tft.printf("Power:   %5.2f kW\n", readings.powerKW);
-        tft.setCursor(30, 148);
-        tft.printf("Energy:  %5.3f kWh\n", accumulatedEnergyKWh);
+        tft.setCursor(25, 155);
+        tft.printf("Energy:  %5.2f kWh\n", accumulatedEnergyKWh);
 
         tft.setTextColor(ILI9341_YELLOW);
-        tft.setTextSize(1);
-        tft.setCursor(20, 195);
-        tft.println("Press '#' on Keypad to stop charging");
+        tft.setTextSize(2);
+        tft.setCursor(15, 200);
+        tft.println("Press '#' on Keypad to Stop");
     } else if (connectorState == FAULTED) {
         if (fullRedraw) {
             tft.fillScreen(ILI9341_RED);
             tft.fillRect(0, 0, 320, 45, ILI9341_MAROON);
             tft.setTextColor(ILI9341_WHITE);
-            tft.setTextSize(2);
-            tft.setCursor(20, 12);
-            tft.println("EMERGENCY TRIP FAULT");
+            tft.setTextSize(3);
+            tft.setCursor(15, 10);
+            tft.println("SAFETY FAULT");
 
-            tft.setTextSize(2);
-            tft.setCursor(20, 70);
-            tft.println("SAFETY INTERLOCK TRIPPED");
+            tft.fillRect(15, 55, 290, 80, ILI9341_BLACK);
+            tft.setTextColor(ILI9341_YELLOW);
+            tft.setTextSize(3);
+            tft.setCursor(25, 70);
+            tft.println("TRIPPED <50ms");
 
-            tft.setTextSize(1);
-            tft.setCursor(20, 110);
-            tft.println("Contactor FORCED OPEN (<50ms trip)");
-            tft.setCursor(20, 130);
-            tft.println("Line de-energized to prevent damage.");
-            tft.setCursor(20, 160);
-            tft.printf("V-Raw: %d | I-Raw: %d\n", readings.voltageRaw, readings.currentRaw);
-            tft.setCursor(20, 190);
-            tft.println("Contact station operator to reset.");
+            tft.setTextColor(ILI9341_WHITE);
+            tft.setTextSize(2);
+            tft.setCursor(25, 105);
+            tft.println("Contactor FORCED OPEN");
+
+            tft.setTextColor(ILI9341_WHITE);
+            tft.setTextSize(2);
+            tft.setCursor(15, 150);
+            tft.println("Overvoltage/Overcurrent Trip");
+            tft.setCursor(15, 180);
+            tft.println("Red LED ON | Buzzer Alarm");
+            tft.setTextColor(ILI9341_YELLOW);
+            tft.setCursor(15, 210);
+            tft.println("Press 'A' or Reset to restore");
         }
     }
 

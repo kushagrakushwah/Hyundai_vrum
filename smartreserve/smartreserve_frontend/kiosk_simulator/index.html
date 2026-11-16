@@ -6,6 +6,7 @@
 <title>Hyundai SmartReserve — Charger Kiosk & Hardware Examiner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
   :root {
     --bg:       #050c1a;
@@ -645,8 +646,33 @@
           <span>EV Sarthi ESP32 IoT Edge Hardware Simulator (Wokwi Live)</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-family:'DM Mono',monospace; color:var(--cyan); font-size:10px;">MQTT: broker.hivemq.com:1883</span>
+          <span id="mqtt-status-badge" style="font-family:'DM Mono',monospace; color:var(--cyan); font-size:10px;">MQTT: broker.hivemq.com:8884</span>
           <a href="https://wokwi.com/projects/480737603461683201" target="_blank" style="color:#60a5fa; text-decoration:none; font-size:10px;">Open in Tab ↗</a>
+        </div>
+      </div>
+      <!-- Ultra-Clear Live Hardware Display Mirror HUD (High-Resolution 1:1) -->
+      <div style="background:#071224; border-bottom:1px solid #1e3a5f; padding:10px 14px; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+            <span>🖥️</span> <span>ESP32 Physical Display Mirror (High-Res Edge Telematics)</span>
+          </div>
+          <span id="hud-relay-state" style="background:#ef4444; color:#fff; font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace;">CONTACTOR: OPEN (SAFE)</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:10px;">
+          <!-- OLED 128x64 Crisp Virtual Mirror -->
+          <div style="background:#000; border:2px solid #0284c7; border-radius:6px; padding:8px 12px; font-family:'DM Mono',monospace; box-shadow:0 0 12px rgba(2,132,199,0.3);">
+            <div style="font-size:9px; color:#64748b; margin-bottom:2px;">SSD1306 OLED (I2C 0x3C)</div>
+            <div id="hud-oled-state" style="font-size:14px; font-weight:800; color:#fff;">STATE: AVAILABLE</div>
+            <div id="hud-oled-pin" style="font-size:11px; color:#38bdf8; margin-top:2px;">PIN: [ Standby ]</div>
+            <div id="hud-oled-relay" style="font-size:10px; color:#ef4444; margin-top:2px;">Relay: OPEN (Red LED)</div>
+          </div>
+          <!-- ILI9341 320x240 Crisp Virtual Mirror -->
+          <div style="background:#000; border:2px solid #e11d48; border-radius:6px; padding:8px 12px; font-family:'DM Mono',monospace; box-shadow:0 0 12px rgba(225,29,72,0.3);">
+            <div style="font-size:9px; color:#64748b; margin-bottom:2px;">ILI9341 TFT SPI (User Screen)</div>
+            <div id="hud-tft-banner" style="font-size:14px; font-weight:800; color:#22c55e;">STATUS: AVAILABLE</div>
+            <div id="hud-tft-sub" style="font-size:11px; color:#fbbf24; margin-top:2px;">60 kW DC Fast · CCS2 Ready</div>
+            <div id="hud-tft-inst" style="font-size:10px; color:#94a3b8; margin-top:2px;">Reserve in App or Tap RFID</div>
+          </div>
         </div>
       </div>
       <!-- Interactive Quick Control Helper -->
@@ -793,6 +819,49 @@ function setState(state) {
     tbState.className = 'tele-pill red';
     tbRelay.textContent = 'DE-ENERGIZED (OPEN)';
     tbRelay.className = 'tele-pill red';
+  }
+
+  // Update Live Hardware Display Mirror HUD (High-Resolution 1:1)
+  const hRelay = document.getElementById('hud-relay-state');
+  const hOledState = document.getElementById('hud-oled-state');
+  const hOledPin = document.getElementById('hud-oled-pin');
+  const hOledRelay = document.getElementById('hud-oled-relay');
+  const hTftBanner = document.getElementById('hud-tft-banner');
+  const hTftSub = document.getElementById('hud-tft-sub');
+  const hTftInst = document.getElementById('hud-tft-inst');
+
+  if (state === 'available') {
+    if (hRelay) { hRelay.textContent = 'CONTACTOR: OPEN (SAFE)'; hRelay.style.background = '#ef4444'; }
+    if (hOledState) { hOledState.textContent = 'STATE: AVAILABLE'; hOledState.style.color = '#22c55e'; }
+    if (hOledPin) { hOledPin.textContent = 'PIN: [ Standby ]'; }
+    if (hOledRelay) { hOledRelay.textContent = 'Relay: OPEN (Red LED)'; hOledRelay.style.color = '#ef4444'; }
+    if (hTftBanner) { hTftBanner.textContent = 'STATUS: AVAILABLE'; hTftBanner.style.color = '#22c55e'; }
+    if (hTftSub) { hTftSub.textContent = `${stationPower.toFixed(0)} kW DC Fast · CCS2 Ready`; }
+    if (hTftInst) { hTftInst.textContent = 'Reserve in App or Tap RFID'; }
+  } else if (state === 'reserved') {
+    if (hRelay) { hRelay.textContent = 'CONTACTOR: LOCKED (OPEN)'; hRelay.style.background = '#3b82f6'; }
+    if (hOledState) { hOledState.textContent = 'STATE: RESERVED'; hOledState.style.color = '#fbbf24'; }
+    if (hOledPin) { hOledPin.textContent = `PIN: ${storedPin || '2580'}`; }
+    if (hOledRelay) { hOledRelay.textContent = 'Contactor: LOCKED (Open)'; hOledRelay.style.color = '#3b82f6'; }
+    if (hTftBanner) { hTftBanner.textContent = 'STATUS: RESERVED'; hTftBanner.style.color = '#fbbf24'; }
+    if (hTftSub) { hTftSub.textContent = `PIN: ${storedPin || '2580'} · Plug-in Window Active`; }
+    if (hTftInst) { hTftInst.textContent = 'Enter PIN on Keypad + # to Unlock'; }
+  } else if (state === 'charging') {
+    if (hRelay) { hRelay.textContent = 'CONTACTOR: CLOSED (ACTIVE)'; hRelay.style.background = '#22c55e'; }
+    if (hOledState) { hOledState.textContent = 'STATE: CHARGING'; hOledState.style.color = '#00b4d8'; }
+    if (hOledPin) { hOledPin.textContent = `${stationPower.toFixed(0)} kW DC Flowing`; }
+    if (hOledRelay) { hOledRelay.textContent = 'Relay: CLOSED (Green LED)'; hOledRelay.style.color = '#22c55e'; }
+    if (hTftBanner) { hTftBanner.textContent = 'CHARGING IN PROGRESS'; hTftBanner.style.color = '#00b4d8'; }
+    if (hTftSub) { hTftSub.textContent = `${stationPower.toFixed(0)} kW DC · 230V Flow`; }
+    if (hTftInst) { hTftInst.textContent = 'Vehicle Cable Connected · Charging'; }
+  } else if (state === 'denied' || state === 'faulted') {
+    if (hRelay) { hRelay.textContent = 'CONTACTOR: TRIPPED (SAFE)'; hRelay.style.background = '#ef4444'; }
+    if (hOledState) { hOledState.textContent = 'STATE: FAULT / TRIP'; hOledState.style.color = '#ef4444'; }
+    if (hOledPin) { hOledPin.textContent = '<50ms Fast Safety Trip'; }
+    if (hOledRelay) { hOledRelay.textContent = 'Contactor FORCED OPEN'; hOledRelay.style.color = '#ef4444'; }
+    if (hTftBanner) { hTftBanner.textContent = 'EMERGENCY SAFETY TRIP'; hTftBanner.style.color = '#ef4444'; }
+    if (hTftSub) { hTftSub.textContent = 'Interlock Cutoff (<50ms trip)'; }
+    if (hTftInst) { hTftInst.textContent = 'Red LED ON · Buzzer Alarm Active'; }
   }
 
   clearPin();
@@ -1000,9 +1069,96 @@ function startIdleCountdown() {
   }, 1000);
 }
 
+// ── Browser-to-HiveMQ MQTT WebSocket Bridge ──────────────────────────────────
+let browserMqtt = null;
+function initBrowserMqtt() {
+  try {
+    if (typeof mqtt === 'undefined') return;
+    browserMqtt = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+      clientId: `kiosk_examiner_${Math.random().toString(16).slice(2, 8)}`,
+      clean: true,
+      connectTimeout: 5000,
+    });
+
+    browserMqtt.on('connect', () => {
+      console.log('[Kiosk MQTT] Connected to broker.hivemq.com:8884 (Live WebSocket)');
+      const badge = document.getElementById('mqtt-status-badge');
+      if (badge) {
+        badge.textContent = '🟢 HiveMQ: Connected (Live Sync)';
+        badge.style.color = '#4ade80';
+      }
+      browserMqtt.subscribe(`evsarthi/${STATION_ID}/+/state`);
+      browserMqtt.subscribe('evsarthi/ST001/+/state');
+    });
+
+    browserMqtt.on('message', (topic, message) => {
+      try {
+        const payload = JSON.parse(message.toString());
+        logOcpp('rx', `MQTT Edge Rx [${topic}]: ${JSON.stringify(payload)}`);
+      } catch (e) {}
+    });
+  } catch (err) {
+    console.warn('[Kiosk MQTT] WebSocket fallback:', err);
+  }
+}
+
+function publishToHardwareMqtt(action, pin = '2580') {
+  if (!browserMqtt || !browserMqtt.connected) return;
+  const bases = [
+    `evsarthi/${STATION_ID}/1`,
+    `evsarthi/ST001/C001`
+  ];
+
+  bases.forEach(base => {
+    if (action === 'reserve') {
+      browserMqtt.publish(`${base}/reserve`, JSON.stringify({
+        action: 'CREATE',
+        reservation_id: `RES_WEB_${Date.now()}`,
+        pin: pin,
+        duration_seconds: 1800,
+        expires_at: Math.floor(Date.now() / 1000) + 1800,
+        rfid_uid: 'DEADBEEF'
+      }));
+    } else if (action === 'auth') {
+      browserMqtt.publish(`${base}/cmd`, JSON.stringify({
+        action: 'AUTH_DECISION',
+        status: 'ACCEPTED',
+        pin: pin,
+        auth_window_duration_ms: 30000,
+        relay_action: 'ENERGIZE'
+      }));
+    } else if (action === 'plugin') {
+      browserMqtt.publish(`${base}/cmd`, JSON.stringify({
+        action: 'START_CHARGING',
+        status: 'CHARGING',
+        relay_action: 'ENERGIZE'
+      }));
+    } else if (action === 'trip') {
+      browserMqtt.publish(`${base}/cmd`, JSON.stringify({
+        action: 'FAULT',
+        status: 'FAULTED',
+        relay_action: 'DE_ENERGIZE'
+      }));
+    } else if (action === 'reset') {
+      browserMqtt.publish(`${base}/reserve`, JSON.stringify({
+        action: 'CANCEL',
+        reservation_id: 'ALL'
+      }));
+      browserMqtt.publish(`${base}/cmd`, JSON.stringify({
+        action: 'STOP_CHARGING',
+        status: 'AVAILABLE',
+        relay_action: 'DE_ENERGIZE'
+      }));
+    }
+  });
+}
+
 // ── Examiner 1-Click Action Dispatcher ───────────────────────────────────────
 async function triggerExaminerAction(action) {
   logOcpp('tx', `Examiner Action Triggered: [${action.toUpperCase()}]`);
+
+  // Instantly dispatch to HiveMQ MQTT over WebSockets
+  publishToHardwareMqtt(action, storedPin || '2580');
 
   try {
     const res = await fetch(`${API}/api/hardware/examiner-action`, {
@@ -1165,6 +1321,7 @@ updateDynamicPower(stationPower);
 fetchStationDetails();
 setState('available');
 connectWS();
+initBrowserMqtt();
 logOcpp('rx', `Examiner Dual View initialized · ${STATION_ID} online · OCPP 1.6J`);
 logOcpp('rx', 'Ready for 1-Click Examiner actions or In-Cabin Car reservation');
 </script>
