@@ -67,7 +67,7 @@ class MockEVSarthiHardware:
 
     # Default Durations (milliseconds)
     RESERVATION_DURATION_MS: int = 60000
-    AUTH_WINDOW_DURATION_MS: int = 8000
+    AUTH_WINDOW_DURATION_MS: int = 30000
     TELEMETRY_INTERVAL_STANDBY_MS: int = 5000
     TELEMETRY_INTERVAL_CHARGING_MS: int = 2000
     SD_LOG_INTERVAL_MS: int = 5000
@@ -127,7 +127,7 @@ class MockEVSarthiHardware:
 
         # Keypad & RFID Input Buffers
         self.pin_buffer: str = ""
-        self.max_pin_length: int = 6
+        self.max_pin_length: int = 4
 
         # MicroSD In-Memory Logging & RAM Buffer
         self.sd_mounted: bool = True

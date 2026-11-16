@@ -433,7 +433,7 @@ class MQTTService:
         if is_authorized:
             status = "ACCEPTED"
             status_code = 200
-            auth_window_duration_ms = 8000
+            auth_window_duration_ms = 30000
             relay_action = "ENERGIZE"
             session_id = f"CHG_{station_id}_{connector_id}_{int(now)}"
 
@@ -566,7 +566,7 @@ class MQTTService:
         action: str = "AUTH_DECISION",
         status: str = "ACCEPTED",
         status_code: int = 200,
-        auth_window_duration_ms: int = 8000,
+        auth_window_duration_ms: int = 30000,
         relay_action: str = "ENERGIZE"
     ) -> bool:
         """Publishes control decision to evsarthi/{station}/{connector}/cmd."""

@@ -45,6 +45,13 @@ try:
     assert r.status_code == 200, f"Health check failed: {r.status_code}"
     print("✅ 1. Health Check passed (Status: 200)")
 
+    # Ensure clean test state for Sitabuldi / test stations
+    try:
+        for c in range(1, 5):
+            requests.post(f"{BASE_URL}/api/hardware/examiner-action", json={"action": "reset", "station_id": "IN_NGP_001", "connector_id": str(c)}, timeout=1.0)
+    except Exception:
+        pass
+
     # 2. Test Direct Voice Reservation: "reserve the nearest station"
     print("\n--- Test 2: 'reserve the nearest station' (Instant Lock) ---")
     payload = {"text": "reserve the nearest station", "user_id": "test_driver_1"}
@@ -57,9 +64,9 @@ try:
     st_id_1 = disp.get("station_id")
     pin_1 = disp.get("pin")
     print(f"  Station: {st_id_1} ({disp.get('station_name')})")
-    print(f"  6-Digit PIN: {pin_1}")
+    print(f"  4-Digit PIN: {pin_1}")
     assert res["action_type"] == "action_complete", "Expected action_complete"
-    assert pin_1 is not None and len(str(pin_1)) == 6, f"Expected 6-digit PIN, got {pin_1}"
+    assert pin_1 is not None and len(str(pin_1)) == 4, f"Expected 4-digit PIN, got {pin_1}"
     print("✅ Test 2 Passed: Instant reservation created with PIN:", pin_1)
 
     # 3. Test Direct Voice Reservation: "book the closest charger"
@@ -72,7 +79,7 @@ try:
     disp = res.get("display_data", {})
     pin_2 = disp.get("pin")
     print(f"  Station: {disp.get('station_id')} | PIN: {pin_2}")
-    assert pin_2 is not None and len(str(pin_2)) == 6
+    assert pin_2 is not None and len(str(pin_2)) == 4
     print("✅ Test 3 Passed: 'book the closest charger' works instantly!")
 
     # 4. Test Operator-Specific Voice Reservation: "reserve Tata Power"
@@ -126,6 +133,10 @@ try:
 
     # 8. Test Two-Turn Flow: "nearest charging station find karo" -> "haan"
     print("\n--- Test 8: Two-Turn Discovery & Confirmation Flow ---")
+    try:
+        requests.post(f"{BASE_URL}/api/hardware/examiner-action", json={"action": "reset", "station_id": "IN_NGP_001", "connector_id": "1"}, timeout=1.0)
+    except Exception:
+        pass
     r1 = requests.post(f"{BASE_URL}/api/voice/process", json={"text": "nearest charging station find karo", "user_id": "test_driver_two_turn"})
     data1 = r1.json()
     print("  Turn 1 AVA:", data1["text"][:80], "...")
@@ -175,11 +186,12 @@ try:
 
     # 13. Test Kiosk OTP Verification with Latest Active Reservation PIN
     print("\n--- Test 13: Kiosk OTP Verification with Active Reservation PIN ---")
-    active_target = all_resv[0]
+    active_target = all_resv[-1]
     target_station_id = active_target["station_id"]
+    target_connector_id = active_target.get("connector_id", "1")
     target_pin = active_target["pin"]
-    print(f"  Attempting kiosk unlock at Station: {target_station_id} with PIN: {target_pin}...")
-    r_otp = requests.post(f"{BASE_URL}/api/verify-otp", json={"station_id": target_station_id, "pin": str(target_pin)})
+    print(f"  Attempting kiosk unlock at Station: {target_station_id} (Connector {target_connector_id}) with PIN: {target_pin}...")
+    r_otp = requests.post(f"{BASE_URL}/api/verify-otp", json={"station_id": target_station_id, "connector_id": target_connector_id, "pin": str(target_pin)})
     assert r_otp.status_code == 200, f"OTP verification failed: {r_otp.status_code} {r_otp.text}"
     otp_res = r_otp.json()
     print("  Kiosk OTP verify success:", otp_res.get("success"))

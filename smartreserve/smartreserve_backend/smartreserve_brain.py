@@ -573,21 +573,21 @@ class SmartReserveBrain:
                 "Hyundai SmartReserve ek AI-powered in-cabin EV charging co-pilot hai, jo Hyundai Ideathon 2026 (Track B) "
                 "ke liye develop kiya gaya hai. Yeh EV drivers ki range anxiety aur charging station par lambi queues ko khatam karta hai. "
                 "Isme real-time 29,260+ Indian charging stations ka data hai, multi-criteria priority engine jo best charger recommend karta hai, "
-                "aur OCPP 1.6J protocol ke through 30-minute guaranteed slot reservation with 6-digit secure PIN diya gaya hai."
+                "aur OCPP 1.6J protocol ke through 30-minute guaranteed slot reservation with 4-digit secure PIN diya gaya hai."
             )
         elif lang == "mr":
             txt = (
                 "Hyundai SmartReserve he ek AI-powered in-cabin EV charging co-pilot system aahe, je Hyundai Ideathon 2026 (Track B) "
                 "sathi build kele aahe. He system driver chi range anxiety ani charger varil wait time kami karte. "
                 "Ismadhe 29,260+ Indian stations, multi-criteria priority engine, ani OCPP 1.6J dwara 30-minute slot lock "
-                "ani 6-digit secure PIN di-la jaato."
+                "ani 4-digit secure PIN di-la jaato."
             )
         else:
             txt = (
                 "Hyundai SmartReserve is an AI-powered in-cabin EV charging co-pilot and priority reservation system "
                 "built for the Hyundai Ideathon 2026 (Track B). It eliminates range anxiety and charger queuing by integrating "
                 "telematics with 29,260+ verified Indian charging stations. It ranks chargers using a multi-criteria priority engine, "
-                "guarantees a 30-minute hardware lock via OCPP 1.6J ReserveNow, and verifies access at the station kiosk using a secure 6-digit PIN."
+                "guarantees a 30-minute hardware lock via OCPP 1.6J ReserveNow, and verifies access at the station kiosk using a secure 4-digit PIN."
             )
         return (txt, "PROJECT_INFO", {
             "title": "Hyundai SmartReserve EV",
@@ -601,18 +601,18 @@ class SmartReserveBrain:
             txt = (
                 "OCPP (Open Charge Point Protocol 1.6J) EV charging stations aur central reservation system ke beech standard communication protocol hai. "
                 "SmartReserve mein, jab aap reserve karte hain, backend station ko 'ReserveNow' command bhej kar connector lock karta hai. "
-                "Jab aap kiosk par apna 6-digit PIN enter karte hain, OCPP 'UnlockConnector' aur 'RemoteStartTransaction' command bhej kar charging start karata hai."
+                "Jab aap kiosk par apna 4-digit PIN enter karte hain, OCPP 'UnlockConnector' aur 'RemoteStartTransaction' command bhej kar charging start karata hai."
             )
         elif lang == "mr":
             txt = (
                 "OCPP (Open Charge Point Protocol 1.6J) he EV charging station ani central cloud madhye communicate karnara open standard aahe. "
-                "SmartReserve 'ReserveNow' dwara connector 30 min lock karte, ani kiosk var 6-digit PIN dilyavar "
+                "SmartReserve 'ReserveNow' dwara connector 30 min lock karte, ani kiosk var 4-digit PIN dilyavar "
                 "'UnlockConnector' ani 'RemoteStartTransaction' ne charging shuru hote."
             )
         else:
             txt = (
                 "OCPP (Open Charge Point Protocol 1.6J over WebSockets) is the global open standard between EV charging stations and central management networks. "
-                "SmartReserve uses OCPP ReserveNow to physically lock the connector for 30 minutes. Upon arrival, entering your 6-digit PIN at the kiosk "
+                "SmartReserve uses OCPP ReserveNow to physically lock the connector for 30 minutes. Upon arrival, entering your 4-digit PIN at the kiosk "
                 "triggers UnlockConnector and RemoteStartTransaction to begin charging securely."
             )
         return (txt, "OCPP_INFO", {
@@ -624,7 +624,7 @@ class SmartReserveBrain:
         if lang in ("hi", "hi+en"):
             txt = (
                 "Rs. 200 ka escrow deposit ghost reservations (fake bookings) rokne ke liye rakha gaya hai. "
-                "Aapki booking par yeh amount hold hoti hai via Razorpay ya UPI. Jaise hi aap station pahunch kar apna 6-digit PIN enter karke charging start karte hain, "
+                "Aapki booking par yeh amount hold hoti hai via Razorpay ya UPI. Jaise hi aap station pahunch kar apna 4-digit PIN enter karke charging start karte hain, "
                 "yeh Rs. 200 turant 100% refund ho jaate hain ya aapke final bill mein adjust ho jaate hain. Demo mode mein yeh deposit waived hai!"
             )
         elif lang == "mr":
@@ -636,7 +636,7 @@ class SmartReserveBrain:
         else:
             txt = (
                 "The Rs. 200 refundable escrow deposit (processed via Razorpay/UPI) prevents ghost reservations and protects charger availability. "
-                "The moment you arrive at the station kiosk and enter your 6-digit PIN, the Rs. 200 is instantly 100% refunded or credited towards your charging bill. "
+                "The moment you arrive at the station kiosk and enter your 4-digit PIN, the Rs. 200 is instantly 100% refunded or credited towards your charging bill. "
                 "In demo mode, this deposit is automatically waived!"
             )
         return (txt, "PAYMENT_INFO", {

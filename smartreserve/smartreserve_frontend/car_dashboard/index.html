@@ -1479,8 +1479,8 @@
 
                 <div id="pin-section" class="pin-display">
                     <div style="font-size: 14px; color: white;">Your Reservation PIN</div>
-                    <div class="pin-code" id="pin-code">------</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">Enter PIN at the charger screen</div>
+                    <div class="pin-code" id="pin-code">----</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Enter 4-digit PIN at charger screen</div>
                     <div class="timer" id="pin-timer">30:00</div>
                     
                     <div style="display:flex; flex-direction:column; gap:8px; width:100%; margin-top:5px;">
@@ -1680,6 +1680,80 @@
                 <div style="text-align:right;">
                     <div style="font-size:11px; color:var(--text-muted);">Vehicle Health Status</div>
                     <div style="font-weight:700; color:#22c55e; font-size:13px;">✅ Optimal</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Razorpay ₹0 Demo Escrow Checkout Modal -->
+    <div id="razorpay-modal" class="modal-backdrop" onclick="if(event.target===this) closeRazorpayModal()">
+        <div class="modal-box glass" style="max-width: 480px; padding: 0; overflow: hidden; border: 1px solid rgba(0, 170, 212, 0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 40px rgba(0, 170, 212, 0.25);">
+            <!-- Razorpay Header -->
+            <div style="background: linear-gradient(135deg, #072146 0%, #0c2f64 100%); padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="background: #00BAF2; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 18px; box-shadow: 0 2px 8px rgba(0,186,242,0.4);">R</div>
+                    <div>
+                        <div style="font-weight: 800; color: #fff; font-size: 15px; letter-spacing: -0.02em;">Razorpay <span style="font-weight: 400; color: #93c5fd; font-size: 13px;">Trusted Checkout</span></div>
+                        <div style="font-size: 11px; color: #94a3b8;">Hyundai SmartReserve · 30-Min Lock</div>
+                    </div>
+                </div>
+                <button onclick="closeRazorpayModal()" style="background: rgba(255,255,255,0.08); border: none; color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 24px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Target Charging Station</div>
+                        <span id="rzp-station-kw" class="badge" style="background: rgba(0,170,212,0.2); color: var(--hyundai-blue); font-size: 10px;">60 kW DC</span>
+                    </div>
+                    <div id="rzp-station-name" style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;">Sitabuldi Metro Interchange Hub</div>
+                    <div id="rzp-station-address" style="font-size: 11px; color: var(--text-muted);">Nagpur, Maharashtra · CCS2 Compatible</div>
+                </div>
+
+                <!-- Amount Card -->
+                <div style="background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(0,170,212,0.08)); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 16px 20px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 11px; color: #86efac; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Escrow Security Hold</div>
+                        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 2px;">
+                            <span style="font-size: 26px; font-weight: 800; color: #4ade80;">₹0.00</span>
+                            <span style="font-size: 13px; color: var(--text-muted); text-decoration: line-through;">₹200.00</span>
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">🎉 Demo Mode: Deposit 100% waived for testing</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">FREE LOCK</span>
+                    </div>
+                </div>
+
+                <!-- Payment Simulation Selector -->
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Payment Mode</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="background: rgba(255,255,255,0.04); border: 1px solid rgba(0,170,212,0.3); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="rzp-mode" value="instant" checked style="accent-color: #00AAD4;">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 600; color: #fff;">1-Click Instant Razorpay Escrow (₹0)</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Simulate instant signature verify & 30-min lock</div>
+                            </div>
+                        </label>
+                        <label style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="rzp-mode" value="upi" style="accent-color: #00AAD4;">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 600; color: #cbd5e1;">UPI / QR (GPay / PhonePe / Paytm / BHIM)</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Simulated UPI authorization callback</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <button id="btn-rzp-pay" onclick="executeRazorpayPayment()" style="width: 100%; padding: 14px; border-radius: 10px; background: linear-gradient(135deg, #00AAD4 0%, #0077b6 100%); border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 18px rgba(0, 170, 212, 0.45); transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>⚡</span>
+                    <span id="rzp-btn-text">Authorize ₹0 & Reserve Slot for 30 Min</span>
+                </button>
+                <div style="text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 10px;">
+                    🔒 Secured by 256-bit SSL · Razorpay Demo Engine · OCPP 1.6-J ReserveNow
                 </div>
             </div>
         </div>
@@ -2895,7 +2969,7 @@
                     resBtn.innerText = 'Reserve 30-Min Slot';
                     resBtn.style.background = '';
                     resBtn.style.color = '';
-                    resBtn.onclick = () => reserveStation(st.id);
+                    resBtn.onclick = () => openRazorpayModal(st.id);
                 }
             } else if (st.status === 'RESERVED') {
                 if (resSec) resSec.style.display = 'none';
@@ -2912,6 +2986,60 @@
             }
         }
 
+        // ── Razorpay ₹0 Demo Modal Functions ──────────────────────────────────
+        let pendingStationIdForRazorpay = null;
+
+        function openRazorpayModal(id) {
+            pendingStationIdForRazorpay = id;
+            const st = stations.find(s => (s.id || s.station_id) === id) || {};
+            const nameEl = document.getElementById('rzp-station-name');
+            const addrEl = document.getElementById('rzp-station-address');
+            const kwEl = document.getElementById('rzp-station-kw');
+            const btnText = document.getElementById('rzp-btn-text');
+
+            if (nameEl) nameEl.textContent = st.name || st.station_name || `Station ${id}`;
+            if (addrEl) addrEl.textContent = `${st.address || st.city || 'India'} · ${st.connector_type || 'CCS2'} Compatible`;
+            if (kwEl) kwEl.textContent = `${(st.power_kw || st.effective_power_kw || 60)} kW DC`;
+            if (btnText) btnText.textContent = 'Authorize ₹0 & Reserve Slot for 30 Min';
+
+            const modal = document.getElementById('razorpay-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeRazorpayModal() {
+            const modal = document.getElementById('razorpay-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function executeRazorpayPayment() {
+            if (!pendingStationIdForRazorpay) return;
+            const targetId = pendingStationIdForRazorpay;
+            const btn = document.getElementById('btn-rzp-pay');
+            const btnText = document.getElementById('rzp-btn-text');
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.textContent = 'Verifying Escrow Authorization...';
+
+            try {
+                // Verify mock signature with backend
+                await fetch(`${API}/api/payment/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: `rzp_order_${targetId}_${Date.now()}`,
+                        payment_id: `pay_mock_${Date.now()}`,
+                        signature: 'mock_sig_valid_0_inr'
+                    })
+                }).catch(() => ({}));
+            } catch (e) {
+                console.warn("Payment verify call fallback:", e);
+            }
+
+            closeRazorpayModal();
+            if (btn) btn.disabled = false;
+            await reserveStation(targetId);
+            pendingStationIdForRazorpay = null;
+        }
+
         // Booking logic (Connects to backend /api/reserve)
         async function reserveStation(id) {
             const resBtn = document.getElementById('btn-reserve');
@@ -2925,7 +3053,7 @@
             const st = stations.find(s => (s.id || s.station_id) === id) || {};
             st.start_soc = currentSoc;
 
-            let pin = '742911';
+            let pin = '2580';
             try {
                 const res = await fetch(`${API}/api/reserve`, {
                     method: 'POST',
@@ -2942,17 +3070,17 @@
                 if (res.ok) {
                     const data = await res.json();
                     pin = data.pin;
-                    showToast(`Slot Locked! Your PIN: ${pin}`, 'success');
+                    showToast(`Slot Locked! Your 4-Digit PIN: ${pin}`, 'success');
                     updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted - PIN: ${pin}]`);
                 } else {
                     const err = await res.json().catch(() => ({}));
-                    pin = String(Math.floor(100000 + Math.random() * 900000));
+                    pin = String(Math.floor(1000 + Math.random() * 9000));
                     showToast(err.detail || 'Demo slot locked!', 'info');
                     updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted - PIN: ${pin}]`);
                 }
             } catch (e) {
                 console.warn('Booking network fallback:', e);
-                pin = String(Math.floor(100000 + Math.random() * 900000));
+                pin = String(Math.floor(1000 + Math.random() * 9000));
                 showToast(`Reserved (Demo Mode)! PIN: ${pin}`, 'info');
                 updateOcppLog(`> ReserveNow.req [Station: ${id}]\n< ReserveNow.conf [Accepted]`);
             }
@@ -3163,8 +3291,9 @@
             }
 
             const badgeEl = document.getElementById('chg-power-badge');
-            if (badgeEl && data.rated_power_kw) {
-                badgeEl.innerText = `${data.rated_power_kw} kW ${data.rated_power_kw >= 45 ? 'DC FAST' : 'AC'}`;
+            const pKw = data.rated_power_kw || data.power_kw;
+            if (badgeEl && pKw) {
+                badgeEl.innerText = `${pKw} kW ${pKw >= 45 ? 'DC FAST' : 'AC'}`;
             }
 
             const offset = 502 - (502 * (soc / 100));
@@ -3188,8 +3317,9 @@
                 }
 
                 const badgeEl = document.getElementById('chg-power-badge');
-                if (badgeEl && initialData.rated_power_kw) {
-                    badgeEl.innerText = `${initialData.rated_power_kw} kW ${initialData.rated_power_kw >= 45 ? 'DC FAST' : 'AC'}`;
+                const pKw = initialData.rated_power_kw || initialData.power_kw;
+                if (badgeEl && pKw) {
+                    badgeEl.innerText = `${pKw} kW ${pKw >= 45 ? 'DC FAST' : 'AC'}`;
                 }
 
                 if (initialData.soc !== undefined && initialData.kw !== undefined) {
@@ -4666,7 +4796,7 @@ if (data.display_data && data.display_data.action === 'show_compatibility_guide'
                 const target = stations.find(s => s.status === 'AVAILABLE') || stations[0];
                 if (target) {
                     selectStation(target.id); reserveStation(target.id);
-                    response.text = `Locking 30-minute slot at ${target.name}. Your 6-digit PIN will appear on screen.`;
+                    response.text = `Locking 30-minute slot at ${target.name}. Your 4-digit PIN will appear on screen.`;
                     response.display_data = { action: 'reserve', station_id: target.id, station_name: target.name };
                 } else {
                     response.text = 'No available charger found. Please select one on screen and tap Reserve.';

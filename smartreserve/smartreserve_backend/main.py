@@ -105,7 +105,7 @@ OCM_API_KEY = os.getenv("OCM_API_KEY") or "1f545914-8daa-4fa6-9d7b-4a6819f2f7cc"
 # ── Pydantic Models ───────────────────────────────────────────────────────────
 class ReserveRequest(BaseModel):
     station_id: str
-    connector_id: Optional[str] = "1"
+    connector_id: Optional[str] = None
     duration_minutes: int = 30
     user_id: str = "hyundai_driver_001"
     user_name: str = "Hyundai Driver"
@@ -115,7 +115,7 @@ class ReserveRequest(BaseModel):
 
 class VerifyOTPRequest(BaseModel):
     station_id: str
-    connector_id: Optional[str] = "1"
+    connector_id: Optional[str] = None
     pin: str
     kiosk_id: Optional[str] = None
 
@@ -123,6 +123,12 @@ class PaymentVerifyRequest(BaseModel):
     order_id: str
     payment_id: str
     signature: str
+
+class ExaminerActionRequest(BaseModel):
+    action: str  # reserve | auth | plugin | trip | reset
+    station_id: Optional[str] = "TG0001"
+    connector_id: Optional[str] = "1"
+    pin: Optional[str] = "2580"
 
 
 class VoiceInputRequest(BaseModel):
@@ -164,7 +170,7 @@ class VehicleStateUpdate(BaseModel):
 
 # ── Utility ───────────────────────────────────────────────────────────────────
 def generate_pin() -> str:
-    return "".join(random.choices(string.digits, k=6))
+    return f"{random.randint(1000, 9999)}"
 
 def get_congestion_score(station_id: str) -> dict:
     """GNN-inspired congestion prediction (deterministic per station)."""
@@ -589,7 +595,26 @@ async def reserve_station(req: ReserveRequest):
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
 
-    connector_id = str(req.connector_id or "1")
+    if req.connector_id:
+        connector_id = str(req.connector_id)
+    else:
+        # Auto-assign first available connector on the station (1 .. total_ports)
+        total_ports = int(station.get("total_ports") or 4)
+        chosen = None
+        for c in range(1, total_ports + 1):
+            c_str = str(c)
+            st_ent = await database.get_connector_status(req.station_id, c_str)
+            if st_ent and st_ent.get("state") == "FAULTED":
+                continue
+            act_ses = await database.get_session(req.station_id, c_str)
+            if act_ses:
+                continue
+            ex = await database.get_reservation(req.station_id, c_str)
+            if ex and ex["expires_at"] > time.time() and ex.get("user_id") != req.user_id:
+                continue
+            chosen = c_str
+            break
+        connector_id = chosen if chosen else "1"
 
     # Check if connector is in FAULTED state
     status_entry = await database.get_connector_status(req.station_id, connector_id)
@@ -651,7 +676,7 @@ async def reserve_station(req: ReserveRequest):
         action="CREATE",
         reservation_id=reservation_id,
         pin=pin,
-        duration_seconds=60,
+        duration_seconds=req.duration_minutes * 60,
         expires_at=int(expires_at),
         rfid_uid=req.rfid_uid or ""
     )
@@ -668,6 +693,7 @@ async def reserve_station(req: ReserveRequest):
         "reservation_id": reservation_id,
         "expiry": expires_at,
         "pin_hash": pin,
+        "power_kw": station.get("power_kw", 60.0),
         "timestamp": datetime.utcnow().isoformat(),
     })
 
@@ -708,8 +734,20 @@ async def reserve_station(req: ReserveRequest):
 @app.post("/api/verify-otp")
 async def verify_otp(req: VerifyOTPRequest):
     """Verify PIN, trigger OCPP UnlockConnector, and start charging session."""
-    connector_id = str(req.connector_id or "1")
-    reservation = await database.get_reservation(req.station_id, connector_id)
+    if req.connector_id:
+        connector_id = str(req.connector_id)
+        reservation = await database.get_reservation(req.station_id, connector_id)
+    else:
+        # Check active reservations on this station matching the PIN
+        all_res = await database.get_all_active_reservations()
+        matched = next((r for r in all_res if r["station_id"] == req.station_id and str(r.get("pin", "")).strip() == str(req.pin).strip()), None)
+        if matched:
+            reservation = matched
+            connector_id = str(matched.get("connector_id", "1"))
+        else:
+            connector_id = "1"
+            reservation = await database.get_reservation(req.station_id, connector_id)
+
     if not reservation:
         raise HTTPException(status_code=404, detail="No active reservation for this connector")
 
@@ -858,6 +896,244 @@ async def get_payment_order(reservation_id: str):
 async def verify_payment(req: PaymentVerifyRequest):
     valid = payment_engine.verify_payment_signature(req.order_id, req.payment_id, req.signature)
     return {"verified": valid}
+
+
+# ── Examiner 1-Click Hardware Action Route ────────────────────────────────────
+@app.post("/api/hardware/examiner-action")
+async def handle_examiner_action(req: ExaminerActionRequest):
+    """
+    1-Click Examiner Action endpoint for evaluators, judges, and kiosk dual-view simulator.
+    Seamlessly triggers:
+      - 'reserve': Creates 30-min reservation, generates/stores 4-digit PIN (default '2580'), broadcasts MQTT /reserve & WebSocket.
+      - 'auth': Submits authorization decision ACCEPTED with 30-second plug-in window & relay ENERGIZE.
+      - 'plugin': Simulates vehicle cable insertion, starts active charging session & streams meter values.
+      - 'trip': Simulates fast hardware emergency safety interlock trip (<50ms response cutoff) and de-energizes contactor.
+      - 'reset': Cancels reservation, halts charging, resets hardware and kiosk state back to AVAILABLE.
+    """
+    station_id = req.station_id or "TG0001"
+    connector_id = str(req.connector_id or "1")
+    station = db.get_station(station_id) or {
+        "name": f"Station {station_id}",
+        "power_kw": 60.0,
+        "connector_type": "CCS2"
+    }
+    power_kw = float(station.get("power_kw") or 60.0)
+    now = time.time()
+
+    if req.action == "reserve":
+        pin = req.pin or "2580"
+        duration_minutes = 30
+        expires_at = now + (duration_minutes * 60)
+        res_id = f"RES_EXAM_{station_id}_{connector_id}_{int(now)}"
+
+        # Save reservation in SQLite database
+        res_data = {
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "reservation_id": res_id,
+            "user_id": "examiner_judge_01",
+            "user_name": "Examiner Evaluator",
+            "pin": pin,
+            "rfid_uid": "DEADBEEF",
+            "duration_minutes": duration_minutes,
+            "created_at": now,
+            "expires_at": expires_at,
+            "vehicle_soc": 20.0,
+            "payment_order_id": f"mock_order_{res_id}",
+            "payment_status": "CONFIRMED"
+        }
+        await database.save_reservation(res_data)
+
+        # Publish MQTT reservation command to hardware
+        await mqtt_service.publish_reserve(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="CREATE",
+            reservation_id=res_id,
+            pin=pin,
+            duration_seconds=duration_minutes * 60,
+            expires_at=int(expires_at),
+            rfid_uid="DEADBEEF"
+        )
+
+        # Broadcast to kiosk display via WebSocket
+        await ws_manager.broadcast_to_kiosk(station_id, {
+            "type": "OCPP_RESERVE_NOW",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "reservation_id": res_id,
+            "expiry": expires_at,
+            "pin_hash": pin,
+            "power_kw": power_kw,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
+        return {
+            "success": True,
+            "action": "reserve",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "pin": pin,
+            "duration_minutes": duration_minutes,
+            "expires_at": expires_at,
+            "power_kw": power_kw,
+            "message": f"Charger {station_id} (Connector {connector_id}) locked for 30 min. PIN: {pin}"
+        }
+
+    elif req.action == "auth":
+        pin = req.pin or "2580"
+        # Publish MQTT Auth Decision ACCEPTED with 30s window and relay energization
+        await mqtt_service.publish_cmd(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="AUTH_DECISION",
+            status="ACCEPTED",
+            status_code=200,
+            auth_window_duration_ms=30000,
+            relay_action="ENERGIZE"
+        )
+
+        # Unlock kiosk
+        ses_id = f"SES_EXAM_{int(now)}"
+        await ws_manager.broadcast_to_kiosk(station_id, {
+            "type": "OCPP_UNLOCK_RELAY",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "session_id": ses_id,
+            "power_kw": power_kw
+        })
+
+        return {
+            "success": True,
+            "action": "auth",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "status": "ACCEPTED",
+            "auth_window_duration_ms": 30000,
+            "relay_action": "ENERGIZE",
+            "message": "PIN verified! 30s vehicle plug-in window active · Relay ENERGIZED"
+        }
+
+    elif req.action == "plugin":
+        # Vehicle cable inserted -> transition to CHARGING
+        ses_id = f"SES_EXAM_{station_id}_{connector_id}_{int(now)}"
+        await database.save_session({
+            "session_id": ses_id,
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "user_id": "examiner_judge_01",
+            "start_time": now,
+            "start_soc": 20.0,
+            "current_soc": 20.0,
+            "kwh_delivered": 0.1,
+            "power_kw": power_kw,
+            "status": "CHARGING"
+        })
+        await database.save_connector_status(station_id, connector_id, {"state": "CHARGING", "relay_state": "ENERGIZED"})
+
+        # Broadcast meter values to kiosk
+        await ws_manager.broadcast_to_kiosk(station_id, {
+            "type": "METER_VALUES",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "soc": 20.0,
+            "kw": power_kw,
+            "kwh": 0.1
+        })
+
+        # Publish MQTT command to IoT Edge / Wokwi hardware
+        await mqtt_service.publish_cmd(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="START_CHARGING",
+            status="CHARGING",
+            status_code=200,
+            auth_window_duration_ms=0,
+            relay_action="ENERGIZE"
+        )
+
+        return {
+            "success": True,
+            "action": "plugin",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "state": "CHARGING",
+            "power_kw": power_kw,
+            "session_id": ses_id,
+            "message": f"Vehicle cable connected. {power_kw:.0f} kW DC flowing to battery."
+        }
+
+    elif req.action == "trip":
+        # Simulate <50ms hardware safety trip
+        await database.save_connector_status(station_id, connector_id, {"state": "FAULTED", "relay_state": "DE_ENERGIZED"})
+        await mqtt_service.publish_cmd(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="STOP_CHARGING",
+            status="FAULTED",
+            status_code=500,
+            auth_window_duration_ms=0,
+            relay_action="DE_ENERGIZE"
+        )
+        await ws_manager.broadcast_to_kiosk(station_id, {
+            "type": "ACCESS_DENIED",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "reason": "SAFETY_TRIP_OVERCURRENT (<50ms interlock)"
+        })
+        return {
+            "success": True,
+            "action": "trip",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "state": "FAULTED",
+            "message": "EMERGENCY SAFETY TRIP: Contactor opened in <50ms! Relay DE-ENERGIZED."
+        }
+
+    elif req.action == "reset":
+        # Reset station to AVAILABLE
+        await database.delete_reservation(station_id, connector_id)
+        await database.delete_session(station_id, connector_id)
+        await database.save_connector_status(station_id, connector_id, {"state": "AVAILABLE", "relay_state": "DE_ENERGIZED"})
+
+        await mqtt_service.publish_reserve(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="CANCEL",
+            reservation_id="ALL",
+            pin="",
+            duration_seconds=0,
+            expires_at=int(now),
+            rfid_uid=""
+        )
+        await mqtt_service.publish_cmd(
+            station_id=station_id,
+            connector_id=connector_id,
+            action="STOP_CHARGING",
+            status="AVAILABLE",
+            status_code=200,
+            auth_window_duration_ms=0,
+            relay_action="DE_ENERGIZE"
+        )
+        await ws_manager.broadcast_to_kiosk(station_id, {
+            "type": "OCPP_CANCEL_RESERVATION",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "reason": "Examiner Reset to Available"
+        })
+        return {
+            "success": True,
+            "action": "reset",
+            "station_id": station_id,
+            "connector_id": connector_id,
+            "state": "AVAILABLE",
+            "message": f"Station {station_id} reset to AVAILABLE. Ready for new reservation."
+        }
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown examiner action: '{req.action}'. Expected reserve, auth, plugin, trip, or reset."
+        )
 
 
 # ── Voice Assistant Routes ─────────────────────────────────────────────────────

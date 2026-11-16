@@ -74,7 +74,7 @@
 #define MQTT_BROKER_DEFAULT   "10.0.2.2"
 #define MQTT_PORT_DEFAULT     1883
 #define MQTT_BUFFER_SIZE_DEF  512
-#define AUTH_GRANT_WINDOW_MS  8000UL
+#define AUTH_GRANT_WINDOW_MS  30000UL
 
 // Simulated Hardware Bus Monitor
 struct PinState {

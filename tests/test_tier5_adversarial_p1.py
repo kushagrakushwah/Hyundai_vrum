@@ -132,10 +132,10 @@ def test_adv_fsm_out_of_order_auth_decision_while_available(single_connector):
 def test_adv_fsm_rapid_keypad_burst_during_countdown(single_connector):
     """
     Adversarial Challenge: Keypad buffer overflow & rapid clearing stress.
-    Stress-tests buffer bounds (max 6), asterisk clearing, short PIN rejection (<4), and valid submission.
+    Stress-tests buffer bounds (max 4), asterisk clearing, short PIN rejection (<4), and valid submission.
     """
     hw = single_connector
-    hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_KEYPAD_STRESS", "pin": "123456"})
+    hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_KEYPAD_STRESS", "pin": "1234"})
     assert hw.state == ConnectorState.RESERVED
 
     # Partial entry + clear
@@ -156,14 +156,14 @@ def test_adv_fsm_rapid_keypad_burst_during_countdown(single_connector):
     # Overfill buffer: send 10 digits
     for digit in "1234567890":
         hw.press_key(digit)
-    assert len(hw.pin_buffer) == 6
-    assert hw.pin_buffer == "123456"
+    assert len(hw.pin_buffer) == 4
+    assert hw.pin_buffer == "1234"
 
-    # Submit valid 6-digit PIN
+    # Submit valid 4-digit PIN
     auth_req = hw.press_key("#")
     assert auth_req is not None
     assert auth_req["auth_type"] == "PIN"
-    assert auth_req["credential"]["pin"] == "123456"
+    assert auth_req["credential"]["pin"] == "1234"
 
 
 def test_adv_fsm_telemetry_extreme_adc_saturation_and_clamping(single_connector):

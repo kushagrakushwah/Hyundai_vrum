@@ -158,10 +158,10 @@ void fsmTriggerAuthGrant(uint32_t windowDurationMs) {
     isAuthWindowActive = true;
     authWindowExpiryMillis = millis() + windowDurationMs;
 
-    // Energize relay during the 8-second plug-in window so vehicle detects line potential
+    // Energize relay during the vehicle plug-in authorization window so vehicle detects line potential
     digitalWrite(RELAY_PIN, RELAY_ENERGIZED);
 
-    Serial.printf("[FSM] Auth Granted: 8s Cable Insertion Window Active (Relay ENERGIZED)\n");
+    Serial.printf("[FSM] Auth Granted: %u ms Cable Insertion Window Active (Relay ENERGIZED)\n", windowDurationMs);
 }
 
 void fsmTriggerEmergencyTrip(const char* reason) {
@@ -174,7 +174,7 @@ void fsmTriggerEmergencyTrip(const char* reason) {
 void fsmUpdate(int currentRaw, int voltageRaw) {
     uint32_t now = millis();
 
-    // 1. Check active 8s auth grant window
+    // 1. Check active auth grant plug-in window
     if (currentState == RESERVED && isAuthWindowActive) {
         // Sensed current check: > 0.8A (raw >= 100) confirms vehicle cable plugged in
         if (currentRaw >= PLUG_DETECT_RAW_CURR) {

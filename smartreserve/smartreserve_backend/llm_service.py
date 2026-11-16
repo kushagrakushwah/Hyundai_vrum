@@ -47,7 +47,7 @@ PROJECT ARCHITECTURAL BLUEPRINT:
 
 3. Kiosk Hardware Locking via OCPP 1.6J:
    - Uses OCPP 1.6J over WebSockets (ReserveNow command) to physically lock the charging gun for 30 minutes.
-   - Driver receives a unique 6-digit PIN on the in-cabin screen to enter at the kiosk touchscreen to unlock the connector.
+   - Driver receives a unique 4-digit PIN on the in-cabin screen to enter at the kiosk touchscreen to unlock the connector.
 
 4. Rs. 200 Refundable Escrow Deposit:
    - Solves the chronic "ghost reservation" and "charger hogging" problem in India.
@@ -69,11 +69,12 @@ PROJECT ARCHITECTURAL BLUEPRINT:
    - Real-time port-level IoT telemetry for Hyderabad Statiq hubs.
 
 Rules for Spoken Output:
-1. Respond in the SAME language mix as the user (English, Hindi, Hinglish, Marathi).
-2. Keep answers concise, clear, and conversational (max 2-3 spoken sentences) so they sound great over the car audio system.
-3. Sound like a knowledgeable, calm, futuristic automotive co-pilot.
-4. Avoid markdown asterisks, hashtags, or emojis in text because they get read aloud awkwardly by the TTS engine.
-5. If the user asks about the car or charging, use the injected vehicle context.
+1. Respond in the requested language (English, Hinglish, or Marathi). ALWAYS write responses in the Latin (Roman) alphabet. Never output Devanagari script so automotive infotainment screens and browser text-to-speech synthesize and display names and numbers cleanly.
+2. If nearby chargers or stations are provided in context, ALWAYS state the top recommended station name (e.g., 'Tata Power Superfast Hub — Sitabuldi') clearly in the very first sentence.
+3. Keep answers concise, clear, and conversational (max 2-3 spoken sentences) so they sound great over the car audio system.
+4. Sound like a knowledgeable, calm, futuristic automotive co-pilot.
+5. Avoid markdown asterisks, hashtags, or emojis in text because they get read aloud awkwardly by the TTS engine.
+6. If the user asks about the car or charging, use the injected vehicle context.
 """
 
 # Supported model names verified working with Gemini API
@@ -103,9 +104,9 @@ def _call_gemini_rest(prompt: str) -> Optional[str]:
                 }
             ],
             "generationConfig": {
-                "temperature": 0.5,
+                "temperature": 0.2,
                 "topP": 0.9,
-                "maxOutputTokens": 300,
+                "maxOutputTokens": 400,
             }
         }
         try:
@@ -146,6 +147,8 @@ def ask_gemini(
         return None
 
     context_parts = []
+    if language_mix:
+        context_parts.append(f"[Language Preference: {language_mix} in Latin alphabet]")
     if vehicle_context:
         v_summary = {
             "car": vehicle_context.get("vehicle", "Hyundai Ioniq 5 AWD"),
@@ -158,6 +161,8 @@ def ask_gemini(
     if station_context:
         top2 = [{"name": s.get("name"), "kw": s.get("power_kw"), "dist": s.get("distance_km")} for s in station_context[:2]]
         context_parts.append(f"[Nearby Chargers: {json.dumps(top2)}]")
+        if station_context[0].get("name"):
+            context_parts.append(f"[Required: Explicitly name '{station_context[0].get('name')}' in the opening sentence.]")
 
     full_prompt = ("\n".join(context_parts) + f"\nUser Question: {user_text}") if context_parts else user_text
 

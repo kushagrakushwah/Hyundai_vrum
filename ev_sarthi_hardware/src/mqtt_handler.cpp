@@ -28,7 +28,7 @@ static void onMqttMessageReceived(char* topic, byte* payload, unsigned int lengt
     }
 
     // 1. Handle Reservation topic: evsarthi/{station}/{connector}/reserve
-    if (String(topic) == topicReserve) {
+    if (String(topic) == topicReserve || String(topic).endsWith("/reserve")) {
         const char* action = doc["action"] | "";
         Serial.printf("[MQTT] /reserve action: %s\n", action);
 
@@ -43,7 +43,7 @@ static void onMqttMessageReceived(char* topic, byte* payload, unsigned int lengt
         }
     }
     // 2. Handle Command topic: evsarthi/{station}/{connector}/cmd
-    else if (String(topic) == topicCmd) {
+    else if (String(topic) == topicCmd || String(topic).endsWith("/cmd")) {
         const char* action = doc["action"] | "";
         const char* status = doc["status"] | "";
         uint32_t authWindowMs = doc["auth_window_duration_ms"] | AUTH_GRANT_WINDOW_MS;
@@ -51,16 +51,21 @@ static void onMqttMessageReceived(char* topic, byte* payload, unsigned int lengt
 
         Serial.printf("[MQTT] /cmd received - action: %s, status: %s, relay: %s\n", action, status, relayAction);
 
-        if (strcmp(action, "AUTH_DECISION") == 0) {
-            if (strcmp(status, "ACCEPTED") == 0) {
+        if (strcmp(action, "AUTH_DECISION") == 0 || strcmp(action, "REMOTE_START") == 0 || strcmp(relayAction, "ENERGIZE") == 0) {
+            if (strcmp(status, "ACCEPTED") == 0 || strcmp(relayAction, "ENERGIZE") == 0) {
                 fsmTriggerAuthGrant(authWindowMs);
             } else if (strcmp(status, "DENIED") == 0) {
                 Serial.println("[MQTT] Authorization explicitly DENIED by backend");
             }
+        } else if (strcmp(action, "START_CHARGING") == 0 || strcmp(status, "CHARGING") == 0) {
+            Serial.println("[MQTT] Cable plugged in confirmed -> transition to CHARGING");
+            fsmTransitionTo(CHARGING, "MQTT_CABLE_CONNECTED");
         }
 
         if (strcmp(relayAction, "DE_ENERGIZE") == 0 || strcmp(action, "STOP_CHARGING") == 0) {
-            if (fsmGetState() == CHARGING) {
+            if (strcmp(status, "FAULTED") == 0) {
+                fsmTriggerEmergencyTrip("MQTT_SAFETY_TRIP");
+            } else if (fsmGetState() == CHARGING) {
                 fsmTransitionTo(AVAILABLE, "REMOTE_COMMAND_STOP");
             }
         }
@@ -110,11 +115,13 @@ static void reconnectMqtt() {
     if (mqttClient.connect(clientId.c_str())) {
         Serial.println("[MQTT] Connected successfully!");
 
-        // Subscribe to incoming operational topics
+        // Subscribe to incoming operational topics (specific and wildcard)
         mqttClient.subscribe(topicReserve.c_str());
         mqttClient.subscribe(topicCmd.c_str());
+        mqttClient.subscribe("evsarthi/+/+/reserve");
+        mqttClient.subscribe("evsarthi/+/+/cmd");
 
-        Serial.printf("[MQTT] Subscribed to:\n  - %s\n  - %s\n", topicReserve.c_str(), topicCmd.c_str());
+        Serial.printf("[MQTT] Subscribed to:\n  - %s\n  - %s\n  - evsarthi/+/+/reserve\n  - evsarthi/+/+/cmd\n", topicReserve.c_str(), topicCmd.c_str());
 
         // Publish initial state on connect (Retained = true)
         mqttPublishState(fsmGetState(), getRelayRaw(), fsmGetTransitionReason(), millis());

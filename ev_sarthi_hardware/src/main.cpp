@@ -114,7 +114,7 @@ void loop() {
         char key = scanKeypad();
         if (key) {
             if (key >= '0' && key <= '9') {
-                if (enteredPin.length() < 6) {
+                if (enteredPin.length() < 4) {
                     enteredPin += key;
                 }
             } else if (key == '*') {
@@ -164,9 +164,16 @@ void loop() {
                 Serial.println("[SERIAL] Manual Trigger: Set AVAILABLE");
                 fsmTransitionTo(AVAILABLE, "SERIAL_MANUAL_AVAILABLE");
                 break;
+            case 'P':
+            case 'p':
+                Serial.println("[SERIAL] Manual Trigger: Cable Plugged In -> CHARGING");
+                fsmTransitionTo(CHARGING, "SERIAL_PLUG_SENSED");
+                break;
             case 'F':
             case 'f':
-                Serial.println("[SERIAL] Manual Trigger: Emergency Fault Injection");
+            case 'T':
+            case 't':
+                Serial.println("[SERIAL] Manual Trigger: Safety Fault Trip (<50ms)");
                 fsmTriggerEmergencyTrip("SERIAL_FAULT_INJECTION");
                 break;
             case 'E':

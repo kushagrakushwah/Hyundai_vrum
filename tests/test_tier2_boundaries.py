@@ -214,14 +214,14 @@ async def test_tier2_expired_pin_reuse_prevention(test_db):
 # ==============================================================================
 
 def test_tier2_auth_window_current_at_7_0s(single_connector):
-    """Verify vehicle plug-in and current detection at t=7.0s locks into CHARGING."""
+    """Verify vehicle plug-in and current detection at t=25.0s locks into CHARGING."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_AW1"})
     hw.handle_cmd_message({"action": "AUTH_DECISION", "status": "ACCEPTED", "status_code": 200})
     assert hw.access_granted is True
 
-    # Advance 7 seconds
-    hw.tick(7000)
+    # Advance 25 seconds
+    hw.tick(25000)
     assert hw.access_granted is True
 
     # Plug in cable and current starts flowing
@@ -233,13 +233,13 @@ def test_tier2_auth_window_current_at_7_0s(single_connector):
 
 
 def test_tier2_auth_window_current_at_7_9s(single_connector):
-    """Verify vehicle plug-in at t=7.9s (100ms before 8s window ends) succeeds."""
+    """Verify vehicle plug-in at t=29.9s (100ms before 30s window ends) succeeds."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_AW2"})
     hw.handle_cmd_message({"action": "AUTH_DECISION", "status": "ACCEPTED", "status_code": 200})
 
-    # Advance 7.9 seconds
-    hw.tick(7900)
+    # Advance 29.9 seconds
+    hw.tick(29900)
     assert hw.access_granted is True
 
     hw.set_sensor_values(voltage_v=220.0, current_a=16.0)
@@ -248,14 +248,14 @@ def test_tier2_auth_window_current_at_7_9s(single_connector):
 
 
 def test_tier2_auth_window_timeout_at_8_1s(single_connector):
-    """Verify at t=8.1s without current, window expires, relay safely de-energizes, and state reverts to AVAILABLE."""
+    """Verify at t=30.1s without current, window expires, relay safely de-energizes, and state reverts to AVAILABLE."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_AW3"})
     hw.handle_cmd_message({"action": "AUTH_DECISION", "status": "ACCEPTED", "status_code": 200})
     assert hw.is_relay_energized() is True
 
-    # Advance past 8,000ms with no current
-    hw.tick(8100)
+    # Advance past 30,000ms with no current
+    hw.tick(30100)
     assert hw.access_granted is False
     assert hw.is_relay_energized() is False
     assert hw.is_red_led_on() is True
@@ -272,8 +272,8 @@ def test_tier2_auth_window_sub_threshold_current(single_connector):
     hw.set_sensor_values(voltage_v=220.0, current_a=0.39)
     assert hw.current_a < 0.8
 
-    # Tick across 8,000 ms
-    hw.tick(8100)
+    # Tick across 30,000 ms
+    hw.tick(30100)
     assert hw.access_granted is False
     assert hw.get_state() == "AVAILABLE"
     assert hw.is_relay_energized() is False
@@ -286,7 +286,7 @@ def test_tier2_auth_window_zero_current_fallback(single_connector):
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_AW5"})
     hw.handle_cmd_message({"action": "AUTH_DECISION", "status": "ACCEPTED", "status_code": 200})
 
-    msgs = hw.tick(8001)
+    msgs = hw.tick(30001)
     timeout_msgs = [m[1] for m in msgs if m[1].get("transition_reason") == TransitionReason.AUTH_WINDOW_TIMEOUT.value]
     assert len(timeout_msgs) > 0
     assert hw.get_state() == "AVAILABLE"
@@ -298,33 +298,33 @@ def test_tier2_auth_window_zero_current_fallback(single_connector):
 # ==============================================================================
 
 def test_tier2_keypad_exact_6digits(single_connector):
-    """Verify keypad accepts up to exact maximum length of 6 digits."""
+    """Verify keypad accepts up to exact maximum length of 4 digits."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_KB1"})
-    for d in "123456":
+    for d in "1234":
         hw.press_key(d)
-    assert len(hw.pin_buffer) == 6
-    assert hw.pin_buffer == "123456"
+    assert len(hw.pin_buffer) == 4
+    assert hw.pin_buffer == "1234"
 
 
 def test_tier2_keypad_7th_digit_dropped(single_connector):
-    """Verify 7th digit is silently dropped and buffer remains capped at 6."""
+    """Verify 5th digit is silently dropped and buffer remains capped at 4."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_KB2"})
-    for d in "1234567":
+    for d in "12345":
         hw.press_key(d)
-    assert len(hw.pin_buffer) == 6
-    assert hw.pin_buffer == "123456"
+    assert len(hw.pin_buffer) == 4
+    assert hw.pin_buffer == "1234"
 
 
 def test_tier2_keypad_12digits_stress(single_connector):
-    """Verify entering 12 rapid keystrokes maintains buffer cap and stability."""
+    """Verify entering 12 rapid keystrokes maintains buffer cap of 4 and stability."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_KB3"})
     for d in "123456789012":
         hw.press_key(d)
-    assert len(hw.pin_buffer) == 6
-    assert hw.pin_buffer == "123456"
+    assert len(hw.pin_buffer) == 4
+    assert hw.pin_buffer == "1234"
 
 
 def test_tier2_keypad_non_numeric_ignored(single_connector):
@@ -377,12 +377,12 @@ def test_tier2_keypad_clear_partial_buffer(single_connector):
 
 
 def test_tier2_keypad_clear_full_buffer(single_connector):
-    """Verify pressing '*' clears full 6-digit buffer."""
+    """Verify pressing '*' clears full 4-digit buffer."""
     hw = single_connector
     hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_CLR3"})
-    for d in "123456":
+    for d in "1234":
         hw.press_key(d)
-    assert len(hw.pin_buffer) == 6
+    assert len(hw.pin_buffer) == 4
     hw.press_key("*")
     assert hw.pin_buffer == ""
 
