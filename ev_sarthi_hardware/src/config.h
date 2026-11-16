@@ -79,7 +79,7 @@ const byte KEYPAD_COL_PINS[KEYPAD_COLS] = {25, 32, 33};
 // Timers & State Machine Lifecycles
 // ------------------------------------------------------------------------------
 #define DEFAULT_RESERVATION_TIME_MS   60000UL // 60-second reservation countdown
-#define AUTH_GRANT_WINDOW_MS          8000UL  // 8-second vehicle plug-in window
+#define AUTH_GRANT_WINDOW_MS          30000UL // 30-second vehicle plug-in window
 #define TELEMETRY_INTERVAL_MS         2000UL  // 2-second CSV & MQTT telemetry period
 #define OLED_REFRESH_INTERVAL_MS      500UL   // 500ms OLED refresh
 #define MQTT_RECONNECT_INTERVAL_MS    5000UL  // 5-second non-blocking MQTT retry
@@ -95,7 +95,7 @@ const byte AUTHORIZED_RFID_DEFAULT[4] = {0xDE, 0xAD, 0xBE, 0xEF};
 // ------------------------------------------------------------------------------
 #define WIFI_SSID_DEFAULT     "Wokwi-GUEST"
 #define WIFI_PASS_DEFAULT     ""
-#define MQTT_BROKER_DEFAULT   "10.0.2.2" // Gateway loopback in Wokwi; or mosquitto host
+#define MQTT_BROKER_DEFAULT   "broker.hivemq.com" // Public cloud broker for Wokwi + Cloud backend
 #define MQTT_PORT_DEFAULT     1883
 #define MQTT_BUFFER_SIZE_DEF  512
 

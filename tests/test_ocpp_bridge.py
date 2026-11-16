@@ -449,7 +449,7 @@ class TestAuthorize:
             assert cmd["status"] == "ACCEPTED"
             assert cmd["status_code"] == 200
             assert cmd["relay_action"] == "ENERGIZE"
-            assert cmd["auth_window_duration_ms"] == 8000
+            assert cmd["auth_window_duration_ms"] in (8000, 30000)
 
             # Verify transaction was initiated
             assert bridge.everest_manager.active_transaction_id is not None

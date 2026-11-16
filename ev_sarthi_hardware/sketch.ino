@@ -70,7 +70,7 @@
 
 // Timers & Intervals
 #define DEFAULT_RESERVATION_TIME_MS   60000UL // 60s reservation countdown
-#define AUTH_GRANT_WINDOW_MS          8000UL  // 8s cable insertion window
+#define AUTH_GRANT_WINDOW_MS          30000UL // 30s cable insertion window
 #define TELEMETRY_INTERVAL_MS         2000UL  // 2s telemetry logging & publish
 #define OLED_REFRESH_INTERVAL_MS      500UL   // 500ms OLED refresh
 #define MQTT_RECONNECT_INTERVAL_MS    5000UL  // 5s MQTT non-blocking retry
@@ -82,7 +82,7 @@ const byte AUTHORIZED_RFID_DEFAULT[4] = {0xDE, 0xAD, 0xBE, 0xEF};
 // Network & MQTT Settings
 #define WIFI_SSID_DEFAULT     "Wokwi-GUEST"
 #define WIFI_PASS_DEFAULT     ""
-#define MQTT_BROKER_DEFAULT   "10.0.2.2" // Wokwi gateway loopback to host; or mosquitto host
+#define MQTT_BROKER_DEFAULT   "broker.hivemq.com" // Public cloud broker for Wokwi + Cloud backend
 #define MQTT_PORT_DEFAULT     1883
 #define MQTT_BUFFER_SIZE_DEF  512
 
@@ -646,7 +646,7 @@ void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
         return;
     }
 
-    if (String(topic) == topicReserve) {
+    if (String(topic) == topicReserve || String(topic).endsWith("/reserve")) {
         const char* action = doc["action"] | "";
         if (strcmp(action, "CREATE") == 0) {
             currentReservationId = (const char*)(doc["reservation_id"] | "RES_REMOTE");
@@ -661,22 +661,28 @@ void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
                 setConnectorState(AVAILABLE, "MQTT_RESERVE_CANCEL");
             }
         }
-    } else if (String(topic) == topicCmd) {
+    } else if (String(topic) == topicCmd || String(topic).endsWith("/cmd")) {
         const char* action = doc["action"] | "";
         const char* status = doc["status"] | "";
         uint32_t authWindowMs = doc["auth_window_duration_ms"] | AUTH_GRANT_WINDOW_MS;
         const char* relayAction = doc["relay_action"] | "";
 
-        if (strcmp(action, "AUTH_DECISION") == 0) {
-            if (strcmp(status, "ACCEPTED") == 0) {
+        if (strcmp(action, "AUTH_DECISION") == 0 || strcmp(action, "REMOTE_START") == 0 || strcmp(relayAction, "ENERGIZE") == 0) {
+            if (strcmp(status, "ACCEPTED") == 0 || strcmp(relayAction, "ENERGIZE") == 0) {
                 triggerAuthGrant(authWindowMs);
             } else if (strcmp(status, "DENIED") == 0) {
                 Serial.println("[MQTT] Authorization DENIED by CSMS backend");
             }
+        } else if (strcmp(action, "START_CHARGING") == 0 || strcmp(status, "CHARGING") == 0) {
+            Serial.println("[MQTT] Vehicle cable plug-in confirmed -> transition to CHARGING");
+            isAuthWindowActive = false;
+            setConnectorState(CHARGING, "MQTT_CABLE_CONNECTED");
         }
 
         if (strcmp(relayAction, "DE_ENERGIZE") == 0 || strcmp(action, "STOP_CHARGING") == 0) {
-            if (connectorState == CHARGING) {
+            if (strcmp(status, "FAULTED") == 0) {
+                triggerEmergencyTrip("MQTT_SAFETY_TRIP");
+            } else if (connectorState == CHARGING) {
                 setConnectorState(AVAILABLE, "REMOTE_COMMAND_STOP");
             }
         }
@@ -718,6 +724,8 @@ void serviceMqtt() {
                 Serial.println("[MQTT] Connected to broker!");
                 mqttClient.subscribe(topicReserve.c_str());
                 mqttClient.subscribe(topicCmd.c_str());
+                mqttClient.subscribe("evsarthi/+/+/reserve");
+                mqttClient.subscribe("evsarthi/+/+/cmd");
                 mqttPublishState(connectorState, (digitalRead(RELAY_PIN) == RELAY_ENERGIZED), lastTransitionReason.c_str(), millis());
             }
         }
@@ -869,7 +877,7 @@ void loop() {
         char key = keypad.getKey();
         if (key) {
             if (key >= '0' && key <= '9') {
-                if (enteredPin.length() < 6) {
+                if (enteredPin.length() < 4) {
                     enteredPin += key;
                 }
             } else if (key == '*') {
@@ -920,9 +928,17 @@ void loop() {
                 Serial.println("[SERIAL] Trigger: AVAILABLE");
                 setConnectorState(AVAILABLE, "SERIAL_AVAILABLE");
                 break;
+            case 'P':
+            case 'p':
+                Serial.println("[SERIAL] Trigger: Cable Plugged In -> CHARGING");
+                isAuthWindowActive = false;
+                setConnectorState(CHARGING, "SERIAL_PLUG_SENSED");
+                break;
             case 'F':
             case 'f':
-                Serial.println("[SERIAL] Trigger: FAULT TRIP");
+            case 'T':
+            case 't':
+                Serial.println("[SERIAL] Trigger: SAFETY FAULT TRIP (<50ms)");
                 triggerEmergencyTrip("SERIAL_FAULT_INJECTION");
                 break;
             case 'E':

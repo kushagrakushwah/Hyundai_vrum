@@ -66,7 +66,7 @@ void advanceMillis(uint32_t ms) {
 #define PLUG_DETECT_RAW_CURR  100
 
 #define DEFAULT_RESERVATION_TIME_MS   60000UL
-#define AUTH_GRANT_WINDOW_MS          8000UL
+#define AUTH_GRANT_WINDOW_MS          30000UL
 #define DEMO_PIN_DEFAULT      "2580"
 
 enum ConnectorState {

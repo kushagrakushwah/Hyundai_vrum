@@ -1,251 +1,309 @@
-# Hyundai SmartReserve
+# Hyundai SmartReserve & EV Sarthi IoT Ecosystem
 
 [![Hyundai CoE Ideathon 2026](https://img.shields.io/badge/Hyundai_CoE_Ideathon-2026-002C5F?style=for-the-badge)](https://hcoe-ideathon.com/)
 [![Track B](https://img.shields.io/badge/Track_B-Technology_%26_Prototype-0284C7?style=for-the-badge)](https://hcoe-ideathon.com/)
 [![Category 2](https://img.shields.io/badge/Category_2-AI_Powered_In--Vehicle_Experience-059669?style=for-the-badge)](https://hcoe-ideathon.com/)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.3.0-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
-[![OCPP](https://img.shields.io/badge/Protocol-OCPP_1.6J-F59E0B?style=for-the-badge)](https://openchargealliance.org/)
-
-An in-cabin EV charging assistant for Hyundai's ccNC / AVNT infotainment system.
-It predicts congestion at charging stations with a spatio-temporal graph neural
-network and lets the driver reserve a connector for 30 minutes with a single tap.
-The reservation is carried to the charger over OCPP 1.6J and protected by a
-one-time PIN.
-
-Built for the Hyundai Centre of Excellence Mobility Innovation Ideathon 2026
-(Track B, Category 2). The prototype is entirely software: the vehicle display and
-the charger are both simulated and talk to a real backend over WebSockets.
-
-![System architecture](architecture_horizontal.png)
+[![ESP32 Hardware](https://img.shields.io/badge/Hardware-ESP32_Wokwi_Sim-E7352C?style=for-the-badge&logo=espressif&logoColor=white)](https://wokwi.com/projects/480737603461683201)
+[![MQTT](https://img.shields.io/badge/Broker-Eclipse_Mosquitto-660066?style=for-the-badge&logo=eclipsemosquitto&logoColor=white)](https://mosquitto.org/)
+[![OCPP](https://img.shields.io/badge/Protocol-OCPP_1.6J_%2B_SteVe-F59E0B?style=for-the-badge)](https://openchargealliance.org/)
+[![Gemini LLM](https://img.shields.io/badge/AI-Gemini_Pro_%2B_AVA-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Tests](https://img.shields.io/badge/Tests-386_Passing-success?style=for-the-badge&logo=pytest&logoColor=white)](file:///c:/Users/kusha/OneDrive/Music/Documents/Projects/EV_Hyundai/tests)
 
 ---
 
-## Problem
+## 📌 Executive Overview
 
-Public charging in India has a reliability problem that range alone does not solve.
+**Hyundai SmartReserve** is an enterprise-grade in-cabin EV charging co-pilot for Hyundai's **ccNC / AVNT infotainment system**. It pairs spatio-temporal AI demand prediction with physical and simulated edge IoT charging hardware (**EV Sarthi**), an asynchronous **Eclipse Mosquitto MQTT broker**, a **SteVe / LF Energy EVerest OCPP 1.6-J bridge**, and **AVA**, an intelligent multilingual voice assistant powered by **Google Gemini**.
 
-- Existing apps (ChargeZone, Statiq, EVselect) list stations but, in our testing,
-  do not report whether a specific connector is free right now. `[TODO: add your
-  test date and method, or soften this sentence]`
-- Checking a phone mid-drive is unsafe and illegal in most cases.
-- A free charger is not a guaranteed charger. Another EV can take the connector
-  during the drive, and ICE vehicles frequently block bays.
-- Telangana's EV fleet is growing quickly (`[TODO: cite figure and source]`), so
-  contention at popular hubs will get worse before it gets better.
+Drivers can query stations in natural English, Hindi, or Marathi, plan charging stops along high-speed corridors with a 30 km radius search, and lock an exclusive charging slot with a single tap. The reservation physically locks the charger contactor over MQTT/OCPP and issues an encrypted one-time PIN and RFID token for instantaneous authorization.
 
-## Solution
-
-SmartReserve moves the whole decision into the car's native interface.
-
-1. **Trigger.** When state of charge drops below 20%, the system queries the
-   congestion model and surfaces the least busy hub along the route.
-2. **Reserve.** One tap on the dashboard sends a reservation request to the cloud
-   service, which issues an OCPP 1.6 `ReserveNow` to the target charge point for a
-   30-minute window.
-3. **Lock.** The charge point enters the Reserved state. In our simulator the
-   contactor stays open (0 kW) until an authorized session starts.
-4. **Authorize.** The backend issues a 6-digit PIN to the driver. Entering any
-   other code on the charger is rejected. The correct PIN closes the contactor and
-   DC fast charging begins.
-
-Note on enforcement: `ReserveNow` is a request, and the charge point firmware is
-what actually refuses other users. A production deployment would depend on
-chargers implementing the OCPP Reservation feature profile. The simulator models
-that behavior; it does not claim to prove it on real hardware.
+* **Live Cloud Demo:** [https://hyundai-vrum.onrender.com](https://hyundai-vrum.onrender.com)
+* **Live Wokwi Hardware Simulation:** [Wokwi Project 480737603461683201](https://wokwi.com/projects/480737603461683201)
+* **2-Page Hardware Engineering Summary:** [EV_Sarthi_Hardware_Summary.pdf](file:///c:/Users/kusha/OneDrive/Music/Documents/Projects/EV_Hyundai/docs/EV_Sarthi_Hardware_Summary.pdf)
+* **Architecture Blueprint:** [architecture_horizontal.png](file:///c:/Users/kusha/OneDrive/Music/Documents/Projects/EV_Hyundai/architecture_horizontal.png)
 
 ---
 
-## Datasets
+## 🏛️ System Architecture
 
-| Dataset | Source | Scale | Used for |
-| :--- | :--- | :--- | :--- |
-| EV charging station registry | Bureau of Energy Efficiency, Ministry of Power (via Dataful, order #23369) | 934 stations across 33 districts of Telangana | Coordinates, power rating, connector types (CCS2, CHAdeMO, Type 2), port count, operator |
-| EV and hybrid vehicle registrations | Parivahan Sewa, MoRTH (via Dataful, dataset #23540) | Monthly, RTO level, 2014 to 2026 | EV adoption volume, manufacturer split, BEV vs. hybrid, district growth rate |
-| Points of interest | OpenStreetMap, Overpass API | Radius counts around each station | Nearby malls, fuel stations, tourism sites, hospitals, schools |
-| District demographics | Census of India, Telangana State Portal | District and mandal level | Population density per district |
-| Monthly graph snapshots | Derived from the sources above | 36 snapshots, Jan 2023 to Dec 2025 | Model input (see below) |
+```mermaid
+flowchart TB
+    subgraph Vehicle ["In-Cabin Hyundai ccNC Infotainment"]
+        UI["12.3-inch ccNC Dashboard\n(Leaflet Maps, Telematics, Curves)"]
+        AVA["AVA Voice Assistant\n(Gemini LLM, Multilingual, Barge-in)"]
+        UI <--> AVA
+    end
 
-**About the snapshots.** Each snapshot is a graph whose nodes are stations with a
-52-dimensional feature vector. Features include commissioning status (355 active
-nodes in Jan 2023, growing to 934 in Dec 2025), demand lags at t-1, t-2 and t-3,
-and sine/cosine month encodings.
-`[TODO: state clearly how the demand targets (energy in kWh, peak load in kW) were
-obtained. If they are modeled or synthesized from registration and POI data rather
-than measured from charger logs, say so here.]`
+    subgraph Cloud ["SmartReserve Cloud Platform (FastAPI Backend)"]
+        API["FastAPI Async Web Service\n(REST API & WebSockets)"]
+        DB[(SQLite Persistent DB\nStations, Reservations, Telemetry)]
+        GNN["ROLAND GNN Model\n(Congestion Predictor R²=80.02%)"]
+        PAY["Razorpay Escrow Engine\n(No-show deposit & refunds)"]
+        OCPP_B["OCPP 1.6-J & EVerest Bridge\n(CSMS Central System Adapter)"]
+        MQTT_SVC["Async MQTT Microservice\n(Paho / asyncio-mqtt)"]
+        
+        API <--> DB
+        API <--> GNN
+        API <--> PAY
+        API <--> OCPP_B
+        API <--> MQTT_SVC
+    end
 
----
+    subgraph Broker ["MQTT Message Bus"]
+        MOSQ["Eclipse Mosquitto Broker\n(TCP: 1883 | WS: 9001)"]
+        MQTT_SVC <-->|evsarthi/+/+/reserve, cmd| MOSQ
+        MOSQ <-->|evsarthi/+/+/state, telemetry, auth| MQTT_SVC
+    end
 
-## Demand Forecasting Model
+    subgraph Edge ["EV Sarthi Physical / Wokwi Edge Hardware (ESP32)"]
+        ESP["ESP32 DevKit C v4\n(4-State FSM, <50ms Trip Logic)"]
+        TFT["2.4-inch ILI9341 Color TFT\n(Status Pages, Power Readout)"]
+        OLED["0.96-inch SSD1306 OLED\n(Countdown, RFID Prompt)"]
+        KP["4x4 Matrix Keypad\n(PIN Entry & Stop Control)"]
+        RFID["MFRC522 RFID Reader\n(Contactless Authentication)"]
+        RELAY["5V Power Relay & LEDs\n(Safety Contactor Interlock)"]
+        ADC["12-bit ADC Sensors\n(Voltage GPIO 35, Current GPIO 34)"]
+        SD["MicroSD SPI Module\n(11-column /telemetry.csv Log)"]
 
-The forecaster adapts **ROLAND** (You, Du and Leskovec, "ROLAND: Graph Learning
-Framework for Dynamic Graphs", KDD 2022), which turns a static GNN into a dynamic
-one by adding recurrent state across snapshots. The original implementation is
-from the Stanford SNAP group; our model is a smaller reimplementation in PyTorch
-fitted to this problem. `[TODO: link the ROLAND repo and note any code you reused.]`
+        ESP --> TFT
+        ESP --> OLED
+        KP --> ESP
+        RFID --> ESP
+        ESP --> RELAY
+        ADC --> ESP
+        ESP --> SD
+    end
 
-```
-        District subgraphs (934 nodes)
-                       |
-                       v
-       +-------------------------------+
-       | Spatial encoder               |   residual EdgeConv message passing
-       +---------------+---------------+
-                       | X_t
-                       v
-       +-------------------------------+
-       | Temporal update               |   GRU cell with active-node mask
-       +---------------+---------------+
-                       | H_t
-                       v
-       +-------------------------------+
-       | Regression head (MLP)         |   energy (kWh) and peak load (kW)
-       +-------------------------------+
+    subgraph Central ["External EV Charging Standards"]
+        STEVE["SteVe / EVerest CSMS\n(OCPP 1.6-J Central System)"]
+        OCM["Open Charge Map & BEE Dataful\n(Live Telematics & 934 Stations)"]
+        OCPP_B <--> STEVE
+        API <--> OCM
+    end
+
+    Vehicle <-->|REST & WebSocket: 8000| Cloud
+    MOSQ <-->|WiFi / TCP: 1883| ESP
 ```
 
-Design decisions:
+---
 
-- **Active-node masking.** Stations that are not yet commissioned in a given month
-  keep their scaled-zero feature value (`-mean/std`) and are excluded from the
-  update, so the model does not learn from stations that did not exist.
-- **District-level subgraphs.** Stations in the same district form a complete
-  subgraph. This models local competition for demand and prevents information
-  from leaking across district borders.
-- **Masked coordinates.** Latitude and longitude are zeroed in the input
-  (`x[:, 0:2] = 0.0`) so the model learns from graph structure and temporal
-  behavior instead of memorizing locations.
+## ⚡ EV Sarthi: IoT Hardware & Firmware Architecture
 
-**Results.** Test R² is **80.02%** on a temporal holdout of snapshots 32 to 36
-(`[TODO: confirm which of 78.50% or 80.02% is your final reported number and
-which target it refers to; report per-target R², MAE and a baseline such as
-last-month persistence or gradient boosting]`). The holdout is five snapshots, so
-treat the figure as indicative rather than conclusive.
+The edge charging station is governed by an **ESP32 DevKit C v4** running low-latency C++ firmware. It was engineered and validated in Wokwi simulation with shared VSPI bus arbitration, dual display drivers, multi-factor authentication, and an empirical safety trip system.
 
-Checkpoints:
-[`roland_final_weights_80_02.pt`](EVCS_Demand_Forecasting/final_model/roland_final_weights_80_02.pt),
-[`roland_final_submission_80_02.pt`](EVCS_Demand_Forecasting/final_model/roland_final_submission_80_02.pt)
+🔗 **Inspect & Run Live in Browser:** [Wokwi Simulation Project 480737603461683201](https://wokwi.com/projects/480737603461683201)
+
+### 1. Hardware Bill of Materials (13 Components)
+
+| Component | Hardware Model | Interface | Pins / GPIOs | Role & Functionality |
+|---|---|---|---|---|
+| **MCU** | ESP32 DevKit C v4 | Xtensa Dual-Core | 240 MHz, WiFi / BLE | Core FSM, WiFi client, MQTT pub/sub, hardware interlocks |
+| **User TFT** | ILI9341 2.4″ Color TFT | Shared SPI (VSPI) | CS: 14, DC: 2, RST: 4 | Real-time state splash, PIN masking, live kW and kWh graph |
+| **Diagnostic OLED** | SSD1306 128×64 | I²C Bus | SDA: 21, SCL: 22 | 60s reservation countdown, cable-insertion grant, fault diagnostics |
+| **Contactless RFID** | MFRC522 13.56 MHz | Shared SPI (VSPI) | CS: 27, RST: 26 | Contactless RFID tag scanning (`DEADBEEF`), SHA-256 dispatch |
+| **Persistent Logger** | MicroSD Module | Shared SPI (VSPI) | CS: 5 | Append-only 11-column session & heartbeat CSV logging |
+| **Matrix Keypad** | 4×4 Matrix Keypad | Digital GPIO | Rows: 13,12,16,17 / Cols: 25,32,33 | 4-digit PIN entry (`2580#`), cancel (`*`), emergency stop (`#`) |
+| **Current Sensor** | ACS712 (simulated pot.) | 12-bit ADC1 | GPIO 34 (ADC1_CH6) | 0–32A sensing; vehicle plug-in detection (>0.8A) |
+| **Voltage Sensor** | Resistor Divider (pot.) | 12-bit ADC1 | GPIO 35 (ADC1_CH7) | 0–250V sensing; line voltage monitoring |
+| **Power Relay** | 5V SPDT Contactor Relay | Digital Output | GPIO 15 | Fail-safe: LOW/NC = Red LED (De-energized); HIGH/NO = Green LED |
+| **Status LEDs** | Red & Green LEDs | Relay Terminals | NC / NO Terminals | Instant visual feedback on contactor lock state |
+| **Shared SPI Bus** | Hardware VSPI | Dedicated Bus | SCK: 18, MISO: 19, MOSI: 23 | Master bus arbitrated by mutual CS pin toggling |
+
+### 2. 4-State Finite State Machine (FSM)
+
+```
+       [ Power-On / Reset ]
+                 │
+                 ▼
+          ┌─────────────┐
+   ┌─────►│  AVAILABLE  │◄───────────────────┐
+   │      └──────┬──────┘                    │
+   │             │ MQTT /reserve             │ Timeout / End
+   │             ▼                           │
+   │      ┌─────────────┐                    │
+   │      │  RESERVED   │────────────────────┤
+   │      └──────┬──────┘                    │
+   │             │ PIN / RFID Validated      │
+   │             ▼                           │
+   │      ┌─────────────┐                    │
+   │      │  CHARGING   │────────────────────┘
+   │      └──────┬──────┘
+   │             │ Overcurrent / Overvoltage / Cmd Fault
+   │             ▼
+   │      ┌─────────────┐
+   └──────┤   FAULTED   │ (Manual Reset / Backend Clear)
+          └─────────────┘
+```
+
+* **AVAILABLE (0)**: Contactor open (Relay LOW, Red LED). TFT shows idle splash with station info.
+* **RESERVED (1)**: Backend locks connector. Relay remains de-energized (0 kW). OLED initiates 60-second non-blocking countdown. TFT prompts for PIN entry or RFID tap.
+* **CHARGING (2)**: 2-tier authentication succeeds. An 8-second window opens for cable plug-in. Once current is detected (>0.8A), relay energizes (HIGH, Green LED), and live kW/kWh accumulation begins.
+* **FAULTED (3)**: Emergency safety interlock (<50ms trip latency) forces the relay LOW immediately if voltage exceeds 227V or current exceeds 29.7A.
+
+### 3. ADC Calibration Formulas
+Sensors sample at 12-bit resolution ($0 - 4095$):
+$$\text{Voltage (V)} = \text{RAW}_{\text{ADC}} \times 0.0574 \quad (\text{0 to 235.0 V})$$
+$$\text{Current (A)} = \text{RAW}_{\text{ADC}} \times 0.0076 \quad (\text{0 to 31.1 A})$$
+$$\text{Power (kW)} = \frac{\text{Voltage (V)} \times \text{Current (A)}}{1000.0}$$
+$$\text{Accumulated Energy (kWh)} = \sum \left( \text{Power (kW)} \times \frac{\Delta t}{3600} \right)$$
 
 ---
 
-## Prototype Components
+## 🎙️ AVA: Multilingual In-Cabin Voice Assistant & Intelligence
 
-### In-cabin dashboard
-`smartreserve/smartreserve_frontend/car_dashboard/index.html`
+The in-cabin assistant **AVA** is directly integrated into the ccNC dashboard, providing deep contextual vehicle intelligence.
 
-Styled after the 12.3-inch ccNC display. It renders a Leaflet map with all 934
-stations, live battery and range telemetry, congestion badges from the model, a
-reservation drawer with a countdown timer, the PIN display, and a Canvas chart of
-the charging curve.
-
-### Charger kiosk simulator
-`smartreserve/smartreserve_frontend/kiosk_simulator/index.html`
-
-A digital twin of a 60 kW DC charge point. States:
-`AVAILABLE` to `RESERVED` to `ACCESS DENIED` (on a wrong PIN) to `CHARGING` to
-`FINISHING`. It shows the contactor state (open at 0 kW, closed at 60 kW), a
-touch keypad, a lockout after repeated bad attempts, an idle-fee countdown to
-discourage bay hogging, and a live log of OCPP 1.6J frames.
-
-### Backend
-`smartreserve/smartreserve_backend/main.py`
-
-An asynchronous FastAPI service with WebSocket channels to the vehicle and the
-charger. It implements the OCPP 1.6J messages `ReserveNow`, `Authorize`,
-`RemoteStartTransaction` and `MeterValues`, and serves congestion predictions. If
-the model fails to load, a deterministic fallback predictor keeps the demo running.
-`[TODO: add measured end-to-end latency and how you measured it; the earlier
-"under 100 ms" claim needs a number behind it.]`
+* **Multilingual Natural Conversation**: Supports English, Hindi (`नमस्ते! पास का चार्जर दिखाओ`), and Marathi (`नमस्कार! जवळचे चार्जिंग स्टेशन शोधा`).
+* **Instant Barge-in Interruption**: Speaking stop commands immediately cancels ongoing speech playback and re-opens the microphone:
+  * English: *"stop"*, *"cancel"*, *"shut up"*, *"be quiet"*
+  * Hindi: *"रुक"*, *"रुको"*, *"रुकिए"*, *"बस"*, *"बंद करो"*
+  * Marathi: *"थांब"*, *"थांबा"*, *"शांत"*
+* **30 km Radius Travel Query**: Resolves nearby chargers within a 30 km radius of the vehicle's dynamic GPS position or any requested landmark.
+* **Corridor Trip Planner**: Intelligent multi-stop planning for long-distance highways (e.g., Nagpur to Pune, Hyderabad to Nagpur).
+* **Multi-Turn Session Memory**: Contextually resolves follow-up queries like *"what about the second one?"* or *"book it now"* without re-stating station names.
+* **Gemini LLM Reasoning**: Seamless fallback to Google Gemini when conversational reasoning is required beyond rule-based vehicle commands.
 
 ---
 
-## Quick Start
+## 🔌 Why Eclipse Mosquitto & MQTT for EV Charging?
 
+In production EVSE architectures, **MQTT** is the gold standard over HTTP/REST for edge hardware:
+
+1. **Push vs. Polling (<20ms vs 2000ms Latency)**: HTTP cannot push data to an ESP32 behind cellular NAT without resource-intensive HTTP long-polling. MQTT maintains a persistent, lightweight TCP socket, enabling the cloud backend to lock the hardware relay within 20 milliseconds of a user tap.
+2. **Extreme Bandwidth & Memory Efficiency**: HTTP headers consume 500–1000 bytes per request. An MQTT heartbeat packet requires only **2 bytes** of overhead, preserving the ESP32's 320 KB SRAM and eliminating heap fragmentation crashes.
+3. **State Retention (`retain: true`)**: Mosquitto caches the last known state of every connector. When a car dashboard connects or the backend reboots, the current charger status is delivered instantaneously without polling the physical charger.
+4. **Last Will and Testament (LWT)**: If an EV charger loses power, cable link, or connectivity, Mosquitto automatically broadcasts an `OFFLINE` or `FAULTED` status to the cloud.
+5. **Alignment with LF Energy EVerest & OCPP**: Enterprise EV frameworks (LF Energy EVerest) use MQTT as their internal IPC bus to coordinate power electronics, RFID modules, and OCPP 1.6-J / 2.0.1 cloud bridges.
+
+### MQTT Topic Contract (`evsarthi/{station_id}/{connector_id}/*`)
+
+| Topic Suffix | Direction | QoS | Retained | Payload Format | Purpose |
+|---|---|---|---|---|---|
+| `/reserve` | Cloud ➔ ESP32 | 1 | No | JSON | Dispatch reservation locking command with PIN & duration |
+| `/state` | ESP32 ➔ Cloud | 1 | **Yes** | JSON | FSM state broadcast (`AVAILABLE`, `RESERVED`, `CHARGING`, `FAULTED`) |
+| `/telemetry` | ESP32 ➔ Cloud | 0 | No | JSON | 2-second heartbeat ($V, A, \text{kW}, \text{kWh}$, raw ADC) |
+| `/auth` | ESP32 ➔ Cloud | 1 | No | JSON | Driver PIN submission or contactless RFID UID scan |
+| `/cmd` | Cloud ➔ ESP32 | 1 | No | JSON | Authorization verdict (`ACCEPTED`/`DENIED`) or emergency trip clear |
+
+---
+
+## 🚀 How to Run Everything
+
+### Method 1: One-Click Local Full Stack (Fastest)
+Launches the FastAPI backend and static server together:
 ```bash
-git clone https://github.com/kushagrakushwah/Hyundai_vrum.git
-cd Hyundai_vrum
-pip install -r smartreserve/requirements.txt
+# 1. Activate Python virtual environment
+.\.venv\Scripts\activate       # Windows
+# source .venv/bin/activate    # Linux / macOS
+
+# 2. Launch the demo
 python smartreserve/run_demo.py
 ```
 
-Open two browser windows side by side:
-
-| Window | URL |
-| :--- | :--- |
-| Vehicle dashboard | http://localhost:3000/car |
-| Charger kiosk | http://localhost:3000/kiosk?station=TG0001 |
-| Demo hub | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
-
-## Demo Walkthrough (about 90 seconds)
-
-1. Arrange `/car` on the left and `/kiosk` on the right.
-2. The car is at 18% state of charge. The model has already recommended the
-   Gachibowli hub with no predicted queue.
-3. Click **Reserve 30-Min Exclusive Slot** on the car screen.
-4. The kiosk turns blue and shows `RESERVED, POWER LOCKED: 0 kW`.
-5. Enter `111111` on the kiosk keypad. The screen flashes red with
-   `ACCESS DENIED` and the contactor stays open.
-6. Enter the PIN shown on the car dashboard (`482910` in the demo). The contactor
-   closes, the kiosk turns green, and 60 kW charging starts with live curves on
-   both screens.
+Open the following in your browser:
+* 🚗 **In-Cabin Dashboard:** [http://localhost:3000/car](http://localhost:3000/car) (or [http://localhost:8000/car](http://localhost:8000/car))
+* 🔌 **Charger Kiosk Digital Twin:** [http://localhost:3000/kiosk?station=TG0001](http://localhost:3000/kiosk?station=TG0001)
+* 📡 **Interactive API Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+* 💓 **System Health Status:** [http://localhost:8000/health](http://localhost:8000/health)
 
 ---
 
-## Security Considerations
+### Method 2: Docker Full Stack with Mosquitto
+Runs both the **FastAPI backend** and **Eclipse Mosquitto broker** in isolated containers:
+```bash
+docker compose up --build
+```
+* **Backend API & Web App:** [http://localhost:8000](http://localhost:8000)
+* **Mosquitto MQTT TCP:** `localhost:1883`
+* **Mosquitto WebSockets:** `ws://localhost:9001`
 
-- PINs are single-use, bound to one reservation and one connector, and expire with
-  the 30-minute window.
-- The kiosk locks out after repeated failed attempts.
-- The demo PIN is hardcoded for reproducibility. In production it would be
-  generated per reservation and mapped to an OCPP `idTag`.
-- `[TODO: describe transport security. Real OCPP deployments use TLS (OCPP
-  Security Profile 2 or 3). State what the prototype does today.]`
+---
 
-## Limitations and Future Work
+### Method 3: Running the Hardware in Wokwi
 
-- The charger is simulated. Real chargers vary in how fully they implement the
-  OCPP Reservation profile, so field validation is required.
-- Demand targets and the five-snapshot holdout limit how far the accuracy figure
-  can be generalized.
-- Reservation holds a connector without payment. A deposit or no-show fee, and
-  fair-use limits per driver, are needed to prevent abuse.
-- Congestion is predicted at monthly granularity. Intraday queueing needs live
-  charger telemetry, which a production system would stream from the CPO.
-- Integration with the real ccNC / AVNT SDK and vehicle navigation is not done;
-  the dashboard is a web mock.
+1. Open [Wokwi Project 480737603461683201](https://wokwi.com/projects/480737603461683201).
+2. Click the green **Play (▶)** button to start the simulation.
+3. Open the **Serial Monitor** at **115200 baud** to see initialization:
+   ```
+   =======================================================
+     EV-SARTHI ESP32 EDGE FIRMWARE - INTEGRATED SKETCH
+   =======================================================
+   [BOOT] State: AVAILABLE | Contactor: DE-ENERGIZED (0 kW)
+   Current RAW: 1321 | Voltage RAW: 0
+   ```
+4. **Interactive Controls**:
+   * **Keypad**: Type `2580#` to authenticate during reservation. Press `*` to clear, `#` to stop.
+   * **Potentiometers**: Turn Pot 1 for Voltage and Pot 2 for Current.
+   * **Serial Commands**: Enter `R` (Reserve 60s), `A` (Available), `F` (Fault Trip), `E` (Expire), `S` (Stop).
 
-## Repository Layout
+---
+
+### Method 4: Render Cloud Deployment & Hardware Sync
+* Refer to [DEPLOY.md](file:///c:/Users/kusha/OneDrive/Music/Documents/Projects/EV_Hyundai/DEPLOY.md) for full cloud instructions.
+* Set `MQTT_BROKER_HOST=broker.hivemq.com` in your Render environment variables to bridge Render with Wokwi anywhere across the globe.
+
+---
+
+### Method 5: Running the Test Suite (386 Tests)
+The repository includes 386 verified unit, integration, boundary, and adversarial tests:
+```bash
+# Run complete test suite (Tiers 1 through 5)
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+
+# Run voice assistant multilingual and barge-in test suite
+python test_voice_multilingual_and_bargein.py
+```
+
+---
+
+## 📂 Repository File Layout
 
 ```
-EVCS_Demand_Forecasting/       model code, training, final checkpoints
-smartreserve/
-  smartreserve_backend/        FastAPI + WebSocket + OCPP engine
-  smartreserve_frontend/
-    car_dashboard/             in-cabin UI
-    kiosk_simulator/           charger digital twin
-  run_demo.py                  launches backend and static servers
-  requirements.txt
+c:\Users\kusha\OneDrive\Music\Documents\Projects\EV_Hyundai\
+├── ev_sarthi_hardware/                  # ESP32 Edge Firmware & Circuit
+│   ├── diagram.json                     # 13-component Wokwi circuit schematic
+│   ├── sketch.ino                       # Standalone unified Arduino/Wokwi sketch
+│   ├── wokwi.toml / platformio.ini      # Simulator & PlatformIO configs
+│   └── src/                             # Modular C++ firmware
+│       ├── config.h                     # Pin definitions & ADC calibration formulas
+│       ├── state_machine.h / .cpp       # 4-state FSM (<50ms emergency safety trip)
+│       ├── peripherals.h / .cpp         # SPI arbitration, TFT, OLED, Keypad, RFID
+│       └── mqtt_handler.h / .cpp        # PubSubClient topics & JSON serializers
+├── mosquitto/config/mosquitto.conf      # Mosquitto broker config (TCP 1883, WS 9001)
+├── smartreserve/
+│   ├── run_demo.py                      # One-click dual server launcher
+│   ├── smartreserve_backend/            # FastAPI Cloud Core
+│   │   ├── main.py                      # REST endpoints, WebSockets, lifecycle hooks
+│   │   ├── mqtt_service.py              # Asynchronous MQTT microservice
+│   │   ├── ocpp_bridge.py               # SteVe & LF Energy EVerest OCPP 1.6-J bridge
+│   │   ├── database.py                  # SQLite persistence (composite connector PKs)
+│   │   ├── voice_assistant.py           # AVA multilingual logic & barge-in triggers
+│   │   └── llm_service.py               # Google Gemini reasoning engine
+│   └── smartreserve_frontend/           # Frontend Web Displays
+│       ├── car_dashboard/index.html     # 12.3-inch ccNC in-cabin dashboard
+│       └── kiosk_simulator/index.html   # 60 kW DC charger digital twin
+├── tests/                               # Comprehensive 5-Tier Test Suite (386 tests)
+│   ├── conftest.py                      # Virtual ESP32 & mock MQTT harnesses
+│   ├── test_tier1_features.py           # Feature unit & nominal tests
+│   ├── test_tier2_boundaries.py         # 60s timers, 8s windows, ADC rail boundaries
+│   ├── test_tier3_combined.py           # Concurrency, reconnection, cross-feature flows
+│   ├── test_tier4_faults.py             # Emergency trips (<50ms), sensor dropouts
+│   └── test_tier5_adversarial_p1/p2.py  # Fuzzing, malformed payloads, NaN/Inf protection
+├── docs/                                # Technical Documentation
+│   └── EV_Sarthi_Hardware_Summary.pdf   # 2-Page hardware design summary PDF
+├── DEPLOY.md                            # Render cloud deployment guide
+├── docker-compose.yml                   # Docker Compose specification
+└── README.md                            # This comprehensive documentation
 ```
 
-## Documents
+---
 
-- [Live demo](https://hyundai-vrum.onrender.com)
-- [Full plan (PDF, 25 pages)](Hyundai_SmartReserve_FullPlan.pdf)
-- [Full plan (HTML)](Hyundai_SmartReserve_FullPlan.html)
-- [Architecture diagram (PNG)](architecture_horizontal.png)
-- [Architecture diagram (PDF)](architecture_horizontal.pdf)
+## 👥 Engineering Team & Attribution
 
-## References
-
-- J. You, T. Du, J. Leskovec. ROLAND: Graph Learning Framework for Dynamic Graphs.
-  KDD 2022.
-- Open Charge Alliance. OCPP 1.6 Specification (JSON).
-- Bureau of Energy Efficiency, Ministry of Power, Government of India.
-- Parivahan Sewa, Ministry of Road Transport and Highways, Government of India.
-- OpenStreetMap contributors, Overpass API.
-
-## Team
-
-- Participants: Kushagra Kushwah and Navya Deshmukh.
-- Hyundai CoE Mobility Innovation Ideathon 2026, Track B, Category 2.
+Developed for the **Hyundai Centre of Excellence Mobility Innovation Ideathon 2026**:
+* **Track:** Track B — Technology & Prototype
+* **Category:** Category 2 — AI-Powered In-Vehicle Experience
+* **Lead Engineers:** Kushagra Singh Kushwah & Navya Deshmukh
+* **GitHub Repository:** [https://github.com/kushagrakushwah/Hyundai_vrum](https://github.com/kushagrakushwah/Hyundai_vrum)

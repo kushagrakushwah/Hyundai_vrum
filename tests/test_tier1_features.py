@@ -301,15 +301,15 @@ def test_tier1_keypad_valid_4digit_pin(single_connector):
     assert hw.is_green_led_on() is True
 
 
-def test_tier1_keypad_valid_6digit_pin(single_connector):
-    """Verify entering and submitting 6-digit PIN works seamlessly."""
+def test_tier1_keypad_alternate_4digit_pin(single_connector):
+    """Verify entering and submitting alternate 4-digit PIN works seamlessly."""
     hw = single_connector
-    hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_PIN2", "pin": "123456"})
+    hw.handle_reserve_message({"action": "CREATE", "reservation_id": "RES_PIN2", "pin": "1234"})
 
-    for k in "123456":
+    for k in "1234":
         hw.press_key(k)
     auth_req = hw.press_key("#")
-    assert auth_req["credential"]["pin"] == "123456"
+    assert auth_req["credential"]["pin"] == "1234"
 
     hw.handle_cmd_message({"action": "AUTH_DECISION", "status": "ACCEPTED", "status_code": 200})
     assert hw.access_granted is True

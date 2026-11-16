@@ -1450,7 +1450,7 @@ class OCPPBridge:
                     action="AUTH_DECISION",
                     status=auth_decision,
                     status_code=status_code,
-                    auth_window_duration_ms=8000,
+                    auth_window_duration_ms=30000,
                     relay_action=relay_action
                 )
             elif hasattr(self.mqtt_svc, "publish"):
@@ -1459,7 +1459,7 @@ class OCPPBridge:
                     "action": "AUTH_DECISION",
                     "status": auth_decision,
                     "status_code": status_code,
-                    "auth_window_duration_ms": 8000,
+                    "auth_window_duration_ms": 30000,
                     "relay_action": relay_action
                 }
                 await self.mqtt_svc.publish(cmd_topic, cmd_payload)
@@ -1689,7 +1689,7 @@ class OCPPBridge:
                     action="AUTH_DECISION",
                     status="ACCEPTED",
                     status_code=200,
-                    auth_window_duration_ms=8000,
+                    auth_window_duration_ms=30000,
                     relay_action="ENERGIZE"
                 )
             elif hasattr(self.mqtt_svc, "publish"):
@@ -1698,7 +1698,7 @@ class OCPPBridge:
                     "action": "AUTH_DECISION",
                     "status": "ACCEPTED",
                     "status_code": 200,
-                    "auth_window_duration_ms": 8000,
+                    "auth_window_duration_ms": 30000,
                     "relay_action": "ENERGIZE"
                 })
 

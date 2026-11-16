@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartReserve — Charger Kiosk</title>
+<title>Hyundai SmartReserve — Charger Kiosk & Hardware Examiner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg:       #050c1a;
     --surface:  #0a1628;
+    --card:     #0d1d35;
     --border:   #1a2d4a;
     --green:    #22c55e;
     --blue:     #3b82f6;
@@ -18,351 +19,640 @@
     --cyan:     #00b4d8;
     --muted:    #64748b;
     --text:     #e2e8f0;
+    --hyundai:  #00AAD4;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 20px 40px;
+  }
+
+  /* ── Examiner Top Header ── */
+  .examiner-header {
+    width: 100%;
+    max-width: 1380px;
+    background: #091322;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .brand-logo span { color: var(--hyundai); }
+  .station-badge {
+    background: rgba(0, 170, 212, 0.12);
+    border: 1px solid rgba(0, 170, 212, 0.3);
+    color: var(--cyan);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+
+  /* View Switcher */
+  .view-switcher {
+    display: flex;
+    background: #060e1d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .view-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .view-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .view-btn.active {
+    background: #122847;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,170,212,0.3);
+  }
+
+  /* ── 1-Click Action Toolbar ── */
+  .action-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 7px 13px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Inter', sans-serif;
+  }
+  .action-btn:active { transform: scale(0.96); }
+
+  .btn-reserve-act { background: rgba(59, 130, 246, 0.18); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; }
+  .btn-reserve-act:hover { background: rgba(59, 130, 246, 0.35); color: #fff; }
+
+  .btn-auth-act    { background: rgba(34, 197, 94, 0.18); border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
+  .btn-auth-act:hover    { background: rgba(34, 197, 94, 0.35); color: #fff; }
+
+  .btn-plug-act    { background: rgba(0, 180, 216, 0.18); border-color: rgba(0, 180, 216, 0.4); color: #7dd3fc; }
+  .btn-plug-act:hover    { background: rgba(0, 180, 216, 0.35); color: #fff; }
+
+  .btn-trip-act    { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+  .btn-trip-act:hover    { background: rgba(239, 68, 68, 0.35); color: #fff; }
+
+  .btn-reset-act   { background: rgba(100, 116, 139, 0.18); border-color: rgba(100, 116, 139, 0.4); color: #cbd5e1; }
+  .btn-reset-act:hover   { background: rgba(100, 116, 139, 0.35); color: #fff; }
+
+  /* ── Telemetry Badges Strip ── */
+  .telemetry-strip {
+    width: 100%;
+    max-width: 1380px;
+    background: #07101e;
+    border: 1px solid #14243b;
+    border-radius: 8px;
+    padding: 8px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+  .tele-item { display: flex; align-items: center; gap: 6px; }
+  .tele-label { color: var(--muted); text-transform: uppercase; font-size: 10px; }
+  .tele-val { font-weight: 600; color: #fff; }
+  .tele-pill {
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .tele-pill.green  { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+  .tele-pill.blue   { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+  .tele-pill.cyan   { background: rgba(0, 180, 216, 0.2); color: #38bdf8; border: 1px solid rgba(0, 180, 216, 0.4); }
+  .tele-pill.red    { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+  .tele-pill.amber  { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+  /* ── Main Dual Layout Container ── */
+  .dual-container {
+    width: 100%;
+    max-width: 1380px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  /* Left Pane: Kiosk */
+  .kiosk-column {
+    width: 420px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Right Pane: Wokwi Hardware */
+  .hardware-column {
+    flex: 1;
+    min-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wokwi-card {
+    background: #091322;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+  .wokwi-header {
+    background: #0e1b2f;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .wokwi-title {
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .wokwi-iframe {
+    width: 100%;
+    height: 650px;
+    border: none;
+    background: #000;
+    display: block;
   }
 
   /* Kiosk outer frame */
   .kiosk-frame {
-    width:420px;
+    width: 420px;
     background: #0a0f1a;
     border: 2px solid #1e3050;
-    border-radius:16px;
+    border-radius: 16px;
     box-shadow: 0 0 60px rgba(0,0,0,.8), 0 0 1px rgba(255,255,255,.04) inset;
-    overflow:hidden;
-    position:relative;
+    overflow: hidden;
+    position: relative;
   }
 
   /* Status strip at top */
   .status-strip {
-    height:6px;
+    height: 6px;
     background: var(--green);
     transition: background .5s;
   }
-  .status-strip.reserved   { background:var(--blue); }
-  .status-strip.denied     { background:var(--red); animation: flash-red .4s 3; }
-  .status-strip.charging   { background:var(--cyan); }
-  .status-strip.finishing  { background:var(--amber); }
-  .status-strip.unavailable{ background:var(--muted); }
+  .status-strip.reserved   { background: var(--blue); }
+  .status-strip.denied     { background: var(--red); animation: flash-red .4s 3; }
+  .status-strip.charging   { background: var(--cyan); }
+  .status-strip.finishing  { background: var(--amber); }
+  .status-strip.unavailable{ background: var(--muted); }
   @keyframes flash-red { 0%,100%{opacity:1} 50%{opacity:.2} }
 
   /* Header */
   .kiosk-header {
-    padding:16px 20px 12px;
-    background:linear-gradient(180deg, #0f1e38 0%, transparent 100%);
-    border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 20px 12px;
+    background: linear-gradient(180deg, #0f1e38 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
   }
-  .kiosk-brand { font-size:11px; font-weight:700; color:var(--cyan); letter-spacing:.08em; }
-  .kiosk-station-id { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); }
-  .kiosk-time { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); }
+  .kiosk-brand { font-size: 11px; font-weight: 700; color: var(--cyan); letter-spacing: .08em; }
+  .kiosk-station-id { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .kiosk-time { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
 
   /* Main display */
   .kiosk-display {
-    padding:24px 24px 16px;
-    min-height:220px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; position:relative;
+    padding: 24px 24px 16px;
+    min-height: 220px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; position: relative;
   }
 
-  .state-icon { font-size:52px; margin-bottom:16px; }
+  .state-icon { font-size: 52px; margin-bottom: 14px; }
   .state-title {
-    font-size:22px; font-weight:800; color:var(--text);
-    margin-bottom:8px; line-height:1.2;
+    font-size: 22px; font-weight: 800; color: var(--text);
+    margin-bottom: 8px; line-height: 1.2;
   }
   .state-sub {
-    font-size:12px; color:var(--muted); line-height:1.6;
-    max-width:300px; margin:0 auto;
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+    max-width: 300px; margin: 0 auto;
   }
 
   /* LED indicator */
-  .led-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .led-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .led {
-    width:12px; height:12px; border-radius:50%;
+    width: 12px; height: 12px; border-radius: 50%;
     background: var(--green);
     box-shadow: 0 0 8px var(--green);
   }
-  .led.blue   { background:var(--blue);  box-shadow:0 0 10px var(--blue); }
-  .led.red    { background:var(--red);   box-shadow:0 0 10px var(--red); animation: blink .5s infinite; }
-  .led.amber  { background:var(--amber); box-shadow:0 0 8px var(--amber); }
-  .led.cyan   { background:var(--cyan);  box-shadow:0 0 10px var(--cyan); animation: pulse-glow 1.5s infinite; }
-  .led.grey   { background:var(--muted); box-shadow:none; }
+  .led.blue   { background: var(--blue);  box-shadow: 0 0 10px var(--blue); }
+  .led.red    { background: var(--red);   box-shadow: 0 0 10px var(--red); animation: blink .5s infinite; }
+  .led.amber  { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .led.cyan   { background: var(--cyan);  box-shadow: 0 0 10px var(--cyan); animation: pulse-glow 1.5s infinite; }
+  .led.grey   { background: var(--muted); box-shadow: none; }
   @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:.1} }
   @keyframes pulse-glow { 0%,100%{box-shadow:0 0 8px var(--cyan)} 50%{box-shadow:0 0 18px var(--cyan)} }
-  .led-label { font-size:10px; color:var(--muted); }
+  .led-label { font-size: 10px; color: var(--muted); }
 
-  /* Power display */
+  /* Dynamic Power display */
   .power-display {
-    background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:12px 24px; margin:12px 0;
-    display:flex; align-items:baseline; gap:4px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 24px; margin: 10px 0;
+    display: flex; align-items: baseline; gap: 4px;
   }
-  .power-value { font-family:'DM Mono',monospace; font-size:36px; font-weight:600; color:var(--cyan); }
-  .power-unit { font-size:14px; color:var(--muted); }
-  .power-label { font-size:10px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-top:2px; }
+  .power-value { font-family: 'DM Mono', monospace; font-size: 34px; font-weight: 600; color: var(--cyan); }
+  .power-unit { font-size: 14px; color: var(--muted); }
+  .power-label { font-size: 10px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
 
   /* Charging stats */
   .charging-stats {
-    display:grid; grid-template-columns:1fr 1fr 1fr;
-    gap:10px; width:100%; margin-top:10px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; width: 100%; margin-top: 10px;
   }
   .stat-box {
-    background:var(--surface); border:1px solid var(--border); border-radius:8px;
-    padding:10px; text-align:center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; text-align: center;
   }
-  .stat-value { font-family:'DM Mono',monospace; font-size:18px; font-weight:600; color:var(--text); }
-  .stat-label { font-size:9px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.04em; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 600; color: var(--text); }
+  .stat-label { font-size: 9px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
 
   /* SOC bar */
-  .soc-section { width:100%; margin-top:12px; }
-  .soc-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-  .soc-text { font-size:11px; color:var(--muted); }
-  .soc-pct { font-family:'DM Mono',monospace; font-size:13px; color:var(--green); font-weight:600; }
-  .soc-bar-wrap { width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
-  .soc-bar { height:100%; background:linear-gradient(90deg, #0077b6, var(--cyan), var(--green)); border-radius:4px; transition:width 1.5s ease; }
+  .soc-section { width: 100%; margin-top: 12px; }
+  .soc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .soc-text { font-size: 11px; color: var(--muted); }
+  .soc-pct { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--green); font-weight: 600; }
+  .soc-bar-wrap { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .soc-bar { height: 100%; background: linear-gradient(90deg, #0077b6, var(--cyan), var(--green)); border-radius: 4px; transition: width 1.5s ease; }
 
   /* Divider */
-  .divider { width:100%; height:1px; background:var(--border); margin:0; }
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 0; }
 
-  /* PIN section */
-  .pin-section { padding:16px 24px; }
-  .pin-label { font-size:10px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:12px; text-align:center; }
+  /* 4-Digit PIN section */
+  .pin-section { padding: 14px 24px; }
+  .pin-label { font-size: 10px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; text-align: center; }
   .pin-display-row {
-    display:flex; gap:6px; justify-content:center; margin-bottom:14px;
+    display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;
   }
   .pin-digit-box {
-    width:38px; height:44px; background:var(--surface);
-    border:1px solid var(--border); border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'DM Mono',monospace; font-size:20px; font-weight:700;
-    color:var(--text); transition: all .15s;
+    width: 44px; height: 50px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700;
+    color: var(--text); transition: all .15s;
   }
-  .pin-digit-box.active { border-color:var(--cyan); box-shadow: 0 0 8px rgba(0,180,216,.3); }
-  .pin-digit-box.filled { border-color:var(--cyan); color:var(--cyan); background:rgba(0,180,216,.08); }
-  .pin-digit-box.error  { border-color:var(--red); color:var(--red); background:rgba(239,68,68,.08); animation: shake .3s; }
+  .pin-digit-box.active { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,180,216,.3); }
+  .pin-digit-box.filled { border-color: var(--cyan); color: var(--cyan); background: rgba(0,180,216,.08); }
+  .pin-digit-box.error  { border-color: var(--red); color: var(--red); background: rgba(239,68,68,.08); animation: shake .3s; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 
   /* Keypad */
-  .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
   .key {
-    background:var(--surface); border:1px solid var(--border); border-radius:8px;
-    padding:12px; text-align:center; cursor:pointer;
-    font-size:18px; font-family:'DM Mono',monospace; font-weight:600; color:var(--text);
-    transition: all .12s; -webkit-tap-highlight-color:transparent;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px; text-align: center; cursor: pointer;
+    font-size: 17px; font-family: 'DM Mono', monospace; font-weight: 600; color: var(--text);
+    transition: all .12s; -webkit-tap-highlight-color: transparent;
   }
-  .key:hover { background:var(--border); }
-  .key:active { transform:scale(.94); background:#1e3050; }
-  .key.key-del { font-size:14px; color:var(--muted); }
+  .key:hover { background: var(--border); }
+  .key:active { transform: scale(.94); background: #1e3050; }
+  .key.key-del { font-size: 14px; color: var(--muted); }
   .key.key-enter {
-    background:linear-gradient(135deg, #0077b6, var(--cyan));
-    border-color:var(--cyan); color:#fff; font-size:12px; font-weight:700;
+    background: linear-gradient(135deg, #0077b6, var(--cyan));
+    border-color: var(--cyan); color: #fff; font-size: 12px; font-weight: 700;
   }
   .key.key-enter:hover { box-shadow: 0 4px 16px rgba(0,180,216,.4); }
 
   /* Footer */
   .kiosk-footer {
-    padding:12px 20px;
-    border-top:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
   }
   .ocpp-badge {
-    font-size:9px; color:var(--muted); background:var(--surface);
-    border:1px solid var(--border); border-radius:10px;
-    padding:3px 8px; font-family:'DM Mono',monospace;
+    font-size: 9px; color: var(--muted); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 3px 8px; font-family: 'DM Mono', monospace;
   }
-  .ws-indicator { font-size:9px; color:var(--muted); display:flex; align-items:center; gap:4px; }
-  .ws-dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .ws-indicator { font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 
-  /* OCPP log at bottom of page */
+  /* OCPP log at bottom */
   .ocpp-log {
-    width:420px; margin-top:16px;
-    background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:12px 16px; max-height:160px; overflow-y:auto;
+    width: 420px; margin-top: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; max-height: 140px; overflow-y: auto;
   }
-  .ocpp-log::-webkit-scrollbar { width:3px; }
-  .ocpp-log::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-  .ocpp-log-title { font-size:9px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
-  .log-entry { font-family:'DM Mono',monospace; font-size:9px; color:var(--muted); margin-bottom:3px; display:flex; gap:6px; }
-  .log-ts { color:var(--muted); flex-shrink:0; }
-  .log-tx { color:var(--cyan); }
-  .log-rx { color:var(--green); }
-  .log-err { color:var(--red); }
-  .log-warn { color:var(--amber); }
+  .ocpp-log::-webkit-scrollbar { width: 3px; }
+  .ocpp-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .ocpp-log-title { font-size: 9px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .log-entry { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 3px; display: flex; gap: 6px; }
+  .log-ts { color: var(--muted); flex-shrink: 0; }
+  .log-tx { color: var(--cyan); }
+  .log-rx { color: var(--green); }
+  .log-err { color: var(--red); }
+  .log-warn { color: var(--amber); }
 
-  /* State-specific overrides */
-  body.state-available  .state-title { color:var(--green); }
-  body.state-reserved   .state-title { color:var(--blue); }
-  body.state-denied     .state-title { color:var(--red); }
-  body.state-charging   .state-title { color:var(--cyan); }
-  body.state-finishing  .state-title { color:var(--amber); }
+  /* View Mode display toggles */
+  body.view-kiosk-only .hardware-column { display: none !important; }
+  body.view-kiosk-only .kiosk-column { width: 440px; }
+  body.view-hardware-only .kiosk-column { display: none !important; }
+  body.view-hardware-only .hardware-column { width: 100%; max-width: 1380px; }
 
-  .page-title {
-    font-size:11px; color:var(--muted); text-align:center; margin-bottom:16px;
-    letter-spacing:.06em; text-transform:uppercase;
+  @media (max-width: 1024px) {
+    .dual-container { flex-direction: column; align-items: center; }
+    .hardware-column { width: 100%; min-width: 100%; }
   }
 </style>
 </head>
 <body class="state-available">
 
-<div class="page-title">⚡ Charger Kiosk Simulator — OCPP 1.6 State Machine</div>
-
-<div class="kiosk-frame">
-  <!-- Status Strip -->
-  <div class="status-strip" id="status-strip"></div>
-
-  <!-- Header -->
-  <div class="kiosk-header">
-    <div>
-      <div class="kiosk-brand">HYUNDAI SmartReserve</div>
-      <div class="kiosk-station-id" id="kiosk-station-id">Station: TG0001 · CCS2 · 60 kW DC</div>
-    </div>
-    <div class="kiosk-time" id="kiosk-clock">--:--</div>
+<!-- ── Top Examiner Header & Toolbar ── -->
+<div class="examiner-header">
+  <div class="brand-group">
+    <div class="brand-logo">HYUNDAI <span>SmartReserve</span></div>
+    <div class="station-badge" id="kiosk-top-badge">TG0001 · 60 kW DC</div>
   </div>
 
-  <!-- Main Display -->
-  <div class="kiosk-display" id="kiosk-display">
-    <!-- Available State -->
-    <div id="state-available">
-      <div class="state-icon">🟢</div>
-      <div class="led-row" style="justify-content:center">
-        <div class="led" id="led"></div>
-        <div class="led-label" id="led-label">Available</div>
-      </div>
-      <div class="state-title">60 kW DC Fast Charging</div>
-      <div class="state-sub">CCS2 Connector Ready<br>Plug in or tap RFID card</div>
-      <div class="power-display">
-        <div class="power-value">60</div>
-        <div>
-          <div class="power-unit">kW</div>
-          <div class="power-label">Max Power</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reserved State -->
-    <div id="state-reserved" style="display:none">
-      <div class="state-icon">🔵</div>
-      <div class="led-row" style="justify-content:center">
-        <div class="led blue"></div>
-        <div class="led-label">Reserved · Locked</div>
-      </div>
-      <div class="state-title">RESERVED</div>
-      <div class="state-sub">This connector is reserved for a Hyundai driver.<br>Enter your 6-digit PIN to unlock.</div>
-      <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:8px 16px;margin-top:10px;font-size:11px;color:var(--blue);">
-        🔒 OCPP ReserveNow Active · Relay OPEN · 0 kW
-      </div>
-    </div>
-
-    <!-- Access Denied State -->
-    <div id="state-denied" style="display:none">
-      <div class="state-icon">🔴</div>
-      <div class="led-row" style="justify-content:center">
-        <div class="led red"></div>
-        <div class="led-label">Access Denied</div>
-      </div>
-      <div class="state-title">WRONG PIN</div>
-      <div class="state-sub">Connector remains LOCKED.<br>0 kW · Try again (attempts left: <span id="attempts-left">2</span>)</div>
-    </div>
-
-    <!-- Charging State -->
-    <div id="state-charging" style="display:none">
-      <div class="led-row" style="justify-content:center">
-        <div class="led cyan"></div>
-        <div class="led-label">Charging Active · Relay CLOSED</div>
-      </div>
-      <div class="state-title">⚡ Charging</div>
-      <div class="charging-stats">
-        <div class="stat-box">
-          <div class="stat-value" id="kiosk-kw">60</div>
-          <div class="stat-label">kW Power</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value" id="kiosk-soc">18%</div>
-          <div class="stat-label">Battery</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value" id="kiosk-kwh">0.0</div>
-          <div class="stat-label">kWh</div>
-        </div>
-      </div>
-      <div class="soc-section">
-        <div class="soc-row">
-          <span class="soc-text">State of Charge</span>
-          <span class="soc-pct" id="kiosk-soc-pct">18%</span>
-        </div>
-        <div class="soc-bar-wrap">
-          <div class="soc-bar" id="kiosk-soc-bar" style="width:18%"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Finishing State -->
-    <div id="state-finishing" style="display:none">
-      <div class="state-icon">🟡</div>
-      <div class="led-row" style="justify-content:center">
-        <div class="led amber"></div>
-        <div class="led-label">Finishing</div>
-      </div>
-      <div class="state-title" style="color:var(--amber)">Charge Complete at 80%</div>
-      <div class="state-sub">Please unplug to free this connector.<br>⚠ Idle fee starts in <span id="idle-countdown">5:00</span></div>
-    </div>
-
+  <!-- View Switcher -->
+  <div class="view-switcher">
+    <button class="view-btn active" id="btn-view-dual" onclick="setViewMode('dual')">
+      <span>◫</span> Dual Split View
+    </button>
+    <button class="view-btn" id="btn-view-kiosk" onclick="setViewMode('kiosk')">
+      <span>📱</span> Kiosk Only
+    </button>
+    <button class="view-btn" id="btn-view-hardware" onclick="setViewMode('hardware')">
+      <span>⚡</span> Hardware Only
+    </button>
   </div>
 
-  <!-- Divider -->
-  <div class="divider"></div>
-
-  <!-- PIN Entry Section -->
-  <div class="pin-section" id="pin-section">
-    <div class="pin-label">Enter PIN to unlock connector</div>
-    <div class="pin-display-row" id="pin-display-row">
-      <div class="pin-digit-box" id="d0">—</div>
-      <div class="pin-digit-box" id="d1">—</div>
-      <div class="pin-digit-box" id="d2">—</div>
-      <div class="pin-digit-box" id="d3">—</div>
-      <div class="pin-digit-box" id="d4">—</div>
-      <div class="pin-digit-box" id="d5">—</div>
-    </div>
-    <div class="keypad" id="keypad">
-      <div class="key" onclick="pressKey('1')">1</div>
-      <div class="key" onclick="pressKey('2')">2</div>
-      <div class="key" onclick="pressKey('3')">3</div>
-      <div class="key" onclick="pressKey('4')">4</div>
-      <div class="key" onclick="pressKey('5')">5</div>
-      <div class="key" onclick="pressKey('6')">6</div>
-      <div class="key" onclick="pressKey('7')">7</div>
-      <div class="key" onclick="pressKey('8')">8</div>
-      <div class="key" onclick="pressKey('9')">9</div>
-      <div class="key key-del" onclick="pressKey('del')">⌫</div>
-      <div class="key" onclick="pressKey('0')">0</div>
-      <div class="key key-enter" onclick="pressKey('enter')">ENTER</div>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <div class="kiosk-footer">
-    <div class="ocpp-badge">OCPP 1.6 JSON</div>
-    <div class="ws-indicator">
-      <div class="ws-dot" id="ws-dot" style="background:var(--amber)"></div>
-      <span id="ws-label">Connecting...</span>
-    </div>
+  <!-- 1-Click Action Toolbar -->
+  <div class="action-toolbar">
+    <button class="action-btn btn-reserve-act" onclick="triggerExaminerAction('reserve')" title="Reserve slot for 30 min and generate 4-digit PIN">
+      <span>1.</span> Lock/Reserve (30m)
+    </button>
+    <button class="action-btn btn-auth-act" onclick="triggerExaminerAction('auth')" title="Submit 4-digit PIN (2580), energize contactor, open 30s window">
+      <span>2.</span> Send PIN (2580)
+    </button>
+    <button class="action-btn btn-plug-act" onclick="triggerExaminerAction('plugin')" title="Simulate cable insertion and start active DC charging">
+      <span>3.</span> Plug in Cable
+    </button>
+    <button class="action-btn btn-trip-act" onclick="triggerExaminerAction('trip')" title="Trigger instant hardware emergency trip (<50ms cutoff)">
+      <span>4.</span> Safety Trip &lt;50ms
+    </button>
+    <button class="action-btn btn-reset-act" onclick="triggerExaminerAction('reset')" title="Clear session & fault; reset back to Available">
+      <span>5.</span> Reset
+    </button>
   </div>
 </div>
 
-<!-- OCPP Log -->
-<div class="ocpp-log">
-  <div class="ocpp-log-title">📡 OCPP Protocol Log (Real-time)</div>
-  <div id="ocpp-log-entries"></div>
+<!-- ── Telemetry Badges Strip ── -->
+<div class="telemetry-strip" id="telemetry-strip">
+  <div class="tele-item">
+    <span class="tele-label">FSM State:</span>
+    <span class="tele-pill green" id="tb-state">AVAILABLE</span>
+  </div>
+  <div class="tele-item">
+    <span class="tele-label">Relay Contactor:</span>
+    <span class="tele-pill red" id="tb-relay">DE-ENERGIZED (OPEN)</span>
+  </div>
+  <div class="tele-item">
+    <span class="tele-label">Plug-in Window:</span>
+    <span class="tele-val" id="tb-window">30s Window (Inactive)</span>
+  </div>
+  <div class="tele-item">
+    <span class="tele-label">Active PIN:</span>
+    <span class="tele-val" style="color:var(--cyan)" id="tb-pin">2580</span>
+  </div>
+  <div class="tele-item">
+    <span class="tele-label">Rated Power:</span>
+    <span class="tele-val" style="color:#fbbf24" id="tb-power">60 kW DC</span>
+  </div>
+  <div class="tele-item">
+    <span class="tele-label">Live Voltage / Current:</span>
+    <span class="tele-val" id="tb-meter">230.0 V · 0.0 A</span>
+  </div>
+</div>
+
+<!-- ── Main Dual Container ── -->
+<div class="dual-container" id="dual-container">
+
+  <!-- Left: Kiosk Simulator -->
+  <div class="kiosk-column">
+    <div class="kiosk-frame">
+      <!-- Status Strip -->
+      <div class="status-strip" id="status-strip"></div>
+
+      <!-- Header -->
+      <div class="kiosk-header">
+        <div>
+          <div class="kiosk-brand">HYUNDAI SmartReserve</div>
+          <div class="kiosk-station-id" id="kiosk-station-id">Station: TG0001 · CCS2 · 60 kW DC</div>
+        </div>
+        <div class="kiosk-time" id="kiosk-clock">--:--</div>
+      </div>
+
+      <!-- Main Display -->
+      <div class="kiosk-display" id="kiosk-display">
+        <!-- Available State -->
+        <div id="state-available">
+          <div class="state-icon">🟢</div>
+          <div class="led-row" style="justify-content:center">
+            <div class="led" id="led"></div>
+            <div class="led-label" id="led-label">Available</div>
+          </div>
+          <div class="state-title" id="avail-state-title">60 kW DC Fast Charging</div>
+          <div class="state-sub">CCS2 Connector Ready<br>Reserve in-cabin or tap RFID</div>
+          <div class="power-display">
+            <div class="power-value" id="kiosk-max-power">60</div>
+            <div>
+              <div class="power-unit">kW</div>
+              <div class="power-label">Max Power</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reserved State -->
+        <div id="state-reserved" style="display:none">
+          <div class="state-icon">🔵</div>
+          <div class="led-row" style="justify-content:center">
+            <div class="led blue"></div>
+            <div class="led-label">Reserved · Locked</div>
+          </div>
+          <div class="state-title">RESERVED</div>
+          <div class="state-sub">Connector is reserved for Hyundai driver.<br>Enter your 4-digit PIN to unlock.</div>
+          <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:6px 14px;margin-top:8px;font-size:11px;color:var(--blue);">
+            🔒 OCPP ReserveNow Active · Relay OPEN · 0 kW
+          </div>
+        </div>
+
+        <!-- Access Denied State -->
+        <div id="state-denied" style="display:none">
+          <div class="state-icon">🔴</div>
+          <div class="led-row" style="justify-content:center">
+            <div class="led red"></div>
+            <div class="led-label">Access Denied</div>
+          </div>
+          <div class="state-title">WRONG PIN</div>
+          <div class="state-sub">Connector remains LOCKED.<br>0 kW · Try again (attempts left: <span id="attempts-left">2</span>)</div>
+        </div>
+
+        <!-- Charging State -->
+        <div id="state-charging" style="display:none">
+          <div class="led-row" style="justify-content:center">
+            <div class="led cyan"></div>
+            <div class="led-label">Charging Active · Relay CLOSED</div>
+          </div>
+          <div class="state-title">⚡ Charging Active</div>
+          <div class="charging-stats">
+            <div class="stat-box">
+              <div class="stat-value" id="kiosk-kw">60</div>
+              <div class="stat-label">kW Power</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="kiosk-soc">18%</div>
+              <div class="stat-label">Battery</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="kiosk-kwh">0.0</div>
+              <div class="stat-label">kWh</div>
+            </div>
+          </div>
+          <div class="soc-section">
+            <div class="soc-row">
+              <span class="soc-text">State of Charge</span>
+              <span class="soc-pct" id="kiosk-soc-pct">18%</span>
+            </div>
+            <div class="soc-bar-wrap">
+              <div class="soc-bar" id="kiosk-soc-bar" style="width:18%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finishing State -->
+        <div id="state-finishing" style="display:none">
+          <div class="state-icon">🟡</div>
+          <div class="led-row" style="justify-content:center">
+            <div class="led amber"></div>
+            <div class="led-label">Finishing</div>
+          </div>
+          <div class="state-title" style="color:var(--amber)">Charge Complete at 80%</div>
+          <div class="state-sub">Please unplug to free this connector.<br>⚠ Idle fee starts in <span id="idle-countdown">5:00</span></div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- 4-Digit PIN Entry Section -->
+      <div class="pin-section" id="pin-section">
+        <div class="pin-label">Enter 4-Digit PIN to unlock connector</div>
+        <div class="pin-display-row" id="pin-display-row">
+          <div class="pin-digit-box active" id="d0">—</div>
+          <div class="pin-digit-box" id="d1">—</div>
+          <div class="pin-digit-box" id="d2">—</div>
+          <div class="pin-digit-box" id="d3">—</div>
+        </div>
+        <div class="keypad" id="keypad">
+          <div class="key" onclick="pressKey('1')">1</div>
+          <div class="key" onclick="pressKey('2')">2</div>
+          <div class="key" onclick="pressKey('3')">3</div>
+          <div class="key" onclick="pressKey('4')">4</div>
+          <div class="key" onclick="pressKey('5')">5</div>
+          <div class="key" onclick="pressKey('6')">6</div>
+          <div class="key" onclick="pressKey('7')">7</div>
+          <div class="key" onclick="pressKey('8')">8</div>
+          <div class="key" onclick="pressKey('9')">9</div>
+          <div class="key key-del" onclick="pressKey('del')">⌫</div>
+          <div class="key" onclick="pressKey('0')">0</div>
+          <div class="key key-enter" onclick="pressKey('enter')">ENTER</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="kiosk-footer">
+        <div class="ocpp-badge">OCPP 1.6 JSON</div>
+        <div class="ws-indicator">
+          <div class="ws-dot" id="ws-dot" style="background:var(--amber)"></div>
+          <span id="ws-label">Connecting...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OCPP Log -->
+    <div class="ocpp-log">
+      <div class="ocpp-log-title">📡 OCPP Protocol & Hardware Log</div>
+      <div id="ocpp-log-entries"></div>
+    </div>
+  </div>
+
+  <!-- Right: Wokwi Hardware Simulation Frame -->
+  <div class="hardware-column" id="hardware-column">
+    <div class="wokwi-card">
+      <div class="wokwi-header">
+        <div class="wokwi-title">
+          <span>⚡</span>
+          <span>EV Sarthi ESP32 IoT Edge Hardware Simulator (Wokwi Live)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-family:'DM Mono',monospace; color:var(--cyan); font-size:10px;">MQTT: broker.hivemq.com:1883</span>
+          <a href="https://wokwi.com/projects/480737603461683201" target="_blank" style="color:#60a5fa; text-decoration:none; font-size:10px;">Open in Tab ↗</a>
+        </div>
+      </div>
+      <iframe class="wokwi-iframe" id="wokwi-iframe" src="https://wokwi.com/projects/480737603461683201" title="EV Sarthi Hardware Simulator"></iframe>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -372,18 +662,57 @@ const API = isLocal ? 'http://localhost:8000' : window.location.origin;
 const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = isLocal ? 'ws://localhost:8000' : `${wsProto}//${window.location.host}`;
 
-// Get station ID from URL param or use default
+// URL parameters
 const params = new URLSearchParams(window.location.search);
 const STATION_ID = params.get('station') || 'TG0001';
+let stationPower = parseFloat(params.get('power') || params.get('kw') || '60');
 
-document.getElementById('kiosk-station-id').textContent = `Station: ${STATION_ID} · CCS2 · 60 kW DC`;
+// Dynamic Power Updater across all UI elements
+function updateDynamicPower(kw) {
+  if (!kw || isNaN(kw)) return;
+  stationPower = parseFloat(kw);
+
+  const topBadge = document.getElementById('kiosk-top-badge');
+  if (topBadge) topBadge.textContent = `${STATION_ID} · ${stationPower.toFixed(0)} kW DC`;
+
+  const kioskStation = document.getElementById('kiosk-station-id');
+  if (kioskStation) kioskStation.textContent = `Station: ${STATION_ID} · CCS2 · ${stationPower.toFixed(0)} kW DC`;
+
+  const availTitle = document.getElementById('avail-state-title');
+  if (availTitle) availTitle.textContent = `${stationPower.toFixed(0)} kW DC Fast Charging`;
+
+  const maxPower = document.getElementById('kiosk-max-power');
+  if (maxPower) maxPower.textContent = stationPower.toFixed(0);
+
+  const statKw = document.getElementById('kiosk-kw');
+  if (statKw && currentState !== 'charging') statKw.textContent = stationPower.toFixed(0);
+
+  const tbPower = document.getElementById('tb-power');
+  if (tbPower) tbPower.textContent = `${stationPower.toFixed(0)} kW DC`;
+}
+
+// Fetch station details from backend
+async function fetchStationDetails() {
+  try {
+    const res = await fetch(`${API}/api/stations/${STATION_ID}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.power_kw) updateDynamicPower(data.power_kw);
+    }
+  } catch (e) {
+    console.warn("Could not load station dynamic power, defaulting to:", stationPower);
+  }
+}
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let currentState = 'available'; // available | reserved | denied | charging | finishing | unlocked
+let currentState = 'available'; // available | reserved | denied | charging | finishing
 let pinBuffer = [];
 let attemptsLeft = 3;
 let ws = null;
 let idleTimer = null;
+let chargingInterval = null;
+let storedPin = '2580';
+let authWindowTimer = null;
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
 function updateClock() {
@@ -393,79 +722,94 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ── View Switcher ─────────────────────────────────────────────────────────────
+function setViewMode(mode) {
+  document.body.classList.remove('view-kiosk-only', 'view-hardware-only');
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+
+  if (mode === 'kiosk') {
+    document.body.classList.add('view-kiosk-only');
+    document.getElementById('btn-view-kiosk').classList.add('active');
+  } else if (mode === 'hardware') {
+    document.body.classList.add('view-hardware-only');
+    document.getElementById('btn-view-hardware').classList.add('active');
+  } else {
+    document.getElementById('btn-view-dual').classList.add('active');
+  }
+}
+
 // ── State Machine ─────────────────────────────────────────────────────────────
-const STATES = ['available','reserved','denied','charging','finishing','unlocked'];
+const STATES = ['available','reserved','denied','charging','finishing'];
 
 function setState(state) {
   currentState = state;
-  document.body.className = `state-${state}`;
-
-  // Hide all state panels
   STATES.forEach(s => {
     const el = document.getElementById(`state-${s}`);
-    if (el) el.style.display = 'none';
+    if (el) el.style.display = (s === state) ? 'block' : 'none';
   });
 
-  // Show active state panel
-  const activeEl = document.getElementById(`state-${state === 'unlocked' ? 'charging' : state}`);
-  if (activeEl) activeEl.style.display = 'block';
-
-  // Update status strip
   const strip = document.getElementById('status-strip');
-  strip.className = 'status-strip';
-  if (['reserved','denied','charging','finishing'].includes(state))
-    strip.classList.add(state);
+  strip.className = 'status-strip ' + (state || 'available');
 
-  // Show/hide keypad
-  const pinSection = document.getElementById('pin-section');
-  pinSection.style.display = (state === 'available' || state === 'reserved' || state === 'denied') ? 'block' : 'none';
+  // Update telemetry badges
+  const tbState = document.getElementById('tb-state');
+  const tbRelay = document.getElementById('tb-relay');
+  const tbWindow = document.getElementById('tb-window');
 
-  // Update LED
-  updateLed(state);
+  if (state === 'available') {
+    tbState.textContent = 'AVAILABLE';
+    tbState.className = 'tele-pill green';
+    tbRelay.textContent = 'DE-ENERGIZED (OPEN)';
+    tbRelay.className = 'tele-pill red';
+    tbWindow.textContent = '30s Window (Inactive)';
+    document.getElementById('tb-meter').textContent = '230.0 V · 0.0 A';
+  } else if (state === 'reserved') {
+    tbState.textContent = 'RESERVED';
+    tbState.className = 'tele-pill blue';
+    tbRelay.textContent = 'LOCKED (OPEN)';
+    tbRelay.className = 'tele-pill blue';
+    tbWindow.textContent = 'Awaiting PIN Verification';
+  } else if (state === 'charging') {
+    tbState.textContent = 'CHARGING';
+    tbState.className = 'tele-pill cyan';
+    tbRelay.textContent = 'ENERGIZED (CLOSED)';
+    tbRelay.className = 'tele-pill green';
+    tbWindow.textContent = 'Plug-in Verified · Active DC Flow';
+  } else if (state === 'denied') {
+    tbState.textContent = 'ACCESS_DENIED';
+    tbState.className = 'tele-pill red';
+    tbRelay.textContent = 'DE-ENERGIZED (OPEN)';
+    tbRelay.className = 'tele-pill red';
+  }
 
-  // Clear PIN buffer on state change (except denied)
-  if (state !== 'denied') clearPin();
+  clearPin();
 }
 
-function updateLed(state) {
-  const led = document.getElementById('led');
-  const label = document.getElementById('led-label');
-  if (!led || !label) return;
-  const map = {
-    available:  { cls:'',      text:'Available · Ready' },
-    reserved:   { cls:'blue',  text:'Reserved · Relay LOCKED · 0 kW' },
-    denied:     { cls:'red',   text:'Access Denied · Relay LOCKED' },
-    charging:   { cls:'cyan',  text:'Charging · Relay CLOSED · Power Dispensing' },
-    finishing:  { cls:'amber', text:'Finishing · Idle fee starting' },
-    unlocked:   { cls:'cyan',  text:'Unlocked · Charging' },
-  };
-  const { cls, text } = map[state] || map.available;
-  led.className = 'led ' + cls;
-  label.textContent = text;
-}
-
-// ── PIN Entry ─────────────────────────────────────────────────────────────────
+// ── 4-Digit Keypad logic ──────────────────────────────────────────────────────
 function pressKey(key) {
-  if (currentState === 'charging' || currentState === 'finishing') return;
+  if (currentState !== 'reserved') {
+    if (key === 'del') clearPin();
+    return;
+  }
 
   if (key === 'del') {
     pinBuffer.pop();
   } else if (key === 'enter') {
     submitPin();
     return;
-  } else if (pinBuffer.length < 6) {
+  } else if (pinBuffer.length < 4) {
     pinBuffer.push(key);
   }
   renderPinDisplay();
 
-  // Auto-submit when 6 digits entered
-  if (pinBuffer.length === 6) {
-    setTimeout(submitPin, 300);
+  // Auto-submit when 4 digits entered
+  if (pinBuffer.length === 4) {
+    setTimeout(submitPin, 250);
   }
 }
 
 function renderPinDisplay() {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     const box = document.getElementById(`d${i}`);
     if (!box) continue;
     if (i < pinBuffer.length) {
@@ -499,37 +843,79 @@ async function submitPin() {
 
     if (res.ok) {
       const data = await res.json();
-      logOcpp('rx', `OCPP UNLOCK_RELAY → session ${data.session_id}`);
+      logOcpp('rx', `OCPP UNLOCK_RELAY → Session Started (${data.session_id})`);
       handleUnlock();
     } else {
-      const err = await res.json();
-      logOcpp('err', `Access denied: ${err.detail}`);
+      const err = await res.json().catch(() => ({}));
+      logOcpp('err', `Access denied: ${err.detail || 'Invalid PIN'}`);
       handleDenied();
     }
   } catch (e) {
-    // Demo mode: check against stored PIN
-    if (currentState === 'reserved' && storedPin && pin === storedPin) {
-      logOcpp('rx', 'OCPP UNLOCK_RELAY (demo mode)');
+    // Offline / Demo fallback: match stored PIN
+    if (currentState === 'reserved' && (pin === storedPin || pin === '2580')) {
+      logOcpp('rx', `OCPP UNLOCK_RELAY (Local Demo Mode · PIN Accepted)`);
       handleUnlock();
     } else {
-      logOcpp('err', 'Wrong PIN · Relay stays locked');
+      logOcpp('err', 'Wrong PIN · Contactor stays locked');
       handleDenied();
     }
   }
 }
 
-function handleUnlock() {
+function handleAuthGrant(windowSecs = 30) {
   attemptsLeft = 3;
-  setState('charging');
-  logOcpp('rx', 'OCPP RemoteStartTransaction → Relay CLOSED · 60 kW DC flowing');
+  // Contactor relay ENERGIZES for vehicle detection, 30s insertion window active
+  const tbState = document.getElementById('tb-state');
+  if (tbState) {
+    tbState.textContent = 'AUTH_GRANTED (RESERVED)';
+    tbState.className = 'tele-pill blue';
+  }
+  const tbRelay = document.getElementById('tb-relay');
+  if (tbRelay) {
+    tbRelay.textContent = 'ENERGIZED (30s Window)';
+    tbRelay.className = 'tele-pill green';
+  }
 
-  // Simulate charging session locally
+  let windowLeft = windowSecs;
+  const tbWindow = document.getElementById('tb-window');
+  if (tbWindow) tbWindow.textContent = `30s Window (${windowLeft}s left)`;
+  if (authWindowTimer) clearInterval(authWindowTimer);
+  authWindowTimer = setInterval(() => {
+    windowLeft--;
+    if (tbWindow) tbWindow.textContent = `30s Window (${windowLeft}s left)`;
+    if (windowLeft <= 0) {
+      clearInterval(authWindowTimer);
+      if (currentState !== 'charging') {
+        if (tbWindow) tbWindow.textContent = 'Expired · Plug-in Timeout';
+        if (tbRelay) {
+          tbRelay.textContent = 'DE-ENERGIZED';
+          tbRelay.className = 'tele-pill red';
+        }
+        setState('available');
+        logOcpp('warn', '30s Plug-in window expired without vehicle connection · Reverted to Available');
+      }
+    }
+  }, 1000);
+
+  logOcpp('rx', `PIN Verified! Contactor ENERGIZED · 30s Cable Insertion Window Active · Ready for Vehicle`);
+}
+
+function startChargingSession() {
+  if (authWindowTimer) clearInterval(authWindowTimer);
+  const tbWindow = document.getElementById('tb-window');
+  if (tbWindow) tbWindow.textContent = 'Plug-in Verified · Active DC Flow';
+
+  setState('charging');
+  logOcpp('rx', `Vehicle cable connected → Relay CLOSED · ${stationPower.toFixed(0)} kW DC flowing`);
+
+  // Simulate charging session dynamically adapted to station power
   let soc = 18.0;
-  const interval = setInterval(() => {
-    if (currentState !== 'charging') { clearInterval(interval); return; }
-    const kw = soc < 80 ? 60 - soc * 0.2 : Math.max(5, 60 - soc * 0.65);
+  if (chargingInterval) clearInterval(chargingInterval);
+  chargingInterval = setInterval(() => {
+    if (currentState !== 'charging') { clearInterval(chargingInterval); return; }
+    const kw = soc < 80 ? stationPower - soc * (stationPower / 300) : Math.max(5, stationPower - soc * (stationPower / 100));
     soc = Math.min(100, soc + (kw / 40) * (2 / 3600) * 100);
-    const kwh = (60 - kw) * 0.01;
+    const kwh = (stationPower - kw) * 0.01;
     updateChargingDisplay(Math.round(soc * 10) / 10, Math.round(kw * 10) / 10, Math.round(kwh * 100) / 100);
     if (soc >= 80 && currentState !== 'finishing') {
       setState('finishing');
@@ -538,11 +924,16 @@ function handleUnlock() {
   }, 2000);
 }
 
+function handleUnlock() {
+  startChargingSession();
+}
+
 function handleDenied() {
   attemptsLeft--;
-  document.getElementById('attempts-left').textContent = Math.max(0, attemptsLeft);
-  // Flash pin digits red
-  for (let i = 0; i < 6; i++) {
+  const attEl = document.getElementById('attempts-left');
+  if (attEl) attEl.textContent = Math.max(0, attemptsLeft);
+
+  for (let i = 0; i < 4; i++) {
     const box = document.getElementById(`d${i}`);
     if (box) box.className = 'pin-digit-box error';
   }
@@ -551,23 +942,37 @@ function handleDenied() {
     if (attemptsLeft <= 0) {
       attemptsLeft = 3;
       setState('available');
-      logOcpp('warn', 'Max attempts reached · Temporary lockout lifted after 30s');
+      logOcpp('warn', 'Max PIN attempts reached · Lockout lifted to Available');
     } else {
       setState('reserved');
     }
-  }, 2500);
+  }, 2200);
 }
 
 function updateChargingDisplay(soc, kw, kwh) {
-  document.getElementById('kiosk-kw').textContent = kw.toFixed(0);
-  document.getElementById('kiosk-soc').textContent = soc.toFixed(0) + '%';
-  document.getElementById('kiosk-kwh').textContent = kwh.toFixed(1);
-  document.getElementById('kiosk-soc-pct').textContent = soc.toFixed(1) + '%';
-  document.getElementById('kiosk-soc-bar').style.width = soc + '%';
+  const elKw = document.getElementById('kiosk-kw');
+  if (elKw) elKw.textContent = kw.toFixed(0);
+
+  const elSoc = document.getElementById('kiosk-soc');
+  if (elSoc) elSoc.textContent = soc.toFixed(0) + '%';
+
+  const elKwh = document.getElementById('kiosk-kwh');
+  if (elKwh) elKwh.textContent = kwh.toFixed(1);
+
+  const elSocPct = document.getElementById('kiosk-soc-pct');
+  if (elSocPct) elSocPct.textContent = soc.toFixed(1) + '%';
+
+  const elSocBar = document.getElementById('kiosk-soc-bar');
+  if (elSocBar) elSocBar.style.width = soc + '%';
+
+  const elMeter = document.getElementById('tb-meter');
+  const currentA = kw > 0 ? (kw * 1000 / 230).toFixed(1) : '0.0';
+  if (elMeter) elMeter.textContent = `230.0 V · ${currentA} A`;
 }
 
 function startIdleCountdown() {
   let secs = 300;
+  if (idleTimer) clearInterval(idleTimer);
   idleTimer = setInterval(() => {
     secs--;
     const m = Math.floor(secs / 60);
@@ -577,14 +982,74 @@ function startIdleCountdown() {
     if (secs <= 0) {
       clearInterval(idleTimer);
       setState('available');
-      logOcpp('warn', 'Vehicle hogging detected · Idle fee started · Session ended');
+      logOcpp('warn', 'Session expired · Idle fee applied · Connector released');
     }
   }, 1000);
 }
 
-// ── WebSocket ─────────────────────────────────────────────────────────────────
-let storedPin = null;
+// ── Examiner 1-Click Action Dispatcher ───────────────────────────────────────
+async function triggerExaminerAction(action) {
+  logOcpp('tx', `Examiner Action Triggered: [${action.toUpperCase()}]`);
 
+  try {
+    const res = await fetch(`${API}/api/hardware/examiner-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: action,
+        station_id: STATION_ID,
+        connector_id: "1",
+        pin: "2580"
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      logOcpp('rx', `API Success: ${data.message}`);
+
+      if (action === 'reserve') {
+        storedPin = data.pin || '2580';
+        document.getElementById('tb-pin').textContent = storedPin;
+        if (data.power_kw) updateDynamicPower(data.power_kw);
+        setState('reserved');
+      } else if (action === 'auth') {
+        handleAuthGrant(30);
+      } else if (action === 'plugin') {
+        startChargingSession();
+      } else if (action === 'trip') {
+        if (chargingInterval) clearInterval(chargingInterval);
+        setState('denied');
+        document.getElementById('tb-state').textContent = 'FAULTED (<50ms TRIP)';
+        document.getElementById('tb-state').className = 'tele-pill red';
+        document.getElementById('tb-relay').textContent = 'DE-ENERGIZED (TRIPPED)';
+        document.getElementById('tb-relay').className = 'tele-pill red';
+        document.getElementById('tb-meter').textContent = '245.0 V · 32.5 A (OVERCURRENT)';
+      } else if (action === 'reset') {
+        if (chargingInterval) clearInterval(chargingInterval);
+        setState('available');
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      logOcpp('err', `Examiner action failed: ${err.detail || res.statusText}`);
+    }
+  } catch (e) {
+    logOcpp('warn', `Local offline execution for [${action}]`);
+    if (action === 'reserve') {
+      storedPin = '2580';
+      setState('reserved');
+    } else if (action === 'auth') {
+      handleAuthGrant(30);
+    } else if (action === 'plugin') {
+      startChargingSession();
+    } else if (action === 'trip') {
+      setState('denied');
+    } else if (action === 'reset') {
+      setState('available');
+    }
+  }
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
 function connectWS() {
   const url = `${WS_URL}/ws/kiosk/${STATION_ID}`;
   ws = new WebSocket(url);
@@ -596,8 +1061,12 @@ function connectWS() {
   };
 
   ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    handleWsMessage(msg);
+    try {
+      const msg = JSON.parse(e.data);
+      handleWsMessage(msg);
+    } catch (err) {
+      console.warn("WS parse error:", err);
+    }
   };
 
   ws.onclose = () => {
@@ -610,30 +1079,29 @@ function connectWS() {
 }
 
 function handleWsMessage(msg) {
+  if (msg.power_kw) updateDynamicPower(msg.power_kw);
+
   switch (msg.type) {
     case 'OCPP_RESERVE_NOW':
-      storedPin = msg.pin_hash;
+      storedPin = msg.pin_hash || '2580';
+      document.getElementById('tb-pin').textContent = storedPin;
       setState('reserved');
-      logOcpp('rx', `OCPP ReserveNow ← reservation_id=${msg.reservation_id} · Relay LOCKED`);
+      logOcpp('rx', `OCPP ReserveNow ← reservation=${msg.reservation_id} · Relay LOCKED · PIN: ${storedPin}`);
       break;
 
     case 'OCPP_CANCEL_RESERVATION':
       setState('available');
-      storedPin = null;
-      logOcpp('rx', 'OCPP CancelReservation ← Relay unlocked');
+      logOcpp('rx', 'OCPP CancelReservation ← Relay unlocked to Available');
       break;
 
     case 'OCPP_UNLOCK_RELAY':
       logOcpp('rx', `OCPP RemoteStartTransaction ← session ${msg.session_id}`);
+      handleUnlock();
       break;
 
     case 'METER_VALUES':
-      if (currentState === 'charging' || currentState === 'unlocked') {
+      if (currentState === 'charging') {
         updateChargingDisplay(msg.soc, msg.kw, msg.kwh);
-        if (msg.soc >= 80 && currentState !== 'finishing') {
-          setState('finishing');
-          startIdleCountdown();
-        }
       }
       break;
 
@@ -643,21 +1111,12 @@ function handleWsMessage(msg) {
 
     case 'CHARGING_COMPLETE':
       setState('available');
-      storedPin = null;
       logOcpp('rx', `OCPP StopTransaction ← final SoC ${msg.final_soc}%`);
       break;
 
     case 'OCPP_RESERVATION_EXPIRED':
       setState('available');
-      storedPin = null;
       logOcpp('warn', 'ReserveNow expired · No-show fee captured');
-      break;
-
-    case 'CHARGING_FINISHING':
-      if (currentState === 'charging') {
-        setState('finishing');
-        startIdleCountdown();
-      }
       break;
   }
 }
@@ -665,6 +1124,7 @@ function handleWsMessage(msg) {
 // ── OCPP Log ──────────────────────────────────────────────────────────────────
 function logOcpp(type, text) {
   const container = document.getElementById('ocpp-log-entries');
+  if (!container) return;
   const ts = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
   const colorClass = { tx:'log-tx', rx:'log-rx', err:'log-err', warn:'log-warn' }[type] || 'log-rx';
   const arrow = { tx:'↑', rx:'↓', err:'✗', warn:'⚠' }[type] || '·';
@@ -683,10 +1143,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+updateDynamicPower(stationPower);
+fetchStationDetails();
 setState('available');
 connectWS();
-logOcpp('rx', `System started · ${STATION_ID} online · OCPP 1.6`);
-logOcpp('rx', 'StatusNotification: Available → Central System');
+logOcpp('rx', `Examiner Dual View initialized · ${STATION_ID} online · OCPP 1.6J`);
+logOcpp('rx', 'Ready for 1-Click Examiner actions or In-Cabin Car reservation');
 </script>
 </body>
 </html>

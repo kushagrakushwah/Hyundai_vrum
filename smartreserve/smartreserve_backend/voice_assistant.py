@@ -822,7 +822,13 @@ class VoiceAssistant:
             logger.debug(f"[AVA] Gemini enrichment skipped: {e}")
 
         loc_str = f" in {city.capitalize()}" if city else " nearby"
-        if gemini_text:
+        s1_first_word = (s1_name or "").lower().split()[0]
+        is_good_gemini = (
+            gemini_text
+            and len(gemini_text) >= 25
+            and any(w in gemini_text.lower() for w in ["tata", "power", "sitabuldi", "station", "charger", "hub", "kw", s1_first_word])
+        )
+        if is_good_gemini:
             spoken = gemini_text
         elif intent_res.language_mix in ("hi", "hi+en"):
             spoken = (
@@ -983,7 +989,7 @@ class VoiceAssistant:
         pin_str = None
         spoken_pin = ""
         if is_booking and s1:
-            pin_str = "".join(random.choices(string.digits, k=6))
+            pin_str = "".join(random.choices(string.digits, k=4))
             spoken_pin = format_spoken_pin(pin_str)
             s1["is_reserved"] = True
             s1["reservation_pin"] = pin_str
